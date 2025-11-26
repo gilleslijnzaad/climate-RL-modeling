@@ -1,0 +1,25 @@
+rating():
+	return normal(mean = 5, sd = 3)
+
+LR <- 0.5
+inv_temp <- 1
+Q_F[1] <- 5
+Q_U[1] <- 5
+
+for (t in 1:n_trials):
+	# choose
+	P_F[t] <- 1 / (1 + exp(-inv_temp * (Q_F[t] - Q_U[t])))
+	choice[t] <- (random(0, 1) < P_F[t] ? "F" : "U")
+	
+	# rate
+	R[t] <- rating()
+	
+	# learn
+	if choice[t] == "F":
+		pred_err[t] <- R[t] - Q_F[t]
+		Q_F[t + 1] <- Q_F[t] + LR * pred_err[t]
+		Q_U[t + 1] <- Q_U[t]
+	else:
+		pred_err[t] <- R[t] - Q_U[t]
+		Q_U[t + 1] <- Q_U[t] + LR * pred_err[t]
+		Q_F[t + 1] <- Q_F[t]

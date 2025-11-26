@@ -1,0 +1,114 @@
+---
+title: "climate-RL Stan models"
+author: "Gilles Lijnzaad"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: TRUE
+    toc_float:
+      collapsed: TRUE
+    highlight: tango
+---
+
+```{r libs, message=FALSE}
+source("~/util.R")
+```
+# The data
+The data are coming from the R simulation:
+```{r}
+
+```
+
+# The model
+I show the Stan model code bit by bit to explain what is happening.
+
+## `data` block
+The data we supply to the model consist of:
+1. the number of trials per participant: `T`;
+2. an array of choices that a participant made: `choice[T]`;
+3. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit` example (see [Stan code](https://github.com/CCS-Lab/hBayesDM/blob/dQelop/commons/stan_files/bandit2arm_delta.stan) for this example).
+
+```{r}
+m <- ""
+m <- paste0(m, 
+  "data {
+    int<lower=1> T;
+    array[T] int<lower=1, upper=2> choice;
+    array[T] int<lower=0, upper=10> R;
+  }\n\n")
+```
+
+## `parameters` block
+In the current model, we have six free parameters. I tried making the initial Qs a vector[2], but it didn't work yet. So we have:
+1. learning rate 
+2. inverse temperature
+3. initial Q for friendly
+4. initial Q for unfriendly
+5. rating mean
+6. rating std dev
+
+```{r}
+m <- paste0(m, 
+  "parameters {
+    real<lower=0, upper=1> LR_pr;
+    real<lower=0, upper=5> inv_temp_pr;
+    real<lower=0, upper=10> initQF_pr;
+    real<lower=0, upper=10> initQU_pr;
+    real<lower=0, upper=10> mu_R_pr;
+    real<lower=0, upper=10> sigma_R_pr;
+  }\n\n"
+)
+```
+
+```{r}
+m <- cmdstan_model("climate-RL.stan")
+
+data_file <- "sim_dat.json"
+
+data <- fromJSON(file = data_file)
+
+it <- 10000
+
+fit <- m$sample(
+  data = data_file,
+  iter_sampling = it,
+  chains = 1,
+  thin = 1,
+  # init = my_inits,
+  iter_warmup = it / 2,
+  refresh = it / 5,
+  seed = 1234
+)
+
+draws <- fit$draws()
+
+# TODO: find a way to easily inspect posteriors for each variable; the draws_array object is annoying
+
+# inv_temp weer terug 
+LR_post <- fit$draws("LR")
+print(paste0("sim: ", data$LR, "      fit: ", mean(LR_post)))
+inv_temp_post <- fit$draws("inv_temp")
+print(paste0("sim: ", data$inv_temp, "      fit: ", mean(inv_temp_post)))
+
+# TODO: simulate with dissimilar initial Qs
+
+QF_post <- fit$draws("initQF")
+print(paste0("sim: ", data$initQF, "      fit: ", mean(QF_post)))
+QU_post <- fit$draws("initQU")
+print(paste0("sim: ", data$initQU, "      fit: ", mean(QU_post)))
+
+initQ_plot_data <- data.frame(
+  draws = c(array(fit$draws("initQF")),
+            array(fit$draws("initQU"))),
+  option = c(rep("Friendly", it),
+             rep("Unfriendly", it))
+)
+
+ggplot(initQ_plot_data, aes(x = draws, fill = option, color = option)) +
+  geom_density() +
+  labs(x = "Q value", y = "Density") +
+  scale_fill_manual(values = c(my_teal, my_pink)) +
+  scale_color_manual(values = c(my_teal, my_pink)) +
+  my_theme
+
+```
