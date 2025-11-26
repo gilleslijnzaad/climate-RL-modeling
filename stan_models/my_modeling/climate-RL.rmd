@@ -1,5 +1,5 @@
 ---
-title: "climate-RL Stan models"
+title: "Climate-RL Stan models"
 author: "Gilles Lijnzaad"
 date: "`r Sys.Date()`"
 output:
@@ -9,14 +9,17 @@ output:
       collapsed: TRUE
     highlight: tango
 ---
+# Loading the data
+The data are coming from the R simulation. The `data_file` first shows the parameter settings that the model was run with (parameters `LR`, `inv_temp`, `initQF`, `initQU`, `mu_R`, `sigma_R`), so we're sure what data we're looking at. The data follow (`T`, `choice`, `R`).
 
-```{r libs, message=FALSE}
-source("~/util.R")
-```
-# The data
-The data are coming from the R simulation:
-```{r}
+The simulation currently only creates data for *one participant*!
+```{r, message=FALSE}
+library(rjson)
+data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
 
+data <- fromJSON(file = data_file)
+library(dplyr)
+glimpse(data)
 ```
 
 # The model
@@ -26,16 +29,17 @@ I show the Stan model code bit by bit to explain what is happening.
 The data we supply to the model consist of:
 1. the number of trials per participant: `T`;
 2. an array of choices that a participant made: `choice[T]`;
-3. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit` example (see [Stan code](https://github.com/CCS-Lab/hBayesDM/blob/dQelop/commons/stan_files/bandit2arm_delta.stan) for this example).
+3. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
 
 ```{r}
-m <- ""
-m <- paste0(m, 
-  "data {
-    int<lower=1> T;
-    array[T] int<lower=1, upper=2> choice;
-    array[T] int<lower=0, upper=10> R;
-  }\n\n")
+mod <- ""
+mod <- paste0(mod, 
+"data {
+  int<lower=1> T;
+  array[T] int<lower=1, upper=2> choice;
+  array[T] int<lower=0, upper=10> R;
+}
+")
 ```
 
 ## `parameters` block
@@ -46,29 +50,122 @@ In the current model, we have six free parameters. I tried making the initial Qs
 4. initial Q for unfriendly
 5. rating mean
 6. rating std dev
-I copied the `2arm_bandit` example in defining a 
+I copied the `2arm_bandit_example` ([see code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan)) in defining "raw parameters" that we later convert using inverse logit transformation.
+
+When I add multiple participants and make the model hierarchical, these parameters will be group-level means and standard deviations.
 
 ```{r}
-m <- paste0(m, 
-  "parameters {
-    real<lower=0, upper=1> LR_pr;
-    real<lower=0, upper=5> inv_temp_pr;
-    real<lower=0, upper=10> initQF_pr;
-    real<lower=0, upper=10> initQU_pr;
-    real<lower=0, upper=10> mu_R_pr;
-    real<lower=0, upper=10> sigma_R_pr;
-  }\n\n"
-)
+mod <- paste0(mod, "
+parameters {
+  real<lower=0, upper=1> LR_raw;
+  real<lower=0, upper=5> inv_temp_raw;
+  real<lower=0, upper=10> initQF_raw;
+  real<lower=0, upper=10> initQU_raw;
+  real<lower=0, upper=10> mu_R_raw;
+  real<lower=0, upper=10> sigma_R_raw;
+}
+")
 ```
 
 ## `transformed parameters` block
-
+This approach copies the `2arm_bandit` approach. 
 ```{r}
+mod <- paste0(mod, "
+transformed parameters {
+  real<lower=0, upper=1> LR;
+  real<lower=0, upper=10> inv_temp;
+  real<lower=0, upper=10> initQF;
+  real<lower=0, upper=10> initQU;
+  real<lower=0, upper=10> mu_R;
+  real<lower=0, upper=10> sigma_R;
+
+  LR = inv_logit(LR_raw);
+  inv_temp = inv_logit(inv_temp_raw) * 10.0;
+  initQF = inv_logit(initQF_raw) * 10.0;
+  initQU = inv_logit(initQU_raw) * 10.0;
+  mu_R = inv_logit(mu_R_raw) * 10.0; 
+  sigma_R = inv_logit(sigma_R_raw) * 10.0;
+}
+")
+```
+
+## `model` block
+### The priors
+Again, following the `2arm_bandit_example` approach.
+```{r}
+mod <- paste0(mod, "
+model {
+  // priors: all uninformative
+  LR_raw ~ normal(0, 1);
+  inv_temp_raw ~ normal(0, 1);
+  initQF_raw ~ normal(0, 1);   
+  initQU_raw ~ normal(0, 1);   
+  mu_R_raw ~ normal(0, 1);          
+  sigma_R_raw ~ normal(0, 1);
+")
+```
+
+### Initialization
+I create a temporary vector `Q_t` that holds the two Q values (F, U) for the current trial, because otherwise the `categorical logit` wouldn't work, somehow. I'll look into this more later.
+```{r}
+mod <- paste0(mod, "
+  array[T, 2] real Q;
+  Q[1, 1] = initQF;
+  Q[1, 2] = initQU;
+  vector[2] Q_t;
+
+  real pred_err;
+")
+```
+
+### Trial loop
+```{r}
+
+mod <- paste0(mod, "
+  for (t in 1:T) {
+    Q_t = to_vector(Q[t]);
+
+    // sample choice (0 is F, 1 is U) via softmax
+    choice[t] ~ categorical_logit(inv_temp * Q_t);
+
+    // rate
+    R[t] ~ normal(mu_R, sigma_R);
+
+    // prediction error
+    if (choice[t] == 0) {
+      pred_err = R[t] - Q[t, 1];
+    } else {
+      pred_err = R[t] - Q[t, 2];
+    }
+
+    // update value (learn)
+    if (t < T) {
+      if (choice[t] == 0) {
+        Q[t+1, 1] = Q[t, 1] + LR * pred_err;
+        Q[t+1, 2] = Q[t, 2];
+      } else {
+        Q[t+1, 1] = Q[t, 1];
+        Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+      }
+    }
+  }
+}
+")
+```
+
+## Save Stan code
+```{r}
+write(mod, file = "~/research/climate-RL/stan_models/my_modeling/climate-RL.stan")
+```
+
+# Fitting the model
+## Run it
+```{r, message=FALSE}
+library(cmdstanr)
+
 m <- cmdstan_model("climate-RL.stan")
 
-data_file <- "sim_dat.json"
-
-data <- fromJSON(file = data_file)
+data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
 
 it <- 10000
 
@@ -82,18 +179,14 @@ fit <- m$sample(
   refresh = it / 5,
   seed = 1234
 )
+```
 
-draws <- fit$draws()
-
-# TODO: find a way to easily inspect posteriors for each variable; the draws_array object is annoying
-
-# inv_temp weer terug 
+## Inspect results
+```{r}
 LR_post <- fit$draws("LR")
 print(paste0("sim: ", data$LR, "      fit: ", mean(LR_post)))
 inv_temp_post <- fit$draws("inv_temp")
 print(paste0("sim: ", data$inv_temp, "      fit: ", mean(inv_temp_post)))
-
-# TODO: simulate with dissimilar initial Qs
 
 QF_post <- fit$draws("initQF")
 print(paste0("sim: ", data$initQF, "      fit: ", mean(QF_post)))
@@ -107,11 +200,37 @@ initQ_plot_data <- data.frame(
              rep("Unfriendly", it))
 )
 
-ggplot(initQ_plot_data, aes(x = draws, fill = option, color = option)) +
-  geom_density() +
+library(ggplot2)
+my_teal <- "#008080"
+my_pink <- "#ff00dd"
+my_theme <- theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold")) +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18)) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size = 16)) +
+  theme(strip.text.x = element_text(size = 18, face = "bold"))
+
+ggplot(initQ_plot_data, aes(x = draws, color = option, fill = option)) +
+  geom_density(alpha = 0.6) +
   labs(x = "Q value", y = "Density") +
   scale_fill_manual(values = c(my_teal, my_pink)) +
   scale_color_manual(values = c(my_teal, my_pink)) +
+  geom_vline(aes(xintercept = data$initQF, linetype = "simulated value"), color = my_teal) +
+  geom_vline(aes(xintercept = data$initQU, linetype = "simulated value"), color = my_pink) +
+  scale_linetype_manual(values = c("simulated value" = 2)) +
   my_theme
+```
+The estimates for the initial Q values are very far off from the simulated values, so something is off. I will have to "bugfix".
 
+
+# Next steps
+- Create a `generated quantities` block to see what Q values, choices and ratings the model predicts. Maybe this will help explain the "bug";
+- Loop over participants, where each participant has the same parameter values (so only one set of parameter values gets estimated). This is just to make sure that I properly implement the participant loop. Maybe this changes something about the "bug";
+- Loop over participants where we supply group-level parameters and hierarchically estimate parameter values;
+- "Cosmetic" improvement: remove the temporary `Q_t` vector;
+- "Cosmetic" improvement in the trial loop. The code for updating values is a bit unwieldy now, so I would prefer it to look something like this if possible:
+```
+Q[t+1, choice[t]] = Q[t, choice[t]] + LR * pred_error
+Q[t+1, !choice[t]] = Q[t, !choice[t]]
 ```

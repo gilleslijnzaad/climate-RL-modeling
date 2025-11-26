@@ -1,26 +1,9 @@
-// CURRENT version 1.0: just one participant, and ratings go from 0 to 10
-// next version 1.1: ratings go from 1 to 10
-
-// next version 2.0: multiple participants. we supply the group-level means in the parameters block, and then draw them for each participant in the transformed parameters block
-
-// random idea: if we are interested in values for pred_err we should make it a vector
-
-// we supply to the model:
-// (1) the number of trials
-// (2) the choices that a participant made
-// (3) the ratings (analogous to "outcome" in the 2arm_bandit example)
 data {
   int<lower=1> T;
   array[T] int<lower=1, upper=2> choice;
   array[T] int<lower=0, upper=10> R;
 }
 
-// we have five free parameters, of which 1 vector: 
-// (1) learning rate 
-// (2) inverse temperature 
-// (3) initial Q for friendly and unfriendly, respectively
-// (4) rating mean 
-// (5) rating std dev
 parameters {
   real<lower=0, upper=1> LR_raw;
   real<lower=0, upper=5> inv_temp_raw;
@@ -62,14 +45,14 @@ model {
 
   real pred_err;
 
-  // model
   for (t in 1:T) {
     Q_t = to_vector(Q[t]);
+
     // sample choice (0 is F, 1 is U) via softmax
-    choice[t] ~ categorical_logit(inv_temp * Q_t); // ??
+    choice[t] ~ categorical_logit(inv_temp * Q_t);
 
     // rate
-    R[t] ~ normal(mu_R, sigma_R);  // does this need to be truncated still?
+    R[t] ~ normal(mu_R, sigma_R);
 
     // prediction error
     if (choice[t] == 0) {
@@ -88,9 +71,6 @@ model {
         Q[t+1, 2] = Q[t, 2] + LR * pred_err;
       }
     }
-
-    // I hope this below works too, would be more elegant
-    // Q[t + 1, choice[t]] = Q[t, choice[t]] + LR * pred_error
-    // Q[t + 1, !choice[t]] = Q[t, !choice[t]]
   }
 }
+
