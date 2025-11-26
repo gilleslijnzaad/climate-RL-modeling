@@ -1,4 +1,4 @@
-// source: https://github.com/CCS-Lab/hBayesDM/blob/dQelop/commons/stan_files/bandit2arm_delta.stan
+// source: https://github.com/CCS-Lab/hBayesDM/blob/develop/commons/stan_files/bandit2arm_delta.stan
 
 // data specification; relates to the format of the data that you supply
 // to the model when running it
