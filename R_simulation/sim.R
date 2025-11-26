@@ -1,22 +1,23 @@
-## ----setup, include=FALSE-----------------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 knitr::knit_hooks$set(purl = knitr::hook_purl)
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----prep---------------------------------------------------------------------
-n_participants <- 10
-n_trials <- 80
+n_participants <- 1
+n_trials <- 40
 params_std <- c(0.5, 0.5, 5, 5) # LR, inv_temp, Q_F_1, Q_U_1
 set.seed(1234)
 
 ## ----fun-rating---------------------------------------------------------------
 library(truncnorm)
-
-rating <- function() {
+mu_R <- 5
+sigma_R <- 3
+rating <- function(mu_sd = c(5, 3)) {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
-                        mean = 5, 
-                        sd = 3), 
+                        mean = mu_R, 
+                        sd = sigma_R), 
              0)
   return(R)
 }
@@ -83,8 +84,20 @@ run_model <- function(params = params_std) {
   return(dat)
 }
 
-## ----helper-fun---------------------------------------------------------------
+## ----plot-util----------------------------------------------------------------
 library(tidyverse)
+my_teal <- "#008080"
+my_pink <- "#ff00dd"
+
+my_theme <- theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold")) +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18)) +
+  theme(legend.title = element_text(size = 18, face = "bold"),
+        legend.text = element_text(size = 16)) +
+  theme(strip.text.x = element_text(size = 18, face = "bold"))
+
+## ----helper-fun---------------------------------------------------------------
 library(grid)
 library(gridExtra)
 
@@ -145,20 +158,25 @@ annotation_double <- function(params_left, params_right) {
   annotation_single(params_right, 0.95)
 }
 
-## ----plot-util, echo = FALSE--------------------------------------------------
-my_teal <- "#008080"
-my_pink <- "#ff00dd"
-
-my_theme <- theme_bw() +
-  theme(plot.title = element_text(size = 20, face = "bold")) +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 18)) +
-  theme(legend.title = element_text(size = 18, face = "bold"),
-        legend.text = element_text(size = 16)) +
-  theme(strip.text.x = element_text(size = 18, face = "bold"))
+## ----dat-to-JSON--------------------------------------------------------------
+library(rjson)
+model_dat_JSON <- function(params, model_dat) {
+  LR <- params[1]
+  inv_temp <- params[2]
+  initQF <- params[3]
+  initQU <- params[4]
+  T <- n_trials
+  choice <- as.numeric(model_dat$choice == "U") + 1
+  R <- model_dat$R
+  my_list <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, choice, R)
+  names(my_list) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "choice", "R")
+  return(toJSON(my_list))
+}
 
 ## ----run-std, warning = FALSE-------------------------------------------------
-dat_std <- run_model() %>% to_long()
+dat_std <- run_model()
+write(model_dat_JSON(params_std, dat_std), "sim_dat.json")
+dat_std <- dat_std %>% to_long()
 p_left <- plot_Q(dat_std)
 p_right <- plot_choice(dat_std)
 grid.arrange(p_left, p_right, nrow = 1)
@@ -166,7 +184,9 @@ annotation_single(params_std)
 
 ## ----run-std-init-val, warning = FALSE----------------------------------------
 params <- c(0.5, 0.5, 8, 3)
-dat <- run_model(params) %>% to_long()
+dat <- run_model(params)
+write(model_dat_JSON(params, dat), "sim_dat.json")
+dat <- dat %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)

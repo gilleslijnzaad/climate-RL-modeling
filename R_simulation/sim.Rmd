@@ -29,11 +29,12 @@ set.seed(1234)
 I define rating as a function in order to easily edit it later on. For now, I say that rating is drawn from a truncated normal distribution (bounds [1, 10]) with mean 5 and standard deviation 3.
 ```{r fun-rating}
 library(truncnorm)
-
-rating <- function() {
+mu_R <- 5
+sigma_R <- 3
+rating <- function(mu_sd = c(5, 3)) {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
-                        mean = 5, 
-                        sd = 3), 
+                        mean = mu_R, 
+                        sd = sigma_R), 
              0)
   return(R)
 }
@@ -197,8 +198,8 @@ model_dat_JSON <- function(params, model_dat) {
   T <- n_trials
   choice <- as.numeric(model_dat$choice == "U") + 1
   R <- model_dat$R
-  my_list <- list(LR, inv_temp, initQF, initQU, T, choice, R)
-  names(my_list) <- c("LR", "inv_temp", "initQF", "initQU", "T", "choice", "R")
+  my_list <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, choice, R)
+  names(my_list) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "choice", "R")
   return(toJSON(my_list))
 }
 ```
