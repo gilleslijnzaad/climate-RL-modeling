@@ -46,6 +46,7 @@ In the current model, we have six free parameters. I tried making the initial Qs
 4. initial Q for unfriendly
 5. rating mean
 6. rating std dev
+I copied the `2arm_bandit` example in defining a 
 
 ```{r}
 m <- paste0(m, 
@@ -59,6 +60,8 @@ m <- paste0(m,
   }\n\n"
 )
 ```
+
+## `transformed parameters` block
 
 ```{r}
 m <- cmdstan_model("climate-RL.stan")
