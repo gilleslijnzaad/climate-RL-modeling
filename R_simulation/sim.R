@@ -5,7 +5,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----prep---------------------------------------------------------------------
-n_participants <- 1
+n_participants <- 20
 n_trials <- 40
 params_std <- c(0.5, 0.5, 5, 5) # LR, inv_temp, Q_F_1, Q_U_1
 set.seed(1234)
@@ -147,8 +147,9 @@ plot_choice <- function(dat) {
 annotation_single <- function(params, x = 0.95) {
     text <- paste0("LR = ", params[1],
                   "\ninv_temp = ", params[2],
-                  "\nQ_F[1] = ", params[3],
-                  "\nQ_U[1] = ", params[4])
+                  "\ninitQF = ", params[3],
+                  "\ninitQU = ", params[4],
+                  "\nmu_R = ", mu_R)
 
     grid.text(text, x = unit(x, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
 }
@@ -166,8 +167,11 @@ model_dat_JSON <- function(params, model_dat) {
   initQF <- params[3]
   initQU <- params[4]
   T <- n_trials
-  choice <- as.numeric(model_dat$choice == "U") + 1
-  R <- model_dat$R
+  N <- n_participants
+
+  participants <- rep(1:N, each = T)
+  choice <- list(participants, as.numeric(model_dat$choice == "U") + 1)
+  R <- list(participants, model_dat$R)
   my_list <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, choice, R)
   names(my_list) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "choice", "R")
   return(toJSON(my_list))
