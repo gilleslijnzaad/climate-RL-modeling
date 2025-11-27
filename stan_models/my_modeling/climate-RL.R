@@ -141,6 +141,9 @@ print(paste0("sim: ", data$initQF, "      fit: ", mean(QF_post)))
 QU_post <- fit$draws("initQU")
 print(paste0("sim: ", data$initQU, "      fit: ", mean(QU_post)))
 
+mu_R_post <- array(fit$draws("mu_R"))
+print(paste0("sim: ", data$mu_R, "      fit: ", mean(mu_R_post)))
+
 plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
             array(fit$draws("initQU")),
@@ -164,10 +167,8 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-
-# TODO: plot mu_R as well, change the values in the sim and see if the initQ values follow the mu_R value
 ggplot() +
-  geom_density(data = plot_data, aes(x = draws, color = parameter, fill = parameter), alpha = 0.6, linewidth = 1) +
+  geom_density(data = plot_data, aes(x = draws, color = parameter, fill = parameter), alpha = 0.6) +
   labs(x = "Estimate", y = "Density") +
   scale_fill_manual(values = c(my_teal, my_pink, my_blue)) +
   scale_color_manual(values = c(my_teal, my_pink, my_blue)) +

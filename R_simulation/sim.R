@@ -12,9 +12,9 @@ set.seed(1234)
 
 ## ----fun-rating---------------------------------------------------------------
 library(truncnorm)
-mu_R <- 5
+mu_R <- 7
 sigma_R <- 3
-rating <- function(mu_sd = c(5, 3)) {
+rating <- function() {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
                         mean = mu_R, 
                         sd = sigma_R), 

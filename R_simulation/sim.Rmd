@@ -26,12 +26,12 @@ params_std <- c(0.5, 0.5, 5, 5) # LR, inv_temp, Q_F_1, Q_U_1
 set.seed(1234)
 ```
 
-I define rating as a function in order to easily edit it later on. For now, I say that rating is drawn from a truncated normal distribution (bounds [1, 10]) with mean 5 and standard deviation 3.
+I define rating as a function in order to easily edit it later on. For now, I say that rating is drawn from a truncated normal distribution (bounds [1, 10]).
 ```{r fun-rating}
 library(truncnorm)
-mu_R <- 5
+mu_R <- 7
 sigma_R <- 3
-rating <- function(mu_sd = c(5, 3)) {
+rating <- function() {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
                         mean = mu_R, 
                         sd = sigma_R), 

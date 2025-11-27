@@ -9,11 +9,19 @@ output:
       collapsed: TRUE
     highlight: tango
 ---
+
+```{r setup, include = FALSE}
+knitr::knit_hooks$set(purl = knitr::hook_purl) # creates an R file upon knitting the Rmd
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
+```
+
 # Loading the data
 The data are coming from the R simulation. The `data_file` first shows the parameter settings that the model was run with (parameters `LR`, `inv_temp`, `initQF`, `initQU`, `mu_R`, `sigma_R`), so we're sure what data we're looking at. The data follow (`T`, `choice`, `R`).
 
 The simulation currently only creates data for *one participant*!
-```{r, message=FALSE}
+```{r loading-data, message=FALSE}
 library(rjson)
 data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
 
@@ -22,16 +30,16 @@ library(dplyr)
 glimpse(data)
 ```
 
-# The model
+# Defining the model
 I show the Stan model code bit by bit to explain what is happening.
 
 ## `data` block
 The data we supply to the model consist of:
 1. the number of trials per participant: `T`;
-2. an array of choices that a participant made: `choice[T]`;
-3. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
+1. an array of choices that a participant made: `choice[T]`;
+1. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
 
-```{r}
+```{r defmod-data}
 mod <- ""
 mod <- paste0(mod, 
 "data {
@@ -45,16 +53,16 @@ mod <- paste0(mod,
 ## `parameters` block
 In the current model, we have six free parameters. I tried making the initial Qs a vector[2], but it didn't work yet. So we have:
 1. learning rate 
-2. inverse temperature
-3. initial Q for friendly
-4. initial Q for unfriendly
-5. rating mean
-6. rating std dev
+1. inverse temperature
+1. initial Q for friendly
+1. initial Q for unfriendly
+1. rating mean
+1. rating std dev
 I copied the `2arm_bandit_example` ([see code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan)) in defining "raw parameters" that we later convert using inverse logit transformation.
 
 When I add multiple participants and make the model hierarchical, these parameters will be group-level means and standard deviations.
 
-```{r}
+```{r defmod-params}
 mod <- paste0(mod, "
 parameters {
   real<lower=0, upper=1> LR_raw;
@@ -69,7 +77,7 @@ parameters {
 
 ## `transformed parameters` block
 This approach copies the `2arm_bandit` approach. 
-```{r}
+```{r defmod-transf-params}
 mod <- paste0(mod, "
 transformed parameters {
   real<lower=0, upper=1> LR;
@@ -92,7 +100,7 @@ transformed parameters {
 ## `model` block
 ### The priors
 Again, following the `2arm_bandit_example` approach.
-```{r}
+```{r defmod-model-priors}
 mod <- paste0(mod, "
 model {
   // priors: all uninformative
@@ -107,7 +115,7 @@ model {
 
 ### Initialization
 I create a temporary vector `Q_t` that holds the two Q values (F, U) for the current trial, because otherwise the `categorical logit` wouldn't work, somehow. I'll look into this more later.
-```{r}
+```{r defmod-model-inits}
 mod <- paste0(mod, "
   array[T, 2] real Q;
   Q[1, 1] = initQF;
@@ -119,8 +127,7 @@ mod <- paste0(mod, "
 ```
 
 ### Trial loop
-```{r}
-
+```{r defmod-data-trials}
 mod <- paste0(mod, "
   for (t in 1:T) {
     Q_t = to_vector(Q[t]);
@@ -154,13 +161,13 @@ mod <- paste0(mod, "
 ```
 
 ## Save Stan code
-```{r}
+```{r save-stan}
 write(mod, file = "~/research/climate-RL/stan_models/my_modeling/climate-RL.stan")
 ```
 
 # Fitting the model
 ## Run it
-```{r, message=FALSE}
+```{r run-model}
 library(cmdstanr)
 
 m <- cmdstan_model("climate-RL.stan")
@@ -182,7 +189,7 @@ fit <- m$sample(
 ```
 
 ## Inspect results
-```{r}
+```{r inspect-model}
 LR_post <- fit$draws("LR")
 print(paste0("sim: ", data$LR, "      fit: ", mean(LR_post)))
 inv_temp_post <- fit$draws("inv_temp")
@@ -193,44 +200,53 @@ print(paste0("sim: ", data$initQF, "      fit: ", mean(QF_post)))
 QU_post <- fit$draws("initQU")
 print(paste0("sim: ", data$initQU, "      fit: ", mean(QU_post)))
 
-initQ_plot_data <- data.frame(
+mu_R_post <- array(fit$draws("mu_R"))
+print(paste0("sim: ", data$mu_R, "      fit: ", mean(mu_R_post)))
+
+plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
-            array(fit$draws("initQU"))),
-  option = c(rep("Friendly", it),
-             rep("Unfriendly", it))
+            array(fit$draws("initQU")),
+            array(fit$draws("mu_R"))),
+  parameter = c(rep("initQF", it),
+                rep("initQU", it),
+                rep("mu_R", it))
 )
 
 library(ggplot2)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
+my_blue <- "#11ccff"
+update_geom_defaults("density", list(linewidth = 1.5))
+update_geom_defaults("vline", list(linewidth = 1.5))
 my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 20, face = "bold")) +
   theme(axis.text = element_text(size = 16),
         axis.title = element_text(size = 18)) +
-  theme(legend.title = element_blank(),
+  theme(legend.title = element_text(size = 18, face = "bold"),
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-ggplot(initQ_plot_data, aes(x = draws, color = option, fill = option)) +
-  geom_density(alpha = 0.6) +
-  labs(x = "Q value", y = "Density") +
-  scale_fill_manual(values = c(my_teal, my_pink)) +
-  scale_color_manual(values = c(my_teal, my_pink)) +
+ggplot() +
+  geom_density(data = plot_data, aes(x = draws, color = parameter, fill = parameter), alpha = 0.6) +
+  labs(x = "Estimate", y = "Density") +
+  scale_fill_manual(values = c(my_teal, my_pink, my_blue)) +
+  scale_color_manual(values = c(my_teal, my_pink, my_blue)) +
   geom_vline(aes(xintercept = data$initQF, linetype = "simulated value"), color = my_teal) +
   geom_vline(aes(xintercept = data$initQU, linetype = "simulated value"), color = my_pink) +
-  scale_linetype_manual(values = c("simulated value" = 2)) +
+  geom_vline(aes(xintercept = data$mu_R, linetype = "simulated value"), color = my_blue) +
+  scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
   my_theme
 ```
-The estimates for the initial Q values are very far off from the simulated values, so something is off. I will have to "bugfix".
 
 
-# Next steps
-- Create a `generated quantities` block to see what Q values, choices and ratings the model predicts. Maybe this will help explain the "bug";
-- Loop over participants, where each participant has the same parameter values (so only one set of parameter values gets estimated). This is just to make sure that I properly implement the participant loop. Maybe this changes something about the "bug";
-- Loop over participants where we supply group-level parameters and hierarchically estimate parameter values;
-- "Cosmetic" improvement: remove the temporary `Q_t` vector;
-- "Cosmetic" improvement in the trial loop. The code for updating values is a bit unwieldy now, so I would prefer it to look something like this if possible:
+# Some next steps
+1. Create a `generated quantities` block to see what Q values, choices and ratings the model predicts. Maybe this will help explain the "bug";
+1. Loop over participants, where each participant has the same parameter values (so only one set of parameter values gets estimated). This is just to make sure that I properly implement the participant loop. Maybe this changes something about the "bug";
+1. Loop over participants where we supply group-level parameters and hierarchically estimate parameter values;
+1. "Cosmetic" improvement: remove the temporary `Q_t` vector;
+1. "Cosmetic" improvement in the trial loop. The code for updating values is a bit unwieldy now, so I would prefer it to look something like this if possible:
 ```
 Q[t+1, choice[t]] = Q[t, choice[t]] + LR * pred_error
 Q[t+1, !choice[t]] = Q[t, !choice[t]]
 ```
+1. Implement confirmation bias!
