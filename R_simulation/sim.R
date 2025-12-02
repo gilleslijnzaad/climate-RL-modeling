@@ -5,14 +5,14 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----prep---------------------------------------------------------------------
-n_participants <- 1
+n_participants <- 20
 n_trials <- 40
-params_std <- c(0.5, 0.5, 5, 5) # LR, inv_temp, Q_F_1, Q_U_1
+params_std <- c(0.5, 0.5, 6, 3) # LR, inv_temp, Q_F_1, Q_U_1
 set.seed(1234)
 
 ## ----fun-rating---------------------------------------------------------------
 library(truncnorm)
-mu_R <- 7
+mu_R <- 5
 sigma_R <- 3
 rating <- function() {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
@@ -147,8 +147,9 @@ plot_choice <- function(dat) {
 annotation_single <- function(params, x = 0.95) {
     text <- paste0("LR = ", params[1],
                   "\ninv_temp = ", params[2],
-                  "\nQ_F[1] = ", params[3],
-                  "\nQ_U[1] = ", params[4])
+                  "\ninitQF = ", params[3],
+                  "\ninitQU = ", params[4],
+                  "\nmu_R = ", mu_R)
 
     grid.text(text, x = unit(x, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
 }
@@ -159,23 +160,37 @@ annotation_double <- function(params_left, params_right) {
 }
 
 ## ----dat-to-JSON--------------------------------------------------------------
-library(rjson)
-model_dat_JSON <- function(params, model_dat) {
+library(cmdstanr) # contains function write_stan_json()
+write_sim_dat_JSON <- function(params, model_dat) {
+  # parameter settings
   LR <- params[1]
   inv_temp <- params[2]
   initQF <- params[3]
   initQU <- params[4]
   T <- n_trials
-  choice <- as.numeric(model_dat$choice == "U") + 1
-  R <- model_dat$R
-  my_list <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, choice, R)
-  names(my_list) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "choice", "R")
-  return(toJSON(my_list))
+  n_part <- n_participants
+  list_param_settings <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, n_part)
+  names(list_param_settings) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "n_part")
+  write_stan_json(list_param_settings, file = "~/research/climate-RL/R_simulation/sim_param_settings.json")
+
+  # data
+  # goal: choice[n_part, T]. see code Jessica
+  choice <- matrix(as.numeric(model_dat$choice == "U") + 1,
+                   nrow = n_part,
+                   ncol = T)
+  R <- matrix(model_dat$R,
+              nrow = n_part,
+              ncol = T)
+  list_dat <- list(n_part, T ,choice, R)
+  names(list_dat) <- c("n_part", "T", "choice", "R")
+  write_stan_json(list_dat, file = "~/research/climate-RL/R_simulation/sim_dat.json")
 }
 
 ## ----run-std, warning = FALSE-------------------------------------------------
+file_path <- "~/research/climate-RL/R_simulation/"
+
 dat_std <- run_model()
-write(model_dat_JSON(params_std, dat_std), "sim_dat.json")
+write_sim_dat_JSON(params_std, dat_std)
 dat_std <- dat_std %>% to_long()
 p_left <- plot_Q(dat_std)
 p_right <- plot_choice(dat_std)
@@ -185,7 +200,6 @@ annotation_single(params_std)
 ## ----run-std-init-val, warning = FALSE----------------------------------------
 params <- c(0.5, 0.5, 8, 3)
 dat <- run_model(params)
-write(model_dat_JSON(params, dat), "sim_dat.json")
 dat <- dat %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)

@@ -1,0 +1,10 @@
+{
+  "LR": 0.5,
+  "inv_temp": 0.5,
+  "initQF": 6,
+  "initQU": 3,
+  "mu_R": 5,
+  "sigma_R": 3,
+  "T": 40,
+  "n_part": 20
+}

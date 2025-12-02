@@ -6,19 +6,20 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----loading-data, message=FALSE----------------------------------------------
 library(rjson)
-data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
-
-data <- fromJSON(file = data_file)
+param_settings <- fromJSON(file = "~/research/climate-RL/R_simulation/sim_param_settings.json")
+data <- fromJSON(file = "~/research/climate-RL/R_simulation/sim_dat.json")
 library(dplyr)
+glimpse(param_settings)
 glimpse(data)
 
 ## ----defmod-data--------------------------------------------------------------
 mod <- ""
 mod <- paste0(mod, 
 "data {
+  int<lower=1> n_part;
   int<lower=1> T;
-  array[T] int<lower=1, upper=2> choice;
-  array[T] int<lower=0, upper=10> R;
+  array[n_part, T] int<lower=1, upper=2> choice;
+  array[n_part, T] int<lower=0, upper=10> R;
 }
 ")
 
@@ -67,40 +68,42 @@ model {
 
 ## ----defmod-model-inits-------------------------------------------------------
 mod <- paste0(mod, "
-  array[T, 2] real Q;
-  Q[1, 1] = initQF;
-  Q[1, 2] = initQU;
-  vector[2] Q_t;
+  for (j in 1:n_part) {
+    array[T, 2] real Q;
+    Q[1, 1] = initQF;
+    Q[1, 2] = initQU;
+    vector[2] Q_t;
 
-  real pred_err;
+    real pred_err;
 ")
 
 ## ----defmod-data-trials-------------------------------------------------------
 mod <- paste0(mod, "
-  for (t in 1:T) {
-    Q_t = to_vector(Q[t]);
+    for (t in 1:T) {
+      Q_t = to_vector(Q[t]);
 
-    // sample choice (0 is F, 1 is U) via softmax
-    choice[t] ~ categorical_logit(inv_temp * Q_t);
+      // sample choice (0 is F, 1 is U) via softmax
+      choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
-    // rate
-    R[t] ~ normal(mu_R, sigma_R);
+      // rate
+      R[j, t] ~ normal(mu_R, sigma_R);
 
-    // prediction error
-    if (choice[t] == 0) {
-      pred_err = R[t] - Q[t, 1];
-    } else {
-      pred_err = R[t] - Q[t, 2];
-    }
-
-    // update value (learn)
-    if (t < T) {
-      if (choice[t] == 0) {
-        Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-        Q[t+1, 2] = Q[t, 2];
+      // prediction error
+      if (choice[j, t] == 0) {
+        pred_err = R[j, t] - Q[t, 1];
       } else {
-        Q[t+1, 1] = Q[t, 1];
-        Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+        pred_err = R[j, t] - Q[t, 2];
+      }
+
+      // update value (learn)
+      if (t < T) {    // no updating in the very last trial
+        if (choice[j, t] == 0) {
+          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
+          Q[t+1, 2] = Q[t, 2];
+        } else {
+          Q[t+1, 1] = Q[t, 1];
+          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+        }
       }
     }
   }
@@ -113,7 +116,7 @@ write(mod, file = "~/research/climate-RL/stan_models/my_modeling/climate-RL.stan
 ## ----run-model----------------------------------------------------------------
 library(cmdstanr)
 
-m <- cmdstan_model("climate-RL.stan")
+m <- cmdstan_model("~/research/climate-RL/stan_models/my_modeling/climate-RL.stan")
 
 data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
 
@@ -129,20 +132,21 @@ fit <- m$sample(
   refresh = it / 5,
   seed = 1234
 )
+# takes about 30 seconds
 
 ## ----inspect-model------------------------------------------------------------
 LR_post <- fit$draws("LR")
-print(paste0("sim: ", data$LR, "      fit: ", mean(LR_post)))
+print(paste0("sim: ", param_settings$LR, "      fit: ", mean(LR_post)))
 inv_temp_post <- fit$draws("inv_temp")
-print(paste0("sim: ", data$inv_temp, "      fit: ", mean(inv_temp_post)))
+print(paste0("sim: ", param_settings$inv_temp, "      fit: ", mean(inv_temp_post)))
 
 QF_post <- fit$draws("initQF")
-print(paste0("sim: ", data$initQF, "      fit: ", mean(QF_post)))
+print(paste0("sim: ", param_settings$initQF, "      fit: ", mean(QF_post)))
 QU_post <- fit$draws("initQU")
-print(paste0("sim: ", data$initQU, "      fit: ", mean(QU_post)))
+print(paste0("sim: ", param_settings$initQU, "      fit: ", mean(QU_post)))
 
 mu_R_post <- array(fit$draws("mu_R"))
-print(paste0("sim: ", data$mu_R, "      fit: ", mean(mu_R_post)))
+print(paste0("sim: ", param_settings$mu_R, "      fit: ", mean(mu_R_post)))
 
 plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
@@ -172,9 +176,10 @@ ggplot() +
   labs(x = "Estimate", y = "Density") +
   scale_fill_manual(values = c(my_teal, my_pink, my_blue)) +
   scale_color_manual(values = c(my_teal, my_pink, my_blue)) +
-  geom_vline(aes(xintercept = data$initQF, linetype = "simulated value"), color = my_teal) +
-  geom_vline(aes(xintercept = data$initQU, linetype = "simulated value"), color = my_pink) +
-  geom_vline(aes(xintercept = data$mu_R, linetype = "simulated value"), color = my_blue) +
+  geom_vline(aes(xintercept = param_settings$initQF, linetype = "simulated value"), color = my_teal) +
+  geom_vline(aes(xintercept = param_settings$initQU, linetype = "simulated value"), color = my_pink) +
+  geom_vline(aes(xintercept = param_settings$mu_R, linetype = "simulated value"), color = my_blue) +
+  geom_vline(alpha = 0.6) +
   scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
   my_theme
 

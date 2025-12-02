@@ -1,7 +1,8 @@
 data {
+  int<lower=1> n_part;
   int<lower=1> T;
-  array[T] int<lower=1, upper=2> choice;
-  array[T] int<lower=0, upper=10> R;
+  array[n_part, T] int<lower=1, upper=2> choice;
+  array[n_part, T] int<lower=0, upper=10> R;
 }
 
 parameters {
@@ -38,37 +39,39 @@ model {
   mu_R_raw ~ normal(0, 1);          
   sigma_R_raw ~ normal(0, 1);
 
-  array[T, 2] real Q;
-  Q[1, 1] = initQF;
-  Q[1, 2] = initQU;
-  vector[2] Q_t;
+  for (j in 1:n_part) {
+    array[T, 2] real Q;
+    Q[1, 1] = initQF;
+    Q[1, 2] = initQU;
+    vector[2] Q_t;
 
-  real pred_err;
+    real pred_err;
 
-  for (t in 1:T) {
-    Q_t = to_vector(Q[t]);
+    for (t in 1:T) {
+      Q_t = to_vector(Q[t]);
 
-    // sample choice (0 is F, 1 is U) via softmax
-    choice[t] ~ categorical_logit(inv_temp * Q_t);
+      // sample choice (0 is F, 1 is U) via softmax
+      choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
-    // rate
-    R[t] ~ normal(mu_R, sigma_R);
+      // rate
+      R[j, t] ~ normal(mu_R, sigma_R);
 
-    // prediction error
-    if (choice[t] == 0) {
-      pred_err = R[t] - Q[t, 1];
-    } else {
-      pred_err = R[t] - Q[t, 2];
-    }
-
-    // update value (learn)
-    if (t < T) {
-      if (choice[t] == 0) {
-        Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-        Q[t+1, 2] = Q[t, 2];
+      // prediction error
+      if (choice[j, t] == 0) {
+        pred_err = R[j, t] - Q[t, 1];
       } else {
-        Q[t+1, 1] = Q[t, 1];
-        Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+        pred_err = R[j, t] - Q[t, 2];
+      }
+
+      // update value (learn)
+      if (t < T) {    // no updating in the very last trial
+        if (choice[j, t] == 0) {
+          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
+          Q[t+1, 2] = Q[t, 2];
+        } else {
+          Q[t+1, 1] = Q[t, 1];
+          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+        }
       }
     }
   }
