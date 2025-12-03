@@ -8,6 +8,7 @@ output:
     toc_float:
       collapsed: TRUE
     highlight: tango
+    number_sections: true
 ---
 
 ```{r setup, include = FALSE}
@@ -17,7 +18,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ```
 
-# 0. Preparation
+# Preparation
 Defining experimental parameters (i.e., number of participants and number of trials) and standard free parameters for the model.
 ```{r prep}
 n_participants <- 20
@@ -40,7 +41,7 @@ rating <- function() {
 }
 ```
 
-# 1. Model definition
+# Model definition
 For each participant, I first initialize parameters and then run a number of trials. This fills up a data frame that gets added to the total data `dat`. 
 
 ```{r model-std}
@@ -106,8 +107,8 @@ run_model <- function(params = params_std) {
 }
 ```
 
-# 2. Helper functions
-## 2a. Plots
+# Helper functions
+## Plots
 I want to create plots of Q over time. I define functions for transforming the data to a long format and for plotting, to make plotting quick and easy.
 
 ```{r plot-util}
@@ -187,7 +188,7 @@ annotation_double <- function(params_left, params_right) {
 }
 ```
 
-## 2b. Data to JSON for Stan
+## Data to JSON for Stan
 I want to plug simulated data into Stan for model recovery. To this end, I need to convert the relevant data points to JSON format.
 ```{r dat-to-JSON}
 library(cmdstanr) # contains function write_stan_json()
@@ -217,8 +218,8 @@ write_sim_dat_JSON <- function(params, model_dat) {
 }
 ```
 
-# 3. Run & inspect
-## 3.0 Standard settings
+# Run & inspect
+## Standard settings
 ```{r run-std, warning = FALSE}
 file_path <- "~/research/climate-RL/R_simulation/"
 
@@ -231,7 +232,7 @@ grid.arrange(p_left, p_right, nrow = 1)
 annotation_single(params_std)
 ```
 
-## 3.1 Differential initial values
+## Differential initial values
 ```{r run-std-init-val, warning = FALSE}
 params <- c(0.5, 0.5, 8, 3)
 dat <- run_model(params)
@@ -243,7 +244,7 @@ annotation_single(params)
 ```
 Even with differential initial values, Q-values quickly converge due to the stochastic nature of the rating function.
 
-## 3.2 Varying learning rate
+## Varying learning rate
 The code for this and all other plots is the same as the code in 3.1, just different `params`, so it will not be included.
 ```{r run-std-LR, echo = FALSE, warning = FALSE}
 params <- c(0.2, 0.5, 5, 5)
@@ -262,7 +263,7 @@ annotation_single(params)
 ```
 A lower learning rate results in a smaller effect of ratings, and therefore less variance in Q values (ribbons are smaller). A higher learning rate does the opposite.
 
-## 3.3 Varying inverse temperature
+## Varying inverse temperature
 ```{r run-std-inv-temp, echo = FALSE}
 params <- c(0.5, 0, 5, 5)
 dat <- run_model(params) %>% to_long()
@@ -280,7 +281,7 @@ annotation_single(params)
 ```
 The inverse temperature has a direct effect on the choice probabilities only, and therefore has an *indirect* effect on Q values by determining the option that gets its Q-value updated next trial. 
 
-# 4. Modifying the model: confirmation bias
+# Modifying the model: confirmation bias
 
 Confirmation bias may occur at the level of learning and/or at the level of rating. For both options, the question is: how do we quantify whether an outcome confirms or disconfirms currently held beliefs? 
 
@@ -294,7 +295,7 @@ is_confirm <- function(rating, init_value) {
 }
 ```
 
-## 4.1 Dual learning rates
+## Dual learning rates
 
 Confirmatory and disconfirmatory outcomes have separate learning rates, where LR_conf > LR_disconf. As a standard, we say LR_conf = 0.7 and LR_disconf = 0.3.
 
@@ -389,10 +390,10 @@ grid.arrange(p_left, p_right, nrow = 1)
 annotation_single(params_std)
 ```
 
-## 4.2 Rating bias
+## Rating bias
 There are multiple ways of implementing bias at the level of rating. I look at two: adding a bonus to (or subtracting a penalty from) the rating, or drawing the rating from two differential normal distributions.
 
-### 4.2.1 Bonus/penalty to rating
+### Bonus/penalty to rating
 ```{r fun-rating-bonus}
 bonus <- 3
 
@@ -499,7 +500,7 @@ annotation_single(params)
 
 A bonus of 3 is 
 
-### 4.2.2 Draw rating from separate distributions
+### Draw rating from separate distributions
 ```{r fun-rating-diffdistr}
 rating <- function(init_value) {
   R <- round(rtruncnorm(n = 1, a = 1, b = 10, 
