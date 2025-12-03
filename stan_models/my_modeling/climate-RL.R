@@ -5,9 +5,10 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----loading-data, message=FALSE----------------------------------------------
+sim_dir <- "~/research/climate-RL/R_simulation/"
 library(rjson)
-param_settings <- fromJSON(file = "~/research/climate-RL/R_simulation/sim_param_settings.json")
-data <- fromJSON(file = "~/research/climate-RL/R_simulation/sim_dat.json")
+param_settings <- fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
+data <- fromJSON(file = paste0(sim_dir, "sim_dat.json"))
 library(dplyr)
 glimpse(param_settings)
 glimpse(data)
@@ -111,28 +112,30 @@ mod <- paste0(mod, "
 ")
 
 ## ----save-stan----------------------------------------------------------------
-write(mod, file = "~/research/climate-RL/stan_models/my_modeling/climate-RL.stan")
+mod_dir <- "~/research/climate-RL/stan_models/my_modeling/"
+write(mod, file = paste0(mod_dir, "climate-RL.stan"))
 
 ## ----run-model----------------------------------------------------------------
 library(cmdstanr)
 
-m <- cmdstan_model("~/research/climate-RL/stan_models/my_modeling/climate-RL.stan")
+# ----------run this to refit the model----------
+# m <- cmdstan_model(paste0(mod_dir, "climate-RL.stan"))
+# data_file <- paste0(sim_dir, "sim_dat.json")
+# it <- 10000
+# fit <- m$sample(
+#   data = data_file,
+#   iter_sampling = it,
+#   chains = 1,
+#   thin = 1,
+#   # init = my_inits,
+#   iter_warmup = it / 2,
+#   refresh = it / 5,
+#   seed = 1234
+# )
+# fit$save_object(file = paste0(mod_dir, "climate-RL_fit.rds"))
 
-data_file <- "~/research/climate-RL/R_simulation/sim_dat.json"
-
-it <- 10000
-
-fit <- m$sample(
-  data = data_file,
-  iter_sampling = it,
-  chains = 1,
-  thin = 1,
-  # init = my_inits,
-  iter_warmup = it / 2,
-  refresh = it / 5,
-  seed = 1234
-)
-# takes about 30 seconds
+# ----------run this to use saved model fit----------
+fit <- readRDS(file = paste0(mod_dir, "climate-RL_fit.rds"))
 
 ## ----inspect-model------------------------------------------------------------
 LR_post <- fit$draws("LR")
@@ -152,9 +155,9 @@ plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
             array(fit$draws("initQU")),
             array(fit$draws("mu_R"))),
-  parameter = c(rep("initQF", it),
-                rep("initQU", it),
-                rep("mu_R", it))
+  parameter = c(rep("initQF", length(fit$draws("initQF"))),
+                rep("initQU", length(fit$draws("initQU"))),
+                rep("mu_R", length(fit$draws("mu_R"))))
 )
 
 library(ggplot2)
