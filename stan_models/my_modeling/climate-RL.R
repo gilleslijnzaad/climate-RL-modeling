@@ -137,20 +137,13 @@ library(cmdstanr)
 # ----------run this to use saved model fit----------
 fit <- readRDS(file = paste0(mod_dir, "climate-RL_fit.rds"))
 
-## ----inspect-model------------------------------------------------------------
+## ----inspect-model-1----------------------------------------------------------
 LR_post <- fit$draws("LR")
 print(paste0("sim: ", param_settings$LR, "      fit: ", mean(LR_post)))
 inv_temp_post <- fit$draws("inv_temp")
 print(paste0("sim: ", param_settings$inv_temp, "      fit: ", mean(inv_temp_post)))
 
-QF_post <- fit$draws("initQF")
-print(paste0("sim: ", param_settings$initQF, "      fit: ", mean(QF_post)))
-QU_post <- fit$draws("initQU")
-print(paste0("sim: ", param_settings$initQU, "      fit: ", mean(QU_post)))
-
-mu_R_post <- array(fit$draws("mu_R"))
-print(paste0("sim: ", param_settings$mu_R, "      fit: ", mean(mu_R_post)))
-
+## ----inspect-model-2----------------------------------------------------------
 plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
             array(fit$draws("initQU")),

@@ -36,9 +36,11 @@ I show the Stan model code bit by bit to explain what is happening.
 
 ## `data` block
 The data we supply to the model consist of:
+
+1. the number of participants: `n_part`;
 1. the number of trials per participant: `T`;
-1. an array of choices that a participant made: `choice[T]`;
-1. an array of ratings that a participant gave: `R[T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
+1. an array of choices that a participant made: `choice[n_part, T]`;
+1. an array of ratings that a participant gave: `R[n_part, T]`. These are analogous to the array `outcomes[T]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
 
 ```{r defmod-data}
 mod <- ""
@@ -53,16 +55,18 @@ mod <- paste0(mod,
 ```
 
 ## `parameters` block
-In the current model, we have six free parameters. I tried making the initial Qs a vector[2], but it didn't work yet. So we have:
+In the current model, we have six free parameters:
+
 1. learning rate 
 1. inverse temperature
 1. initial Q for friendly
 1. initial Q for unfriendly
 1. rating mean
 1. rating std dev
+
 I copied the `2arm_bandit_example` ([see code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan)) in defining "raw parameters" that we later convert using inverse logit transformation.
 
-When I add multiple participants and make the model hierarchical, these parameters will be group-level means and standard deviations.
+When I make the model hierarchical, these parameters will be group-level means and standard deviations.
 
 ```{r defmod-params}
 mod <- paste0(mod, "
@@ -116,7 +120,7 @@ model {
 ```
 
 ### Participant loop
-For every participant I initialize an array for holding the Q values. I also create a temporary vector `Q_t` that holds the two Q values (F, U) for the *current* trial, because otherwise the `categorical logit` wouldn't work, somehow. This works for now, and maybe in the future I will find a more elegant solution.
+For every participant I initialize an array for holding the Q values. I also create a temporary vector `Q_t` that holds the two Q values (F, U) for the *current* trial, because otherwise the `categorical_logit` wouldn't work, somehow. This works for now, and maybe in the future I will find a more elegant solution.
 ```{r defmod-model-inits}
 mod <- paste0(mod, "
   for (j in 1:n_part) {
@@ -196,20 +200,16 @@ fit <- readRDS(file = paste0(mod_dir, "climate-RL_fit.rds"))
 ```
 
 ## Inspect results
-```{r inspect-model}
+```{r inspect-model-1}
 LR_post <- fit$draws("LR")
 print(paste0("sim: ", param_settings$LR, "      fit: ", mean(LR_post)))
 inv_temp_post <- fit$draws("inv_temp")
 print(paste0("sim: ", param_settings$inv_temp, "      fit: ", mean(inv_temp_post)))
+```
 
-QF_post <- fit$draws("initQF")
-print(paste0("sim: ", param_settings$initQF, "      fit: ", mean(QF_post)))
-QU_post <- fit$draws("initQU")
-print(paste0("sim: ", param_settings$initQU, "      fit: ", mean(QU_post)))
+Here I'm not sure why the inverse temperature is off by a factor of 10. Other parameters don't have this issue. Thoughts?
 
-mu_R_post <- array(fit$draws("mu_R"))
-print(paste0("sim: ", param_settings$mu_R, "      fit: ", mean(mu_R_post)))
-
+```{r inspect-model-2}
 plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
             array(fit$draws("initQU")),
@@ -246,14 +246,13 @@ ggplot() +
   my_theme
 ```
 
-
 # Some next steps
+1. Implement confirmation bias!
 1. Create a `generated quantities` block to see what Q values, choices and ratings the model predicts;
-1. Loop over participants where we supply group-level parameters and hierarchically estimate parameter values;
+1. Hierarchically estimate parameter values for participants;
 1. "Cosmetic" improvement: remove the temporary `Q_t` vector;
 1. "Cosmetic" improvement in the trial loop. The code for updating values is a bit unwieldy now, so I would prefer it to look something like this if possible:
 ```
 Q[t+1, choice[t]] = Q[t, choice[t]] + LR * pred_error
 Q[t+1, !choice[t]] = Q[t, !choice[t]]
 ```
-1. Implement confirmation bias!
