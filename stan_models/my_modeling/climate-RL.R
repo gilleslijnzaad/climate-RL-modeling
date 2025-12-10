@@ -31,8 +31,6 @@ parameters {
   real<lower=0, upper=5> inv_temp_raw;
   real<lower=0, upper=10> initQF_raw;
   real<lower=0, upper=10> initQU_raw;
-  real<lower=0, upper=10> mu_R_raw;
-  real<lower=0, upper=10> sigma_R_raw;
 }
 ")
 
@@ -43,15 +41,11 @@ transformed parameters {
   real<lower=0, upper=10> inv_temp;
   real<lower=0, upper=10> initQF;
   real<lower=0, upper=10> initQU;
-  real<lower=0, upper=10> mu_R;
-  real<lower=0, upper=10> sigma_R;
 
   LR = inv_logit(LR_raw);
   inv_temp = inv_logit(inv_temp_raw) * 10.0;
   initQF = inv_logit(initQF_raw) * 10.0;
   initQU = inv_logit(initQU_raw) * 10.0;
-  mu_R = inv_logit(mu_R_raw) * 10.0; 
-  sigma_R = inv_logit(sigma_R_raw) * 10.0;
 }
 ")
 
@@ -62,9 +56,7 @@ model {
   LR_raw ~ normal(0, 1);
   inv_temp_raw ~ normal(0, 1);
   initQF_raw ~ normal(0, 1);   
-  initQU_raw ~ normal(0, 1);   
-  mu_R_raw ~ normal(0, 1);          
-  sigma_R_raw ~ normal(0, 1);
+  initQU_raw ~ normal(0, 1);
 ")
 
 ## ----defmod-model-inits-------------------------------------------------------
@@ -85,9 +77,6 @@ mod <- paste0(mod, "
 
       // sample choice (0 is F, 1 is U) via softmax
       choice[j, t] ~ categorical_logit(inv_temp * Q_t);
-
-      // rate
-      R[j, t] ~ normal(mu_R, sigma_R);
 
       // prediction error
       if (choice[j, t] == 0) {
@@ -141,7 +130,7 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(TRUE)
+fit <- fit_model(refit = TRUE)
 
 ## ----inspect-model-1----------------------------------------------------------
 LR_post <- fit$draws("LR")
@@ -152,17 +141,14 @@ print(paste0("sim: ", param_settings$inv_temp, "      fit: ", mean(inv_temp_post
 ## ----inspect-model-2----------------------------------------------------------
 plot_data <- data.frame(
   draws = c(array(fit$draws("initQF")),
-            array(fit$draws("initQU")),
-            array(fit$draws("mu_R"))),
+            array(fit$draws("initQU"))),
   parameter = c(rep("initQF", length(fit$draws("initQF"))),
-                rep("initQU", length(fit$draws("initQU"))),
-                rep("mu_R", length(fit$draws("mu_R"))))
+                rep("initQU", length(fit$draws("initQU"))))
 )
 
 library(ggplot2)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
-my_blue <- "#11ccff"
 update_geom_defaults("density", list(linewidth = 1.5))
 update_geom_defaults("vline", list(linewidth = 1.5))
 my_theme <- theme_bw() +
@@ -176,11 +162,10 @@ my_theme <- theme_bw() +
 ggplot() +
   geom_density(data = plot_data, aes(x = draws, color = parameter, fill = parameter), alpha = 0.6) +
   labs(x = "Estimate", y = "Density") +
-  scale_fill_manual(values = c(my_teal, my_pink, my_blue)) +
-  scale_color_manual(values = c(my_teal, my_pink, my_blue)) +
+  scale_fill_manual(values = c(my_teal, my_pink)) +
+  scale_color_manual(values = c(my_teal, my_pink)) +
   geom_vline(aes(xintercept = param_settings$initQF, linetype = "simulated value"), color = my_teal) +
   geom_vline(aes(xintercept = param_settings$initQU, linetype = "simulated value"), color = my_pink) +
-  geom_vline(aes(xintercept = param_settings$mu_R, linetype = "simulated value"), color = my_blue) +
   geom_vline(alpha = 0.6) +
   scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
   my_theme
