@@ -179,24 +179,30 @@ write(mod, file = paste0(mod_dir, "climate-RL.stan"))
 ```{r run-model}
 library(cmdstanr)
 
-# ----------run this to refit the model----------
-# m <- cmdstan_model(paste0(mod_dir, "climate-RL.stan"))
-# data_file <- paste0(sim_dir, "sim_dat.json")
-# it <- 10000
-# fit <- m$sample(
-#   data = data_file,
-#   iter_sampling = it,
-#   chains = 1,
-#   thin = 1,
-#   # init = my_inits,
-#   iter_warmup = it / 2,
-#   refresh = it / 5,
-#   seed = 1234
-# )
-# fit$save_object(file = paste0(mod_dir, "climate-RL_fit.rds"))
+# function allows for easily changing whether you want to refit or use a saved fit
+fit_model <- function(refit) {
+  if (refit) {
+    m <- cmdstan_model(paste0(mod_dir, "climate-RL.stan"))
+    data_file <- paste0(sim_dir, "sim_dat.json")
+    it <- 10000
+    fit <- m$sample(
+      data = data_file,
+      iter_sampling = it,
+      chains = 1,
+      thin = 1,
+      # init = my_inits,
+      iter_warmup = it / 2,
+      refresh = it / 5,
+      seed = 1234
+    )
+    fit$save_object(file = paste0(mod_dir, "climate-RL_fit.rds"))
+  } else {
+    fit <- readRDS(file = paste0(mod_dir, "climate-RL_fit.rds"))
+  }
+  return(fit)
+}
 
-# ----------run this to use saved model fit----------
-fit <- readRDS(file = paste0(mod_dir, "climate-RL_fit.rds"))
+fit <- fit_model(FALSE)
 ```
 
 ## Inspect results
