@@ -8,15 +8,15 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 n_participants <- 20
 n_trials <- 40
 params_std <- c(0.5, 0.5, 6, 3, 5, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R, sigma_R
-set.seed(1234)
 
 ## ----model-std----------------------------------------------------------------
 library(truncnorm) # draw from a truncated normal distribution (for rating)
 
-run_model <- function(params = params_std) {
+runmod <- function(params = params_std) {
   dat <- data.frame()
 
   for (j in 1:n_participants) {
+    set.seed(j)
 
     # ------ init data frames etc -----
     Q <- data.frame(
@@ -45,6 +45,7 @@ run_model <- function(params = params_std) {
                            "F",
                            "U")
 
+      # rate
       R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10, 
                         mean = mu_R, 
                         sd = sigma_R),
@@ -138,7 +139,7 @@ plot_choice <- function(dat) {
   return(p)
 }
 
-annotation_single <- function(params, x = 0.95) {
+my_annotation <- function(params, x = 0.95) {
     text <- paste0("LR = ", params[1],
                   "\ninv_temp = ", params[2],
                   "\ninitQF = ", params[3],
@@ -147,11 +148,6 @@ annotation_single <- function(params, x = 0.95) {
                   "\nsigma_R = ", params[6])
 
     grid.text(text, x = unit(x, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
-}
-
-annotation_double <- function(params_left, params_right) {
-  annotation_single(params_left, 0.45)
-  annotation_single(params_right, 0.95)
 }
 
 ## ----dat-to-JSON--------------------------------------------------------------
@@ -185,50 +181,50 @@ write_sim_dat_JSON <- function(params, model_dat) {
 }
 
 ## ----run-std------------------------------------------------------------------
-dat_std <- run_model()
+dat_std <- runmod()
 write_sim_dat_JSON(params_std, dat_std)
 dat_std <- dat_std %>% to_long()
 p_left <- plot_Q(dat_std)
 p_right <- plot_choice(dat_std)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params_std)
+my_annotation(params_std)
 
 ## ----run-std-init-val---------------------------------------------------------
 params <- c(params_std[1:2], 9, 2, params_std[5:6])
-dat <- run_model(params)
+dat <- runmod(params)
 dat <- dat %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params)
+my_annotation(params)
 
 ## ----run-std-LR, echo = FALSE-------------------------------------------------
 params <- c(0.2, params_std[2:6])
-dat <- run_model(params) %>% to_long()
+dat <- runmod(params) %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params)
+my_annotation(params)
 
 params <- c(0.8, params_std[2:6])
-dat <- run_model(params) %>% to_long()
+dat <- runmod(params) %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params)
+my_annotation(params)
 
 ## ----run-std-inv-temp, echo = FALSE-------------------------------------------
 params <- c(params_std[1], 0, params_std[3:6])
-dat <- run_model(params) %>% to_long()
+dat <- runmod(params) %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params)
+my_annotation(params)
 
 params <- c(params_std[1], 1.5, params_std[3:6])
-dat <- run_model(params) %>% to_long()
+dat <- runmod(params) %>% to_long()
 p_left <- plot_Q(dat)
 p_right <- plot_choice(dat)
 grid.arrange(p_left, p_right, nrow = 1)
-annotation_single(params)
+my_annotation(params)
 
