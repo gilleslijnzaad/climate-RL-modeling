@@ -24,7 +24,7 @@ Defining experimental parameters (i.e., number of participants and number of tri
 ```{r prep}
 n_participants <- 20
 n_trials <- 40
-params_std <- c(0.5, 0.5, 6, 3, 5, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R, sigma_R
+params_std <- c(0.5, 0.5, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 ```
 
 ## Model definition
@@ -54,8 +54,9 @@ runmod <- function(params = params_std) {
     inv_temp <- params[2]
     Q$F[1] <- params[3]
     Q$U[1] <- params[4]
-    mu_R <- params[5]
-    sigma_R <- params[6]
+    mu_R <- params[5:6]
+    names(mu_R) <- c("F", "U")
+    sigma_R <- params[7]
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -68,7 +69,7 @@ runmod <- function(params = params_std) {
 
       # rate
       R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10, 
-                        mean = mu_R, 
+                        mean = mu_R[[choice[t]]], 
                         sd = sigma_R),
                     0)
 
@@ -149,7 +150,7 @@ plot_Q <- function(dat) {
 
 plot_choice <- function(dat) {
   dat <- dat %>%
-    mutate(choice_is_F = if_else(choice == "F", 1, 0),
+    mutate(choice_is_F = as.numeric(choice == "F"),
            choice_is_U = 1 - choice_is_F)
     
   p <- ggplot(dat, aes(x = trial)) +
@@ -190,12 +191,13 @@ write_sim_dat_JSON <- function(params, model_dat) {
   inv_temp <- params[2]
   initQF <- params[3]
   initQU <- params[4]
-  mu_R <- params[5]
-  sigma_R <- params[6]
+  mu_R_F <- params[5]
+  mu_R_U <- params[6]
+  sigma_R <- params[7]
   T <- n_trials
   n_part <- n_participants
-  list_param_settings <- list(LR, inv_temp, initQF, initQU, mu_R, sigma_R, T, n_part)
-  names(list_param_settings) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R", "sigma_R", "T", "n_part")
+  list_param_settings <- list(LR, inv_temp, initQF, initQU, mu_R_F, mu_R_U, sigma_R, T, n_part)
+  names(list_param_settings) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R_F", "mu_R_U", "sigma_R", "T", "n_part")
   write_stan_json(list_param_settings, file = paste0(dir, "sim_param_settings.json"))
 
   # data
@@ -205,8 +207,8 @@ write_sim_dat_JSON <- function(params, model_dat) {
   R <- matrix(model_dat$R,
               nrow = n_part,
               ncol = T)
-  list_dat <- list(n_part, T ,choice, R)
-  names(list_dat) <- c("n_part", "T", "choice", "R")
+  list_dat <- list(n_part, T, initQF, initQU, choice, R)
+  names(list_dat) <- c("n_part", "T", "initQF", "initQU", "choice", "R")
   write_stan_json(list_dat, file = paste0(dir, "sim_dat.json"))
 }
 ```

@@ -3,33 +3,27 @@ data {
   int<lower=1> T;
   array[n_part, T] int<lower=1, upper=2> choice;
   array[n_part, T] int<lower=0, upper=10> R;
+  int<lower=0, upper=10> initQF;
+  int<lower=0, upper=10> initQU;
 }
 
 parameters {
   real<lower=0, upper=1> LR_raw;
   real<lower=0, upper=5> inv_temp_raw;
-  real<lower=0, upper=10> initQF_raw;
-  real<lower=0, upper=10> initQU_raw;
 }
 
 transformed parameters {
   real<lower=0, upper=1> LR;
   real<lower=0, upper=10> inv_temp;
-  real<lower=0, upper=10> initQF;
-  real<lower=0, upper=10> initQU;
 
   LR = inv_logit(LR_raw);
   inv_temp = inv_logit(inv_temp_raw) * 10.0;
-  initQF = inv_logit(initQF_raw) * 10.0;
-  initQU = inv_logit(initQU_raw) * 10.0;
 }
 
 model {
   // priors: all uninformative
   LR_raw ~ normal(0, 1);
   inv_temp_raw ~ normal(0, 1);
-  initQF_raw ~ normal(0, 1);   
-  initQU_raw ~ normal(0, 1);
 
   for (j in 1:n_part) {
     array[T, 2] real Q;

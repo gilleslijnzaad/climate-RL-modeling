@@ -7,7 +7,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ## ----prep---------------------------------------------------------------------
 n_participants <- 20
 n_trials <- 40
-params_std <- c(0.5, 0.5, 6, 3, 5, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R, sigma_R
+params_std <- c(0.5, 0.5, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 
 ## ----model-std----------------------------------------------------------------
 library(truncnorm) # draw from a truncated normal distribution (for rating)
@@ -33,8 +33,9 @@ runmod <- function(params = params_std) {
     inv_temp <- params[2]
     Q$F[1] <- params[3]
     Q$U[1] <- params[4]
-    mu_R <- params[5]
-    sigma_R <- params[6]
+    mu_R <- params[5:6]
+    names(mu_R) <- c("F", "U")
+    sigma_R <- params[7]
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -47,7 +48,7 @@ runmod <- function(params = params_std) {
 
       # rate
       R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10, 
-                        mean = mu_R, 
+                        mean = mu_R[[choice[t]]], 
                         sd = sigma_R),
                     0)
 
@@ -188,43 +189,4 @@ p_left <- plot_Q(dat_std)
 p_right <- plot_choice(dat_std)
 grid.arrange(p_left, p_right, nrow = 1)
 my_annotation(params_std)
-
-## ----run-std-init-val---------------------------------------------------------
-params <- c(params_std[1:2], 9, 2, params_std[5:6])
-dat <- runmod(params)
-dat <- dat %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-## ----run-std-LR, echo = FALSE-------------------------------------------------
-params <- c(0.2, params_std[2:6])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-params <- c(0.8, params_std[2:6])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-## ----run-std-inv-temp, echo = FALSE-------------------------------------------
-params <- c(params_std[1], 0, params_std[3:6])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-params <- c(params_std[1], 1.5, params_std[3:6])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
 

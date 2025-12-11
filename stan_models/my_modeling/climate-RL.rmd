@@ -50,6 +50,8 @@ mod <- paste0(mod,
   int<lower=1> T;
   array[n_part, T] int<lower=1, upper=2> choice;
   array[n_part, T] int<lower=0, upper=10> R;
+  int<lower=0, upper=10> initQF;
+  int<lower=0, upper=10> initQU;
 }
 ")
 ```
@@ -73,8 +75,6 @@ mod <- paste0(mod, "
 parameters {
   real<lower=0, upper=1> LR_raw;
   real<lower=0, upper=5> inv_temp_raw;
-  real<lower=0, upper=10> initQF_raw;
-  real<lower=0, upper=10> initQU_raw;
 }
 ")
 ```
@@ -86,13 +86,9 @@ mod <- paste0(mod, "
 transformed parameters {
   real<lower=0, upper=1> LR;
   real<lower=0, upper=10> inv_temp;
-  real<lower=0, upper=10> initQF;
-  real<lower=0, upper=10> initQU;
 
   LR = inv_logit(LR_raw);
   inv_temp = inv_logit(inv_temp_raw) * 10.0;
-  initQF = inv_logit(initQF_raw) * 10.0;
-  initQU = inv_logit(initQU_raw) * 10.0;
 }
 ")
 ```
@@ -106,8 +102,6 @@ model {
   // priors: all uninformative
   LR_raw ~ normal(0, 1);
   inv_temp_raw ~ normal(0, 1);
-  initQF_raw ~ normal(0, 1);   
-  initQU_raw ~ normal(0, 1);
 ")
 ```
 
@@ -191,30 +185,12 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(refit = TRUE)
+fit <- fit_model(refit = FALSE)
 ```
 
 ## Inspect results
-```{r inspect-model-1}
-LR_post <- fit$draws("LR")
-print(paste0("sim: ", param_settings$LR, "      fit: ", mean(LR_post)))
-inv_temp_post <- fit$draws("inv_temp")
-print(paste0("sim: ", param_settings$inv_temp, "      fit: ", mean(inv_temp_post)))
-```
-
-Here I'm not sure why the inverse temperature is off by a factor of 10. Other parameters don't have this issue. Thoughts?
-
 ```{r inspect-model-2}
-plot_data <- data.frame(
-  draws = c(array(fit$draws("initQF")),
-            array(fit$draws("initQU"))),
-  parameter = c(rep("initQF", length(fit$draws("initQF"))),
-                rep("initQU", length(fit$draws("initQU"))))
-)
-
 library(ggplot2)
-my_teal <- "#008080"
-my_pink <- "#ff00dd"
 update_geom_defaults("density", list(linewidth = 1.5))
 update_geom_defaults("vline", list(linewidth = 1.5))
 my_theme <- theme_bw() +
@@ -225,16 +201,22 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-ggplot() +
-  geom_density(data = plot_data, aes(x = draws, color = parameter, fill = parameter), alpha = 0.6) +
-  labs(x = "Estimate", y = "Density") +
-  scale_fill_manual(values = c(my_teal, my_pink)) +
-  scale_color_manual(values = c(my_teal, my_pink)) +
-  geom_vline(aes(xintercept = param_settings$initQF, linetype = "simulated value"), color = my_teal) +
-  geom_vline(aes(xintercept = param_settings$initQU, linetype = "simulated value"), color = my_pink) +
-  geom_vline(alpha = 0.6) +
-  scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
+LR_posterior <- array(fit$draws("LR"))
+LR_plot <- ggplot() +
+  geom_density(aes(x = LR_posterior)) +
+  labs(title = "Learning rate", x = "Estimate", y = "Density") +
+  geom_vline(aes(xintercept = param_settings$LR, linetype = "simulated value"), linetype = 2, color = "blue") +
+  # xlim(c(0.49, 0.51)) +
   my_theme
+inv_temp <- array(fit$draws("inv_temp"))
+inv_temp_plot <- ggplot() +
+  geom_density(aes(x = inv_temp)) +
+  labs(title = "Inverse temperature", x = "Estimate", y = "Density") +
+  geom_vline(aes(xintercept = param_settings$inv_temp, linetype = "simulated value"), linetype = 2, color = "blue") +
+  my_theme
+
+library(gridExtra)
+grid.arrange(LR_plot, inv_temp_plot, nrow = 1)
 ```
 
 # Some next steps

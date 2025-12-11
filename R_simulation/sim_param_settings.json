@@ -1,9 +1,10 @@
 {
   "LR": 0.5,
   "inv_temp": 0.5,
-  "initQF": 6,
-  "initQU": 3,
-  "mu_R": 5,
+  "initQF": 5,
+  "initQU": 5,
+  "mu_R_F": 8,
+  "mu_R_U": 3,
   "sigma_R": 3,
   "T": 40,
   "n_part": 20
