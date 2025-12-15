@@ -1,5 +1,5 @@
 {
-  "LR": 0.5,
+  "LR": 0.2,
   "inv_temp": 0.5,
   "initQF": 5,
   "initQU": 5,

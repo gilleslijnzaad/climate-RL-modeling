@@ -22,6 +22,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ## Preparation
 Defining experimental parameters (i.e., number of participants and number of trials).
 ```{r prep}
+rm(list = ls())
 n_participants <- 20
 n_trials <- 40
 ```
@@ -217,7 +218,7 @@ write_sim_dat_JSON <- function(params, model_dat) {
 ### Standard settings
 ```{r run-std}
 # generate data for Stan
-stan_params <- c(0.5, 0.5, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
+stan_params <- c(0.2, 0.5, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 stan_dat <- runmod(stan_params)
 write_sim_dat_JSON(stan_params, stan_dat)
 
