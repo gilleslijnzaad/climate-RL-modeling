@@ -5,6 +5,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----loading-data, message=FALSE----------------------------------------------
+rm(list = ls())
 sim_dir <- "~/research/climate-RL/R_simulation/"
 library(rjson)
 param_settings <- fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
@@ -102,17 +103,16 @@ write(mod, file = paste0(mod_dir, "climate-RL.stan"))
 library(cmdstanr)
 
 # function allows for easily changing whether you want to refit or use a saved fit
+it <- 10000
 fit_model <- function(refit) {
   if (refit) {
     m <- cmdstan_model(paste0(mod_dir, "climate-RL.stan"))
     data_file <- paste0(sim_dir, "sim_dat.json")
-    it <- 10000
     fit <- m$sample(
       data = data_file,
       iter_sampling = it,
       chains = 1,
       thin = 1,
-      # init = my_inits,
       iter_warmup = it / 2,
       refresh = it / 5,
       seed = 1234
@@ -126,10 +126,12 @@ fit_model <- function(refit) {
 
 fit <- fit_model(refit = FALSE)
 
-## ----inspect-model-2----------------------------------------------------------
+## -----------------------------------------------------------------------------
 library(ggplot2)
-update_geom_defaults("density", list(linewidth = 1.5))
-update_geom_defaults("vline", list(linewidth = 1.5))
+my_teal <- "#008080"
+my_pink <- "#ff00dd"
+my_blue <- "#00ccff"
+my_colors <- c(my_teal, my_pink, my_blue)
 my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 20, face = "bold")) +
   theme(axis.text = element_text(size = 16),
@@ -138,20 +140,30 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-LR_posterior <- array(fit$draws("LR"))
-LR_plot <- ggplot() +
-  geom_density(aes(x = LR_posterior)) +
-  labs(title = "Learning rate", x = "Estimate", y = "Density") +
-  geom_vline(aes(xintercept = param_settings$LR, linetype = "simulated value"), linetype = 2, color = "blue") +
-  # xlim(c(0.49, 0.51)) +
-  my_theme
-inv_temp <- array(fit$draws("inv_temp"))
-inv_temp_plot <- ggplot() +
-  geom_density(aes(x = inv_temp)) +
-  labs(title = "Inverse temperature", x = "Estimate", y = "Density") +
-  geom_vline(aes(xintercept = param_settings$inv_temp, linetype = "simulated value"), linetype = 2, color = "blue") +
-  my_theme
+dens_plot <- function(fit, pars, include_sim_value = FALSE) {
+  plot_data <- data.frame()
 
-library(gridExtra)
-grid.arrange(LR_plot, inv_temp_plot, nrow = 1)
+  for (p in pars) {
+    dat <- data.frame(
+      parameter = rep(p, it),
+      estimate = array(fit$draws(p)),
+      sim_value = rep(param_settings[[p]], it)
+    )
+    plot_data <- rbind(plot_data, dat)
+  }
+
+  plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
+    geom_density(alpha = 0.6) +
+    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "simulated value")) +
+    labs(title = "Posterior distribution", x = "Estimate", y = "Density", color = "Parameter", fill = "Parameter") +
+    scale_color_manual(values = my_colors) +  
+    scale_fill_manual(values = my_colors) +
+    scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
+    my_theme
+  
+  return(plot)
+}
+
+## ----inspect-model------------------------------------------------------------
+dens_plot(fit, c("LR"))
 
