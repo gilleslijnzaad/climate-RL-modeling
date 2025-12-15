@@ -9,21 +9,29 @@ data {
 
 parameters {
   real<lower=0, upper=1> LR_raw;
+  real<lower=0, upper=1> test_LR_raw;
   real<lower=0, upper=5> inv_temp_raw;
+  real<lower=0, upper=5> test_inv_temp_raw;
 }
 
 transformed parameters {
   real<lower=0, upper=1> LR;
+  real<lower=0, upper=1> test_LR;
   real<lower=0, upper=10> inv_temp;
+  real<lower=0, upper=10> test_inv_temp;
 
   LR = inv_logit(LR_raw);
+  test_LR = inv_logit(test_LR_raw);
   inv_temp = inv_logit(inv_temp_raw) * 10.0;
+  test_inv_temp = inv_logit(test_inv_temp_raw) * 10.0;
 }
 
 model {
   // priors: all uninformative
   LR_raw ~ normal(0, 1);
+  test_LR_raw ~ normal(0, 1);
   inv_temp_raw ~ normal(0, 1);
+  test_inv_temp_raw ~ normal(0, 1);
 
   for (j in 1:n_part) {
     array[T, 2] real Q;

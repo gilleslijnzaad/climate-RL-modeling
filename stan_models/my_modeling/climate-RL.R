@@ -31,7 +31,9 @@ mod <- paste0(mod,
 mod <- paste0(mod, "
 parameters {
   real<lower=0, upper=1> LR_raw;
+  real<lower=0, upper=1> test_LR_raw;
   real<lower=0, upper=5> inv_temp_raw;
+  real<lower=0, upper=5> test_inv_temp_raw;
 }
 ")
 
@@ -39,10 +41,14 @@ parameters {
 mod <- paste0(mod, "
 transformed parameters {
   real<lower=0, upper=1> LR;
+  real<lower=0, upper=1> test_LR;
   real<lower=0, upper=10> inv_temp;
+  real<lower=0, upper=10> test_inv_temp;
 
   LR = inv_logit(LR_raw);
+  test_LR = inv_logit(test_LR_raw);
   inv_temp = inv_logit(inv_temp_raw) * 10.0;
+  test_inv_temp = inv_logit(test_inv_temp_raw) * 10.0;
 }
 ")
 
@@ -51,7 +57,9 @@ mod <- paste0(mod, "
 model {
   // priors: all uninformative
   LR_raw ~ normal(0, 1);
+  test_LR_raw ~ normal(0, 1);
   inv_temp_raw ~ normal(0, 1);
+  test_inv_temp_raw ~ normal(0, 1);
 ")
 
 ## ----defmod-model-inits-------------------------------------------------------
@@ -113,9 +121,9 @@ fit_model <- function(refit) {
       iter_sampling = it,
       chains = 1,
       thin = 1,
+      # seed = 1234,
       iter_warmup = it / 2,
-      refresh = it / 5,
-      seed = 1234
+      refresh = it / 5
     )
     fit$save_object(file = paste0(mod_dir, "climate-RL_fit.rds"))
   } else {
@@ -124,7 +132,7 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(refit = FALSE)
+fit <- fit_model(refit = TRUE)
 
 ## -----------------------------------------------------------------------------
 library(ggplot2)
@@ -140,30 +148,80 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-dens_plot <- function(fit, pars, include_sim_value = FALSE) {
+dens_plot <- function(fit, pars, include_sim_value = TRUE) {
   plot_data <- data.frame()
 
   for (p in pars) {
+    sim_value <- param_settings[[p]] %||% NA  # if p is not in parameters, sim_value = NA
     dat <- data.frame(
       parameter = rep(p, it),
       estimate = array(fit$draws(p)),
-      sim_value = rep(param_settings[[p]], it)
+      sim_value = rep(sim_value, it)
     )
     plot_data <- rbind(plot_data, dat)
   }
 
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
-    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "simulated value")) +
     labs(title = "Posterior distribution", x = "Estimate", y = "Density", color = "Parameter", fill = "Parameter") +
     scale_color_manual(values = my_colors) +  
     scale_fill_manual(values = my_colors) +
-    scale_linetype_manual(values = c("simulated value" = 2), name = NULL) +
     my_theme
+  
+  if (include_sim_value) {
+    if (any(!is.na(plot_data$sim_value))) {   # only plot sim_value if there's at least one that's not NA
+      plot <- plot +
+        geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "sim_value")) +
+        scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+    }
+  }
+
+  return(plot)
+}
+
+dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
+  plot_data <- data.frame()
+
+  cred_int <- function(posterior_dist) {
+    return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
+  }
+
+  for (p in pars) {
+    dat <- data.frame(
+      parameter = p,
+      mean = mean(array(fit$draws(p))),
+      cred_int_min = cred_int(array(fit$draws(p)))[1],
+      cred_int_max = cred_int(array(fit$draws(p)))[2],
+      sim_value = param_settings[[p]] %||% NA  # if p is not in parameters, sim_value = NA
+    )
+    plot_data <- rbind(plot_data, dat)
+  }
+
+  plot <- ggplot(plot_data, aes(x = parameter, y = mean, color = parameter)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = cred_int_min, ymax = cred_int_max), width = 0.25) +
+    labs(x = element_blank(), y = "Estimate") +
+    scale_color_manual(values = my_colors) +
+    guides(color = "none") +
+    my_theme
+
+  if (include_sim_value) {
+    if (any(!is.na(plot_data$sim_value))) {   # only plot sim_value if there's at least one that's not NA
+      plot <- plot +
+        geom_hline(aes(yintercept = sim_value, color = parameter, linetype = "sim_value")) +
+        scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+    }
+  }
   
   return(plot)
 }
 
-## ----inspect-model------------------------------------------------------------
-dens_plot(fit, c("LR"))
+
+## ----inspect-model, warning = FALSE-------------------------------------------
+library(gridExtra)
+grid.arrange(dens_plot(fit, c("inv_temp"), include_sim_value = FALSE), 
+             dens_plot(fit, c("test_inv_temp")), 
+             nrow = 1)
+
+dot_error_plot(fit, c("LR", "test_LR"))
 
