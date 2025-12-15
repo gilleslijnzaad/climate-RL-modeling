@@ -139,7 +139,7 @@ plot_choice <- function(dat) {
   return(p)
 }
 
-my_annotation <- function(params, x = 0.95) {
+my_annotation <- function(params) {
     text <- paste0("LR = ", params[1],
                   "\ninv_temp = ", params[2],
                   "\ninitQF = ", params[3],
@@ -148,7 +148,7 @@ my_annotation <- function(params, x = 0.95) {
                   "\nmu_R_U = ", params[6],
                   "\nsigma_R = ", params[7])
 
-    grid.text(text, x = unit(x, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
+    grid.text(text, x = unit(0.98, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
 }
 
 ## ----dat-to-JSON--------------------------------------------------------------
@@ -166,8 +166,8 @@ write_sim_dat_JSON <- function(params, model_dat) {
   sigma_R <- params[7]
   T <- n_trials
   n_part <- n_participants
-  list_param_settings <- list(LR, inv_temp, initQF, initQU, mu_R_F, mu_R_U, sigma_R, T, n_part)
-  names(list_param_settings) <- c("LR", "inv_temp", "initQF", "initQU", "mu_R_F", "mu_R_U", "sigma_R", "T", "n_part")
+  par_names <- c("LR", "inv_temp", "initQF", "initQU", "mu_R_F", "mu_R_U", "sigma_R", "T", "n_part")
+  list_param_settings <- setNames(mget(par_names), par_names)
   write_stan_json(list_param_settings, file = paste0(dir, "sim_param_settings.json"))
 
   # data
@@ -177,8 +177,8 @@ write_sim_dat_JSON <- function(params, model_dat) {
   R <- matrix(model_dat$R,
               nrow = n_part,
               ncol = T)
-  list_dat <- list(n_part, T, initQF, initQU, choice, R)
-  names(list_dat) <- c("n_part", "T", "initQF", "initQU", "choice", "R")
+  dat_names <- c("n_part", "T", "initQF", "initQU", "choice", "R")
+  list_dat <- setNames(mget(dat_names), dat_names)
   write_stan_json(list_dat, file = paste0(dir, "sim_dat.json"))
 }
 
