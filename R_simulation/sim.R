@@ -5,6 +5,7 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----prep---------------------------------------------------------------------
+rm(list = ls())
 n_participants <- 20
 n_trials <- 40
 
@@ -88,7 +89,7 @@ my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 20, face = "bold")) +
   theme(axis.text = element_text(size = 16),
         axis.title = element_text(size = 18)) +
-  theme(legend.title = element_text(size = 18, face = "bold"),
+  theme(legend.title = element_blank(),
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
@@ -116,7 +117,10 @@ plot_Q <- function(dat) {
                       labels = c("Friendly", "Unfriendly")) +  
     scale_fill_manual(values = c(my_teal, my_pink),
                       labels = c("Friendly", "Unfriendly")) +
-    my_theme
+    my_theme +
+    theme(legend.position = "inside",
+          legend.position.inside = c(0.83, 0.91))
+
   return(p)
 }
 
@@ -182,11 +186,20 @@ write_sim_dat_JSON <- function(params, model_dat) {
   write_stan_json(list_dat, file = paste0(dir, "sim_dat.json"))
 }
 
+## ----dat-to-rds---------------------------------------------------------------
+save_plot_dat <- function(params, dat) {
+  dat <- dat %>% to_long()
+  dir <- "~/research/climate-RL/stan_models/my_modeling/"
+  saveRDS(plot_Q(dat), file = paste0(dir, "plot_Q.rds"))
+  saveRDS(plot_choice(dat), file = paste0(dir, "plot_choice.rds"))
+}
+
 ## ----run-std------------------------------------------------------------------
 # generate data for Stan
-stan_params <- c(0.5, 0.5, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
+stan_params <- c(0.6, 1.2, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 stan_dat <- runmod(stan_params)
 write_sim_dat_JSON(stan_params, stan_dat)
+save_plot_dat(stan_params, stan_dat)
 
 params_std <- c(0.5, 0.5, 8, 3, 5, 5, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 dat_std <- runmod()

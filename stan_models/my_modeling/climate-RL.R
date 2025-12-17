@@ -14,6 +14,26 @@ library(dplyr)
 glimpse(param_settings)
 glimpse(data)
 
+## ----inspecting-data, echo = FALSE--------------------------------------------
+mod_dir <- "~/research/climate-RL/stan_models/my_modeling/"
+plot_Q <- readRDS(paste0(mod_dir, "plot_Q.rds"))
+plot_choice <- readRDS(paste0(mod_dir, "plot_choice.rds"))
+
+library(grid)
+library(gridExtra)
+grid.arrange(plot_Q, plot_choice, nrow = 1,
+             top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
+
+text <- paste0("LR = ", param_settings$LR,
+              "\ninv_temp = ", param_settings$inv_temp,
+              "\ninitQF = ", param_settings$initQF,
+              "\ninitQU = ", param_settings$initQU,
+              "\nmu_R_F = ", param_settings$mu_R_F,
+              "\nmu_R_U = ", param_settings$mu_R_U,
+              "\nsigma_R = ", param_settings$sigma_R)
+grid.text(text, x = unit(0.98, "npc"), y = unit(0.87, "npc"), hjust = 1, vjust = 1)
+
+
 ## ----defmod-data--------------------------------------------------------------
 mod <- ""
 mod <- paste0(mod, 
@@ -30,36 +50,23 @@ mod <- paste0(mod,
 ## ----defmod-params------------------------------------------------------------
 mod <- paste0(mod, "
 parameters {
-  real<lower=0, upper=1> LR_raw;
-  real<lower=0, upper=1> test_LR_raw;
-  real<lower=0, upper=5> inv_temp_raw;
-  real<lower=0, upper=5> test_inv_temp_raw;
+  real<lower=0, upper=1> LR;
+  real<lower=0, upper=5> inv_temp;
 }
 ")
 
 ## ----defmod-transf-params-----------------------------------------------------
 mod <- paste0(mod, "
-transformed parameters {
-  real<lower=0, upper=1> LR;
-  real<lower=0, upper=1> test_LR;
-  real<lower=0, upper=10> inv_temp;
-  real<lower=0, upper=10> test_inv_temp;
-
-  LR = inv_logit(LR_raw);
-  test_LR = inv_logit(test_LR_raw);
-  inv_temp = inv_logit(inv_temp_raw) * 10.0;
-  test_inv_temp = inv_logit(test_inv_temp_raw) * 10.0;
-}
+// transformed parameters {
+// }
 ")
 
 ## ----defmod-model-priors------------------------------------------------------
 mod <- paste0(mod, "
 model {
   // priors: all uninformative
-  LR_raw ~ normal(0, 1);
-  test_LR_raw ~ normal(0, 1);
-  inv_temp_raw ~ normal(0, 1);
-  test_inv_temp_raw ~ normal(0, 1);
+  LR ~ uniform(0, 1);
+  inv_temp ~ uniform(0, 5);
 ")
 
 ## ----defmod-model-inits-------------------------------------------------------
@@ -104,7 +111,6 @@ mod <- paste0(mod, "
 ")
 
 ## ----save-stan----------------------------------------------------------------
-mod_dir <- "~/research/climate-RL/stan_models/my_modeling/"
 write(mod, file = paste0(mod_dir, "climate-RL.stan"))
 
 ## ----run-model----------------------------------------------------------------
@@ -121,9 +127,9 @@ fit_model <- function(refit) {
       iter_sampling = it,
       chains = 1,
       thin = 1,
-      # seed = 1234,
       iter_warmup = it / 2,
-      refresh = it / 5
+      refresh = it / 5,
+      seed = 1234
     )
     fit$save_object(file = paste0(mod_dir, "climate-RL_fit.rds"))
   } else {
@@ -132,7 +138,7 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(refit = TRUE)
+fit <- fit_model(refit = FALSE)
 
 ## -----------------------------------------------------------------------------
 library(ggplot2)
@@ -218,10 +224,8 @@ dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
 
 
 ## ----inspect-model, warning = FALSE-------------------------------------------
-library(gridExtra)
-grid.arrange(dens_plot(fit, c("inv_temp"), include_sim_value = FALSE), 
-             dens_plot(fit, c("test_inv_temp")), 
-             nrow = 1)
+dens_plot(fit, "LR")
+dens_plot(fit, "inv_temp")
 
-dot_error_plot(fit, c("LR", "test_LR"))
+dot_error_plot(fit, c("LR", "inv_temp"))
 
