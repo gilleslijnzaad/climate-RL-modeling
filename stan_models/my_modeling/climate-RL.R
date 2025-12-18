@@ -64,9 +64,7 @@ mod <- paste0(mod, "
 ## ----defmod-model-priors------------------------------------------------------
 mod <- paste0(mod, "
 model {
-  // priors: all uninformative
-  LR ~ uniform(0, 1);
-  inv_temp ~ uniform(0, 5);
+  // this is where priors would go. leaving them empty leads to uninformative priors
 ")
 
 ## ----defmod-model-inits-------------------------------------------------------
@@ -140,7 +138,7 @@ fit_model <- function(refit) {
 
 fit <- fit_model(refit = FALSE)
 
-## -----------------------------------------------------------------------------
+## ----plot-fun-----------------------------------------------------------------
 library(ggplot2)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
@@ -204,9 +202,9 @@ dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
   }
 
   plot <- ggplot(plot_data, aes(x = parameter, y = mean, color = parameter)) +
-    geom_point() +
+    geom_point(size = 3) +
     geom_errorbar(aes(ymin = cred_int_min, ymax = cred_int_max), width = 0.25) +
-    labs(x = element_blank(), y = "Estimate") +
+    labs(title = "Posterior mean ± 95% credibility interval", x = element_blank(), y = "Estimate") +
     scale_color_manual(values = my_colors) +
     guides(color = "none") +
     my_theme

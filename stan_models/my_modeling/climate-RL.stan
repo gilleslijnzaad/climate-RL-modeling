@@ -16,9 +16,7 @@ parameters {
 // }
 
 model {
-  // priors: all uninformative
-  LR ~ uniform(0, 1);
-  inv_temp ~ uniform(0, 5);
+  // this is where priors would go. leaving them empty leads to uninformative priors
 
   for (j in 1:n_part) {
     array[T, 2] real Q;
