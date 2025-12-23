@@ -4,7 +4,7 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
-## ----loading-data, message=FALSE----------------------------------------------
+## ----loading-data-------------------------------------------------------------
 rm(list = ls())
 sim_dir <- "~/research/climate-RL/R_simulation/"
 library(rjson)
@@ -83,11 +83,11 @@ mod <- paste0(mod, "
     for (t in 1:T) {
       Q_t = to_vector(Q[t]);
 
-      // sample choice (0 is F, 1 is U) via softmax
+      // sample choice (1 is F, 2 is U) via softmax
       choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
       // prediction error
-      if (choice[j, t] == 0) {
+      if (choice[j, t] == 1) {
         pred_err = R[j, t] - Q[t, 1];
       } else {
         pred_err = R[j, t] - Q[t, 2];
@@ -95,7 +95,7 @@ mod <- paste0(mod, "
 
       // update value (learn)
       if (t < T) {    // no updating in the very last trial
-        if (choice[j, t] == 0) {
+        if (choice[j, t] == 1) {
           Q[t+1, 1] = Q[t, 1] + LR * pred_err;
           Q[t+1, 2] = Q[t, 2];
         } else {
@@ -136,7 +136,7 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(refit = FALSE)
+fit <- fit_model(refit = TRUE)
 
 ## ----plot-fun-----------------------------------------------------------------
 library(ggplot2)
@@ -193,7 +193,7 @@ dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
   for (p in pars) {
     dat <- data.frame(
       parameter = p,
-      mean = mean(array(fit$draws(p))),
+      median = median(array(fit$draws(p))),
       cred_int_min = cred_int(array(fit$draws(p)))[1],
       cred_int_max = cred_int(array(fit$draws(p)))[2],
       sim_value = param_settings[[p]] %||% NA  # if p is not in parameters, sim_value = NA
@@ -201,10 +201,10 @@ dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
     plot_data <- rbind(plot_data, dat)
   }
 
-  plot <- ggplot(plot_data, aes(x = parameter, y = mean, color = parameter)) +
+  plot <- ggplot(plot_data, aes(x = parameter, y = median, color = parameter)) +
     geom_point(size = 3) +
     geom_errorbar(aes(ymin = cred_int_min, ymax = cred_int_max), width = 0.25) +
-    labs(title = "Posterior mean ± 95% credibility interval", x = element_blank(), y = "Estimate") +
+    labs(title = "Posterior median ± 95% credibility interval", x = element_blank(), y = "Estimate") +
     scale_color_manual(values = my_colors) +
     guides(color = "none") +
     my_theme
@@ -219,7 +219,6 @@ dot_error_plot <- function(fit, pars, include_sim_value = TRUE) {
   
   return(plot)
 }
-
 
 ## ----inspect-model, warning = FALSE-------------------------------------------
 dens_plot(fit, "LR")

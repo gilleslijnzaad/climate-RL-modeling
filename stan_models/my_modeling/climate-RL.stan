@@ -29,11 +29,11 @@ model {
     for (t in 1:T) {
       Q_t = to_vector(Q[t]);
 
-      // sample choice (0 is F, 1 is U) via softmax
+      // sample choice (1 is F, 2 is U) via softmax
       choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
       // prediction error
-      if (choice[j, t] == 0) {
+      if (choice[j, t] == 1) {
         pred_err = R[j, t] - Q[t, 1];
       } else {
         pred_err = R[j, t] - Q[t, 2];
@@ -41,7 +41,7 @@ model {
 
       // update value (learn)
       if (t < T) {    // no updating in the very last trial
-        if (choice[j, t] == 0) {
+        if (choice[j, t] == 1) {
           Q[t+1, 1] = Q[t, 1] + LR * pred_err;
           Q[t+1, 2] = Q[t, 2];
         } else {

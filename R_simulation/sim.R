@@ -6,8 +6,8 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----prep---------------------------------------------------------------------
 rm(list = ls())
-n_participants <- 20
-n_trials <- 40
+n_participants <- 10
+n_trials <- 100
 
 ## ----model-std----------------------------------------------------------------
 library(truncnorm) # draw from a truncated normal distribution (for rating)
@@ -196,7 +196,7 @@ save_plot_dat <- function(params, dat) {
 
 ## ----run-std------------------------------------------------------------------
 # generate data for Stan
-stan_params <- c(0.6, 1.2, 5, 5, 8, 3, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
+stan_params <- c(0.8, 0.5, 5, 5, 7, 4, 2) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
 stan_dat <- runmod(stan_params)
 write_sim_dat_JSON(stan_params, stan_dat)
 save_plot_dat(stan_params, stan_dat)

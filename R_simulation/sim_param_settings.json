@@ -1,11 +1,11 @@
 {
-  "LR": 0.6,
-  "inv_temp": 1.2,
+  "LR": 0.8,
+  "inv_temp": 0.5,
   "initQF": 5,
   "initQU": 5,
-  "mu_R_F": 8,
-  "mu_R_U": 3,
-  "sigma_R": 3,
-  "T": 40,
-  "n_part": 20
+  "mu_R_F": 7,
+  "mu_R_U": 4,
+  "sigma_R": 2,
+  "T": 100,
+  "n_part": 10
 }
