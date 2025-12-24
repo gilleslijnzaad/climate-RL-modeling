@@ -1562,10 +1562,9 @@ border-radius: 0px;
 <p>I define the simulation code in a different file, but print it here
 as well for clarity.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">&quot;~/research/climate-RL/R_simulation&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;sim.R&quot;</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>run_sim</span></code></pre></div>
-<pre><code>## function (params) 
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;sim.R&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>run_sim</span></code></pre></div>
+<pre><code>## function (params, save_to_JSON = FALSE) 
 ## {
 ##     library(truncnorm)
 ##     dat &lt;- data.frame()
@@ -1603,6 +1602,9 @@ as well for clarity.</p>
 ##             Q_F = Q$F, Q_U = Q$U, P_F = P_F, choice = choice, 
 ##             R = R, pred_err = pred_err)
 ##         dat &lt;- rbind(dat, dat_p)
+##     }
+##     if (save_to_JSON) {
+##         save_sim_dat(params, dat)
 ##     }
 ##     return(dat)
 ## }</code></pre>

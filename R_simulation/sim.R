@@ -1,6 +1,6 @@
 util <- new.env()
 
-source("~/research/climate-RL/plot_utils.R")
+source("../plot_utils.R")
 
 library(dplyr)
 
@@ -158,10 +158,9 @@ my_annotation <- function(params) {
 # returns: nothing
 save_sim_dat <- function(params, sim_dat) {
   library(cmdstanr) # contains function write_stan_json()
-  dir <- "~/research/climate-RL/R_simulation/"
 
   # parameter settings
-  write_stan_json(params, file = paste0(dir, "sim_param_settings.json"))
+  write_stan_json(params, "sim_param_settings.json")
 
   # data
   n_part <- params$n_part
@@ -180,14 +179,6 @@ save_sim_dat <- function(params, sim_dat) {
 }
 
 # ---------------------------------------------
-
-# eem tijdelijk
-save_plot_dat <- function(params, dat) {
-  dat <- dat %>% to_long()
-  dir <- "~/research/climate-RL/stan_models/my_modeling/"
-  saveRDS(plot_Q(dat), file = paste0(dir, "plot_Q.rds"))
-  saveRDS(plot_choice(dat), file = paste0(dir, "plot_choice.rds"))
-}
 
 while ("util" %in% search())
   detach("util")

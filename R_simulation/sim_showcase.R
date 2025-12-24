@@ -6,7 +6,6 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----sim-code-----------------------------------------------------------------
 rm(list = ls())
-setwd("~/research/climate-RL/R_simulation")
 source("sim.R")
 run_sim
 
