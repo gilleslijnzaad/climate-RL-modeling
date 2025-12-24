@@ -1,24 +1,23 @@
-## ----setup, include = FALSE---------------------------------------------------
-knitr::knit_hooks$set(purl = knitr::hook_purl)
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
+util <- new.env()
 
-## ----prep---------------------------------------------------------------------
-rm(list = ls())
-n_participants <- 10
-n_trials <- 100
+source("~/research/climate-RL/plot_utils.R")
 
-## ----model-std----------------------------------------------------------------
-library(truncnorm) # draw from a truncated normal distribution (for rating)
+library(dplyr)
 
-runmod <- function(params = params_std) {
+# ======== run_sim =============================
+# arguments: vector of parameter settings; whether or not to save data to JSON
+# returns: data frame of simulated data (only if save_to_JSON = FALSE)
+run_sim <- function(params, save_to_JSON = FALSE) {
+  library(truncnorm) # draw from a truncated normal distribution (for rating)
   dat <- data.frame()
 
-  for (j in 1:n_participants) {
+  n_part <- params$n_part
+  n_trials <- params$n_trials
+
+  for (j in 1:n_part) {
     set.seed(j)
 
-    # ------ init data frames etc -----
+    # ------ init data frames & vectors -----
     Q <- data.frame(
       F = rep(NA, n_trials),
       U = rep(NA, n_trials)
@@ -29,13 +28,13 @@ runmod <- function(params = params_std) {
     pred_err <- c()
 
     # ----- initialize parameters -----
-    LR <- params[1]
-    inv_temp <- params[2]
-    Q$F[1] <- params[3]
-    Q$U[1] <- params[4]
-    mu_R <- params[5:6]
+    LR <- params$LR
+    inv_temp <- params$inv_temp
+    Q$F[1] <- params$initQF
+    Q$U[1] <- params$initQU
+    mu_R <- params$mu_R
     names(mu_R) <- c("F", "U")
-    sigma_R <- params[7]
+    sigma_R <- params$sigma_R
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -47,9 +46,9 @@ runmod <- function(params = params_std) {
                            "U")
 
       # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10, 
-                        mean = mu_R[[choice[t]]], 
-                        sd = sigma_R),
+      R[t] <- round(rtruncnorm(n = 1, a = 0, b = 10, 
+                               mean = mu_R[[choice[t]]], 
+                               sd = sigma_R),
                     0)
 
       # learn
@@ -76,37 +75,25 @@ runmod <- function(params = params_std) {
 
     dat <- rbind(dat, dat_p)
   }
-
+  if (save_to_JSON) {
+    save_sim_dat(params, dat)
+  }
   return(dat)
 }
 
-## ----plot-util----------------------------------------------------------------
-library(tidyverse)
-my_teal <- "#008080"
-my_pink <- "#ff00dd"
+# ======== plot utils ====================
 
-my_theme <- theme_bw() +
-  theme(plot.title = element_text(size = 20, face = "bold")) +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 18)) +
-  theme(legend.title = element_blank(),
-        legend.text = element_text(size = 16)) +
-  theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-## ----helper-fun---------------------------------------------------------------
-library(grid)
-library(gridExtra)
-
-to_long <- function(dat) {
-  long_dat <- dat %>%
+# ======== plot_Q ========================
+# arguments: data frame of simulated data
+# returns: ggplot object: smooth plot of Q values over time
+plot_Q <- function(dat) {
+  # data to long format
+  dat <- dat %>%
     pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
     mutate(option = factor(option),
            choice = factor(choice))
 
-  return(long_dat)
-}
-
-plot_Q <- function(dat) {
   p <- ggplot(dat, aes(x = trial,
                       y = Q,
                       color = option)) +
@@ -124,8 +111,15 @@ plot_Q <- function(dat) {
   return(p)
 }
 
+# ======== plot_choice ========================
+# arguments: data frame of simulated data
+# returns: ggplot object: smooth plot of choices over time
 plot_choice <- function(dat) {
+  # data to long format
   dat <- dat %>%
+    pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
+    mutate(option = factor(option),
+           choice = factor(choice)) %>%
     mutate(choice_is_F = as.numeric(choice == "F"),
            choice_is_U = 1 - choice_is_F)
     
@@ -143,50 +137,51 @@ plot_choice <- function(dat) {
   return(p)
 }
 
+# ======== my_annotation ======================
+# arguments: vector of parameter settings
+# returns: nothing
 my_annotation <- function(params) {
-    text <- paste0("LR = ", params[1],
-                  "\ninv_temp = ", params[2],
-                  "\ninitQF = ", params[3],
-                  "\ninitQU = ", params[4],
-                  "\nmu_R_F = ", params[5],
-                  "\nmu_R_U = ", params[6],
-                  "\nsigma_R = ", params[7])
+  library(grid)
+  text <- paste0("LR = ", params$LR,
+                 "\ninv_temp = ", params$inv_temp,
+                 "\ninitQF = ", params$initQF,
+                 "\ninitQU = ", params$initQU,
+                 "\nmu_R_F = ", params$mu_R[1],
+                 "\nmu_R_U = ", params$mu_R[2],
+                 "\nsigma_R = ", params$sigma_R)
 
-    grid.text(text, x = unit(0.98, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
+  grid.text(text, x = unit(0.98, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
 }
 
-## ----dat-to-JSON--------------------------------------------------------------
-library(cmdstanr) # contains function write_stan_json()
-dir <- "~/research/climate-RL/R_simulation/"
+# ======== save_sim_dat =======================
+# arguments: vector of parameter settings; data frame of simulated data
+# returns: nothing
+save_sim_dat <- function(params, sim_dat) {
+  library(cmdstanr) # contains function write_stan_json()
+  dir <- "~/research/climate-RL/R_simulation/"
 
-write_sim_dat_JSON <- function(params, model_dat) {
   # parameter settings
-  LR <- params[1]
-  inv_temp <- params[2]
-  initQF <- params[3]
-  initQU <- params[4]
-  mu_R_F <- params[5]
-  mu_R_U <- params[6]
-  sigma_R <- params[7]
-  T <- n_trials
-  n_part <- n_participants
-  par_names <- c("LR", "inv_temp", "initQF", "initQU", "mu_R_F", "mu_R_U", "sigma_R", "T", "n_part")
-  list_param_settings <- setNames(mget(par_names), par_names)
-  write_stan_json(list_param_settings, file = paste0(dir, "sim_param_settings.json"))
+  write_stan_json(params, file = paste0(dir, "sim_param_settings.json"))
 
   # data
-  choice <- matrix(as.numeric(model_dat$choice == "U") + 1,
+  n_part <- params$n_part
+  n_trials <- params$n_trials
+  initQF <- params$initQF
+  initQU <- params$initQU
+  choice <- matrix(as.numeric(sim_dat$choice == "U") + 1,
                    nrow = n_part,
-                   ncol = T)
-  R <- matrix(model_dat$R,
+                   ncol = n_trials)
+  R <- matrix(sim_dat$R,
               nrow = n_part,
-              ncol = T)
-  dat_names <- c("n_part", "T", "initQF", "initQU", "choice", "R")
+              ncol = n_trials)
+  dat_names <- c("n_part", "n_trials", "initQF", "initQU", "choice", "R")
   list_dat <- setNames(mget(dat_names), dat_names)
   write_stan_json(list_dat, file = paste0(dir, "sim_dat.json"))
 }
 
-## ----dat-to-rds---------------------------------------------------------------
+# ---------------------------------------------
+
+# eem tijdelijk
 save_plot_dat <- function(params, dat) {
   dat <- dat %>% to_long()
   dir <- "~/research/climate-RL/stan_models/my_modeling/"
@@ -194,57 +189,7 @@ save_plot_dat <- function(params, dat) {
   saveRDS(plot_choice(dat), file = paste0(dir, "plot_choice.rds"))
 }
 
-## ----run-std------------------------------------------------------------------
-# generate data for Stan
-stan_params <- c(0.8, 0.5, 5, 5, 7, 4, 2) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
-stan_dat <- runmod(stan_params)
-write_sim_dat_JSON(stan_params, stan_dat)
-save_plot_dat(stan_params, stan_dat)
+while ("util" %in% search())
+  detach("util")
 
-params_std <- c(0.5, 0.5, 8, 3, 5, 5, 3) # LR, inv_temp, Q_F_1, Q_U_1, mu_R_F, mu_R_U, sigma_R
-dat_std <- runmod()
-dat_std <- dat_std %>% to_long()
-p_left <- plot_Q(dat_std)
-p_right <- plot_choice(dat_std)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params_std)
-
-## ----run-std-init-val---------------------------------------------------------
-params <- c(params_std[1:2], 10, 1, 5, 5, 3)
-dat <- runmod(params)
-dat <- dat %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-## ----run-std-LR, echo = FALSE-------------------------------------------------
-params <- c(0.2, params_std[2:7])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-params <- c(0.8, params_std[2:7])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-## ----run-std-inv-temp, echo = FALSE-------------------------------------------
-params <- c(params_std[1], 0, params_std[3:7])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
-params <- c(params_std[1], 1.5, params_std[3:7])
-dat <- runmod(params) %>% to_long()
-p_left <- plot_Q(dat)
-p_right <- plot_choice(dat)
-grid.arrange(p_left, p_right, nrow = 1)
-my_annotation(params)
-
+attach(util)

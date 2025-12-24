@@ -1,8 +1,8 @@
 data {
   int<lower=1> n_part;
-  int<lower=1> T;
-  array[n_part, T] int<lower=1, upper=2> choice;
-  array[n_part, T] int<lower=0, upper=10> R;
+  int<lower=1> n_trials;
+  array[n_part, n_trials] int<lower=1, upper=2> choice;
+  array[n_part, n_trials] int<lower=0, upper=10> R;
   int<lower=0, upper=10> initQF;
   int<lower=0, upper=10> initQU;
 }
@@ -19,14 +19,14 @@ model {
   // this is where priors would go. leaving them empty leads to uninformative priors
 
   for (j in 1:n_part) {
-    array[T, 2] real Q;
+    array[n_trials, 2] real Q;
     Q[1, 1] = initQF;
     Q[1, 2] = initQU;
     vector[2] Q_t;
 
     real pred_err;
 
-    for (t in 1:T) {
+    for (t in 1:n_trials) {
       Q_t = to_vector(Q[t]);
 
       // sample choice (1 is F, 2 is U) via softmax
@@ -40,7 +40,7 @@ model {
       }
 
       // update value (learn)
-      if (t < T) {    // no updating in the very last trial
+      if (t < n_trials) {    // no updating in the very last trial
         if (choice[j, t] == 1) {
           Q[t+1, 1] = Q[t, 1] + LR * pred_err;
           Q[t+1, 2] = Q[t, 2];
