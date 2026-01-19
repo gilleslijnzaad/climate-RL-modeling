@@ -6,8 +6,12 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----sim-code-----------------------------------------------------------------
 rm(list = ls())
+setwd("~/research/climate-RL/R_simulation")
 source("sim.R")
-run_sim
+temp <- readLines("sim.R")
+start <- grep("# === run_sim", temp)
+end <- grep("# === end of run_sim", temp) - 1
+cat(temp[start:end], sep = "\n")
 
 ## ----run-std------------------------------------------------------------------
 params_std <- list(
@@ -25,7 +29,7 @@ dat <- run_sim(params_std)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
 my_annotation(params_std)
 
-## ----run-std-LR, echo = FALSE-------------------------------------------------
+## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR = 0.2))
 dat <- run_sim(params)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
@@ -36,7 +40,7 @@ dat <- run_sim(params)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
 my_annotation(params)
 
-## ----run-std-inv-temp, echo = FALSE-------------------------------------------
+## ----run-std-inv-temp---------------------------------------------------------
 params <- modifyList(params_std, list(inv_temp = 0))
 dat <- run_sim(params)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)

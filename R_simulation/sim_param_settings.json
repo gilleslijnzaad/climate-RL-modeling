@@ -1,5 +1,5 @@
 {
-  "n_part": 10,
+  "n_part": 1,
   "n_trials": 100,
   "LR": 0.4,
   "inv_temp": 1,

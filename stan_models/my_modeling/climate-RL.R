@@ -10,7 +10,7 @@ sim_dir <- "../../R_simulation/"
 source(paste0(sim_dir, "sim.R"))
 
 params <- list(
-  n_part = 10,
+  n_part = 1,
   n_trials = 100,
   LR = 0.4,
   inv_temp = 1,
@@ -134,7 +134,7 @@ fit_model <- function(refit) {
   return(fit)
 }
 
-fit <- fit_model(refit = FALSE)
+fit <- fit_model(refit = TRUE)
 
 ## ----inspect-results----------------------------------------------------------
 source("../../plot_utils.R")

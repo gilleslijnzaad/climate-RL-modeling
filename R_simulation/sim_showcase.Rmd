@@ -8,6 +8,7 @@ output:
     toc_float:
       collapsed: TRUE
     highlight: tango
+    code_folding: hide
 ---
 
 ```{r setup, include = FALSE}
@@ -18,11 +19,15 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ```
 
 # 0. Simulation code
-I define the simulation code in a different file, but print it here as well for clarity.
+I define the simulation code in its own file. For ease of reference I include it below as well.
 ```{r sim-code}
 rm(list = ls())
+setwd("~/research/climate-RL/R_simulation")
 source("sim.R")
-run_sim
+temp <- readLines("sim.R")
+start <- grep("# === run_sim", temp)
+end <- grep("# === end of run_sim", temp) - 1
+cat(temp[start:end], sep = "\n")
 ```
 
 # 1. Standard settings
@@ -44,7 +49,7 @@ my_annotation(params_std)
 ```
 
 # 2. Varying learning rate
-```{r run-std-LR, echo = FALSE}
+```{r run-std-LR}
 params <- modifyList(params_std, list(LR = 0.2))
 dat <- run_sim(params)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
@@ -57,7 +62,7 @@ my_annotation(params)
 ```
 
 # 3. Varying inverse temperature
-```{r run-std-inv-temp, echo = FALSE}
+```{r run-std-inv-temp}
 params <- modifyList(params_std, list(inv_temp = 0))
 dat <- run_sim(params)
 gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
