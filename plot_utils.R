@@ -14,23 +14,32 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text.x = element_text(size = 18, face = "bold"))
 
-
+# === posterior_density_plot =============================
+# arguments:
+#   - fit: model fit obtained by cmdstanr::model$sample()
+#   - to_plot: character array of parameters to plot
+#   - param_settings: named list of parameter settings (e.g., list(LR = 0.5, inv_temp = 0.5))
+#   - include_sim_value: default TRUE
+# returns: density plot of posterior distribution(s), optionally with simulated value as dashed line
 posterior_density_plot <- function(fit, to_plot, param_settings, include_sim_value = TRUE) {
   plot_data <- data.frame()
 
   for (param in to_plot) {
-    sim_value <- param_settings[[param]]
     dat <- data.frame(
       parameter = rep(param, length(fit$draws(param))),
-      estimate = array(fit$draws(param)),
-      sim_value = rep(sim_value, length(fit$draws(param)))
+      estimate = array(fit$draws(param))
     )
+    if (include_sim_value) {
+      sim_value <- param_settings[[param]]
+      dat$sim_value <- rep(sim_value, length(fit$draws(param)))
+    }
     plot_data <- rbind(plot_data, dat)
   }
 
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
     labs(title = "Posterior distribution", x = "Estimate", y = "Density", color = "Parameter", fill = "Parameter") +
+    facet_grid(. ~ parameter, scales = "free") +
     scale_color_manual(values = my_colors) +
     scale_fill_manual(values = my_colors) +
     my_theme
@@ -44,6 +53,13 @@ posterior_density_plot <- function(fit, to_plot, param_settings, include_sim_val
   return(plot)
 }
 
+# === posterior_dot_error_plot =============================
+# arguments:
+#   - fit: model fit obtained by cmdstanr::model$sample()
+#   - to_plot: character array of parameters to plot
+#   - param_settings: named list of parameter settings (e.g., list(LR = 0.5, inv_temp = 0.5))
+#   - include_sim_value: default TRUE
+# returns: dot plot with error bars (median + cred. int.), optionally with simulated value as dashed line
 posterior_dot_error_plot <- function(fit, to_plot, param_settings, include_sim_value = TRUE) {
   plot_data <- data.frame()
 
