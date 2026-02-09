@@ -13,7 +13,6 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ```
 
 ```{r setup}
-setwd("~/research/climate-RL/stan_models/sandbox/")
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
 library(dplyr)
@@ -149,8 +148,16 @@ plot_choice <- function(sim_dat) {
 ```
 
 ## Run simulation
+```{r param-settings}
+param_settings <- list(LR = 0.05, inv_temp = 0.2)
+```
+
+Parameter settings are:
+
+- LR = `r param_settings[["LR"]]`
+- inv_temp = `r param_settings[["inv_temp"]]`
+
 ```{r run-sim}
-param_settings <- list(LR = 0.25, inv_temp = 0.3)
 
 sim_dat <- run_sim(param_settings)
 # print(sim_dat)
@@ -159,8 +166,8 @@ glimpse(sim_dat)
 N <- n_part
 T <- n_trials
 choice <- matrix(sim_dat$choice,
-                  nrow = N,
-                  ncol = T)
+                 nrow = N,
+                 ncol = T)
 outcome <- matrix(sim_dat$outcome,
                   nrow = N,
                   ncol = T)
@@ -179,25 +186,32 @@ Full model code here: [sandbox_model.stan](https://github.com/gilleslijnzaad/cli
 ```{r fit-model}
 model <- cmdstan_model("sandbox_model.stan")
 it <- 10000
-fit <- model$sample(
-  data = "sandbox_sim_dat.json",
-  iter_sampling = it,
-  chains = 4,
-  thin = 1,
-  iter_warmup = it / 2,
-  refresh = it / 5
-  # , seed = 1234
-)
+refit <- TRUE
+
+if (refit) {
+  fit <- model$sample(
+    data = "sandbox_sim_dat.json",
+    iter_sampling = it,
+    chains = 4,
+    thin = 1,
+    iter_warmup = it / 2,
+    refresh = it / 5, 
+    seed = 1234
+  )
+  fit$save_object(file = "sandbox_model_fit.rds")
+} else {
+  fit <- readRDS(file = "sandbox_model_fit.rds")
+}
 ```
 
-## Define plot function for parameter estimates
+## Plot parameter estimates
 
 ```{r plot-fit}
 source("../../plot_utils.R")
-posterior_density_plot(fit, c("LR"), param_settings)
+posterior_density_plot(fit, c("LR", "inv_temp"), param_settings)
 ```
 
-```{r pred}
+```{r pred, eval=FALSE, include=FALSE}
 summ <- summary(fit$draws())
 choice_sim <- 2 - sim_dat$choice
 choice_pred <- 2 - summ$mean[which(startsWith(summ$variable, "choice_pred"))]

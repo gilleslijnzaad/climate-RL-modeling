@@ -8,12 +8,11 @@ data {
 transformed data {
   vector[2] initQ;  // initial Q-values for the two options: 0.0
   initQ = rep_vector(0.0, 2);
-
-  real inv_temp = 0.3; // make inv_temp static & low
 }
 
 parameters {
-  real<lower=0, upper=1> LR; // only estimate LR
+  real<lower=0, upper=1> LR;
+  real<lower=0, upper=5> inv_temp;
 }
 
 model {
