@@ -175,7 +175,7 @@ grid.arrange(plot_Q(sim_dat), plot_choice(sim_dat), nrow = 1,
 ```
 
 # Model two-armed bandit
-Full model code here: [sandbox_model.stan](sandbox_model.stan).
+Full model code here: [sandbox_model.stan](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/sandbox/sandbox_model.stan).
 ```{r fit-model}
 model <- cmdstan_model("sandbox_model.stan")
 it <- 10000

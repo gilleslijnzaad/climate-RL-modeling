@@ -694,6 +694,7 @@ display: none;
 </div>
 <div id="model-two-armed-bandit" class="section level1">
 <h1>Model two-armed bandit</h1>
+<p>Full model code here: <a href="https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/sandbox/sandbox_model.stan">sandbox_model.stan</a>.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(<span class="st">&quot;sandbox_model.stan&quot;</span>)</span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>it <span class="ot">&lt;-</span> <span class="dv">10000</span></span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>fit <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">sample</span>(</span>
@@ -713,16 +714,16 @@ display: none;
 ## Chain 4 Iteration:     1 / 15000 [  0%]  (Warmup) 
 ## Chain 1 Iteration:  2000 / 15000 [ 13%]  (Warmup) 
 ## Chain 2 Iteration:  2000 / 15000 [ 13%]  (Warmup) 
-## Chain 4 Iteration:  2000 / 15000 [ 13%]  (Warmup) 
 ## Chain 3 Iteration:  2000 / 15000 [ 13%]  (Warmup) 
+## Chain 4 Iteration:  2000 / 15000 [ 13%]  (Warmup) 
 ## Chain 1 Iteration:  4000 / 15000 [ 26%]  (Warmup) 
+## Chain 3 Iteration:  4000 / 15000 [ 26%]  (Warmup) 
 ## Chain 2 Iteration:  4000 / 15000 [ 26%]  (Warmup) 
 ## Chain 4 Iteration:  4000 / 15000 [ 26%]  (Warmup) 
-## Chain 3 Iteration:  4000 / 15000 [ 26%]  (Warmup) 
 ## Chain 1 Iteration:  5001 / 15000 [ 33%]  (Sampling) 
 ## Chain 2 Iteration:  5001 / 15000 [ 33%]  (Sampling) 
-## Chain 4 Iteration:  5001 / 15000 [ 33%]  (Sampling) 
 ## Chain 3 Iteration:  5001 / 15000 [ 33%]  (Sampling) 
+## Chain 4 Iteration:  5001 / 15000 [ 33%]  (Sampling) 
 ## Chain 1 Iteration:  7000 / 15000 [ 46%]  (Sampling) 
 ## Chain 2 Iteration:  7000 / 15000 [ 46%]  (Sampling) 
 ## Chain 4 Iteration:  7000 / 15000 [ 46%]  (Sampling) 
@@ -740,17 +741,17 @@ display: none;
 ## Chain 4 Iteration: 13000 / 15000 [ 86%]  (Sampling) 
 ## Chain 3 Iteration: 13000 / 15000 [ 86%]  (Sampling) 
 ## Chain 1 Iteration: 15000 / 15000 [100%]  (Sampling) 
-## Chain 1 finished in 34.9 seconds.
+## Chain 1 finished in 35.3 seconds.
 ## Chain 2 Iteration: 15000 / 15000 [100%]  (Sampling) 
-## Chain 2 finished in 37.1 seconds.
+## Chain 2 finished in 37.0 seconds.
 ## Chain 4 Iteration: 15000 / 15000 [100%]  (Sampling) 
-## Chain 4 finished in 37.3 seconds.
+## Chain 4 finished in 37.9 seconds.
 ## Chain 3 Iteration: 15000 / 15000 [100%]  (Sampling) 
-## Chain 3 finished in 40.3 seconds.
+## Chain 3 finished in 40.2 seconds.
 ## 
 ## All 4 chains finished successfully.
-## Mean chain execution time: 37.4 seconds.
-## Total execution time: 40.5 seconds.</code></pre>
+## Mean chain execution time: 37.6 seconds.
+## Total execution time: 40.4 seconds.</code></pre>
 <div id="define-plot-function-for-parameter-estimates" class="section level2">
 <h2>Define plot function for parameter estimates</h2>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;../../plot_utils.R&quot;</span>)</span>
