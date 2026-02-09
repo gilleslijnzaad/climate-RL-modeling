@@ -1,0 +1,214 @@
+---
+title: "Standbox (Stan sandbox)"
+output:
+  html_document:
+    highlight: tango
+    code_folding: hide
+---
+
+```{r md-settings}
+rm(list = ls())
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
+```
+
+```{r setup}
+setwd("~/research/climate-RL/stan_models/sandbox/")
+library(cmdstanr)
+options(mc.cores = parallel::detectCores())
+library(dplyr)
+```
+
+# Simulate two-armed bandit data
+## Define simulation function
+```{r sim-function}
+n_part <- 100
+n_trials <- 30
+
+run_sim <- function(param_settings) {
+  sim_dat <- data.frame()
+
+  for (j in 1:n_part) {
+    set.seed(j)
+
+    # ------ init data frames & vectors -----
+    Q <- matrix(rep(NA, 2*n_trials),
+                    nrow = 2,
+                    ncol = n_trials)
+    P_1 <- c()
+    choice <- c()
+    outcome <- c()
+    pred_err <- c()
+
+    # ----- initialize parameters -----
+    LR <- param_settings[["LR"]]
+    inv_temp <- param_settings[["inv_temp"]]
+    Q[1,1] <- 0
+    Q[2,1] <- 0
+    score <- c(10, -10)
+
+    # --------- run trials ------------
+    for (t in 1:n_trials) {
+      # choose
+      P_1[t] <- 1 / (1 + exp(-inv_temp * (Q[1,t] - Q[2,t])))
+      choice[t] <- if_else(runif(1) < P_1[t],
+                           1,
+                           2)
+      # outcome
+      if (runif(1) < 0.75) {
+        outcome[t] <- score[choice[t]]
+      } else {
+        outcome[t] <- -score[choice[t]]
+      }
+      # learn
+      pred_err[t] <- outcome[t] - Q[choice[t], t]
+
+      if (t < n_trials) {   # no updating Qs in the very last trial
+        Q[choice[t], t+1] <- Q[choice[t], t] + LR * pred_err[t]
+        not_chosen <- 3 - choice[t]
+        Q[not_chosen, t+1] <- Q[not_chosen, t]
+      }
+    }
+    
+    dat_p <- data.frame(
+      participant = rep(j, n_trials),
+      trial =       1:n_trials,
+      Q_1 =         Q[1,],
+      Q_2 =         Q[2,],
+      P_1 =         P_1,
+      choice =      choice,
+      outcome =     outcome,
+      pred_err =    pred_err
+    )
+
+    sim_dat <- rbind(sim_dat, dat_p)
+  }
+  return(sim_dat)
+}
+```
+
+## Define plot functions for sim data
+```{r plot-fun}
+library(tidyverse)
+my_teal <- "#008080"
+my_pink <- "#ff00dd"
+my_theme <- theme_bw() +
+  theme(plot.title = element_text(size = 20, face = "bold")) +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18)) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size = 16)) +
+  theme(strip.text.x = element_text(size = 18, face = "bold"))
+
+plot_Q <- function(sim_dat) {
+  # data to long format
+  dat_long <- sim_dat %>%
+    pivot_longer(c(Q_1, Q_2), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
+    mutate(option = factor(option),
+           choice = factor(choice))
+
+  p <- ggplot(dat_long, aes(x = trial,
+                      y = Q,
+                      color = option)) +
+    geom_smooth(aes(fill = option)) +
+    labs(x = "Trial") +
+    ylim(c(-10, 10)) +
+    scale_color_manual(values = c(my_teal, my_pink),
+                      labels = c("Correct", "Incorrect")) +  
+    scale_fill_manual(values = c(my_teal, my_pink),
+                      labels = c("Correct", "Incorrect")) +
+    my_theme +
+    theme(legend.position = "inside",
+          legend.position.inside = c(0.83, 0.91))
+
+  return(p)
+}
+
+plot_choice <- function(sim_dat) {
+  # data to long format
+  dat_long <- sim_dat %>%
+    pivot_longer(c(Q_1, Q_2), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
+    mutate(option = factor(option),
+           choice = factor(choice)) %>%
+    mutate(choice_is_1 = as.numeric(choice == 1),
+          choice_is_2 = as.numeric(choice == 2))
+    
+  p <- ggplot(dat_long, aes(x = trial)) +
+    geom_smooth(aes(y = choice_is_1),
+                color = paste0(my_teal, "30"),
+                fill = paste0(my_teal, "30")) +
+    geom_smooth(aes(y = choice_is_2),
+                color = paste0(my_pink, "30"),
+                fill = paste0(my_pink, "30")) +
+    ylim(c(0, 1)) +
+    labs(x = "Trial",
+        y = "Proportion chosen") +
+    my_theme
+  return(p)
+}
+```
+
+## Run simulation
+```{r run-sim}
+param_settings <- list(LR = 0.25, inv_temp = 0.3)
+
+sim_dat <- run_sim(param_settings)
+# print(sim_dat)
+glimpse(sim_dat)
+
+N <- n_part
+T <- n_trials
+choice <- matrix(sim_dat$choice,
+                  nrow = N,
+                  ncol = T)
+outcome <- matrix(sim_dat$outcome,
+                  nrow = N,
+                  ncol = T)
+dat_names <- c("N", "T", "choice", "outcome")
+list_dat <- setNames(mget(dat_names), dat_names)
+write_stan_json(list_dat, file = "sandbox_sim_dat.json")
+
+library(grid)
+library(gridExtra)
+grid.arrange(plot_Q(sim_dat), plot_choice(sim_dat), nrow = 1,
+             top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
+```
+
+# Model two-armed bandit
+Full model code here: [sandbox_model.stan](sandbox_model.stan).
+```{r fit-model}
+model <- cmdstan_model("sandbox_model.stan")
+it <- 10000
+fit <- model$sample(
+  data = "sandbox_sim_dat.json",
+  iter_sampling = it,
+  chains = 4,
+  thin = 1,
+  iter_warmup = it / 2,
+  refresh = it / 5
+  # , seed = 1234
+)
+```
+
+## Define plot function for parameter estimates
+
+```{r plot-fit}
+source("../../plot_utils.R")
+posterior_density_plot(fit, c("LR"), param_settings)
+```
+
+```{r pred}
+summ <- summary(fit$draws())
+choice_sim <- 2 - sim_dat$choice
+choice_pred <- 2 - summ$mean[which(startsWith(summ$variable, "choice_pred"))]
+plot_data <- data.frame(
+  trial = 1:T,
+  simulated = choice_sim,
+  predicted = choice_pred
+) %>% pivot_longer(cols = c("simulated", "predicted"))
+
+ggplot(data = plot_data, aes(x = trial)) + 
+  geom_smooth(aes(y = value, color = name)) +
+  labs(title = "Simulated choice vs. predicted choice", y = "proportion correct") +
+  my_theme
+```
