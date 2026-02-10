@@ -35,7 +35,7 @@ params_std <- list(
   n_part = 50,
   n_trials = 30,
   LR = 0.4,
-  inv_temp = 0.3,
+  inv_temp = 0.5,
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2) # F and U

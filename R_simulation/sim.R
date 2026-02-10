@@ -41,14 +41,16 @@ run_sim <- function(params, save_to_JSON = FALSE) {
 
       # choose
       P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] <- if_else(runif(1) < P_F[t],
-                           "F",
-                           "U")
+      choice[t] <- sample(c("F", "U"), 
+                          size = 1,
+                          prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      # 80% of the time, get R that belongs to the choice.
-      # other 20%, get R that belongs to the other choice.
-      if (runif(1) < 0.8) {
+      # 80% of the time, R is congruent with choice; 20% incongruent
+      congruent <- sample(c(1, 0),
+                          size = 1,
+                          prob = c(0.9, 0.1))
+      if (congruent) {
         R[t] <- mu_R[[choice[t]]]
       } else {
         R[t] <- mu_R[[names(mu_R)[names(mu_R) != choice[t]]]]
@@ -58,10 +60,13 @@ run_sim <- function(params, save_to_JSON = FALSE) {
       pred_err[t] <- R[t] - Q[t, choice[t]]
 
       if (t < n_trials) {   # no updating Qs in the very last trial
-        Q[t+1, choice[t]] <- Q[t, choice[t]] + LR * pred_err[t]
-
-        not_chosen <- colnames(Q[which(colnames(Q) != choice[t])])
-        Q[t+1, not_chosen] <- Q[t, not_chosen]
+        if (choice[t] == "F") {
+          Q[t+1, "F"] <- Q[t, "F"] + LR * pred_err[t]
+          Q[t+1, "U"] <- Q[t, "U"]
+        } else {
+          Q[t+1, "U"] <- Q[t, "U"] + LR * pred_err[t]
+          Q[t+1, "F"] <- Q[t, "F"]
+        }
       }
     }
 
@@ -142,7 +147,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
   # === my_annotation ======================
 # arguments: vector of parameter settings
 # returns: nothing
-my_annotation <- function(params) {
+my_annotation <- function(params, extra_vertical_spacing = FALSE) {
   library(grid)
   text <- paste0("LR = ", params$LR,
                  "\ninv_temp = ", params$inv_temp,
@@ -152,8 +157,8 @@ my_annotation <- function(params) {
                  "\nmu_R_U = ", params$mu_R[2]
                 #  ,"\nsigma_R = ", params$sigma_R
                  )
-
-  grid.text(text, x = unit(0.98, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
+  y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
+  grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)
 }
 
 # === save_sim_dat =======================
@@ -163,7 +168,7 @@ save_sim_dat <- function(params, sim_dat) {
   library(cmdstanr) # contains function write_stan_json()
 
   # parameter settings
-  write_stan_json(params, file = paste0(sim_dir,"sim_param_settings.json"))
+  write_stan_json(params, file = paste0(sim_dir, "sim_param_settings.json"))
 
   # data
   n_part <- params$n_part

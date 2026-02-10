@@ -10,10 +10,10 @@ sim_dir <- "../../R_simulation/"
 source(paste0(sim_dir, "sim.R"))
 
 params <- list(
-  n_part = 50,
-  n_trials = 30,
+  n_part = 30,
+  n_trials = 200,
   LR = 0.25,
-  inv_temp = 0.2,
+  inv_temp = 1,
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2) # F and U
@@ -29,7 +29,7 @@ library(grid)
 library(gridExtra)
 grid.arrange(plot_Q(sim_dat), plot_choice(sim_dat), nrow = 1,
                         top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
-my_annotation(params)
+my_annotation(params, extra_vertical_spacing = TRUE)
 
 ## ----defmod-data--------------------------------------------------------------
 mod <- ""
@@ -109,7 +109,7 @@ library(cmdstanr)
 options(mc.cores = parallel::detectCores())
 
 # code allows for easily changing whether you want to refit or use a saved fit
-it <- 10000
+it <- 1000
 refit = TRUE
 if (refit) {
   m <- cmdstan_model("climate-RL.stan")
@@ -117,7 +117,7 @@ if (refit) {
   fit <- m$sample(
     data = data_file,
     iter_sampling = it,
-    chains = 4,
+    chains = 1,
     thin = 1,
     iter_warmup = it / 2,
     refresh = it / 5,
@@ -132,5 +132,4 @@ if (refit) {
 source("../../plot_utils.R")
 
 posterior_density_plot(fit, c("LR", "inv_temp"), params)
-posterior_dot_error_plot(fit, c("LR", "inv_temp"), params)
 

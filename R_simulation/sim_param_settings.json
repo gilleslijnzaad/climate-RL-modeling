@@ -1,8 +1,8 @@
 {
-  "n_part": 50,
-  "n_trials": 30,
+  "n_part": 30,
+  "n_trials": 200,
   "LR": 0.25,
-  "inv_temp": 0.2,
+  "inv_temp": 1,
   "initQF": 5,
   "initQU": 5,
   "mu_R": [8, 2]
