@@ -1,13 +1,13 @@
 data {
   int<lower=1> N; // participants
   int<lower=1> T; // trials
-  array[N, T] int<lower=-1, upper=2> choice;
-  array[N, T] int<lower=-10, upper=10> outcome;
+  array[N, T] int<lower=0, upper=2> choice;
+  array[N, T] int<lower=0, upper=10> outcome;
 }
 
 transformed data {
   vector[2] initQ;  // initial Q-values for the two options: 0.0
-  initQ = rep_vector(0.0, 2);
+  initQ = rep_vector(5.0, 2);
 }
 
 parameters {
