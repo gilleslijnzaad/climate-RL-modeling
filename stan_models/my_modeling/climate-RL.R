@@ -17,7 +17,7 @@ params <- list(
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2), # F and U
-  sigma_R = 2
+  sigma_R = 3
 )
 
 sim_dat <- run_sim(params, save_to_JSON = TRUE)
@@ -111,7 +111,7 @@ options(mc.cores = parallel::detectCores())
 
 # code allows for easily changing whether you want to refit or use a saved fit
 it <- 1000
-refit = TRUE
+refit = FALSE
 if (refit) {
   m <- cmdstan_model("climate-RL.stan")
   data_file <- paste0(sim_dir, "sim_dat.json")

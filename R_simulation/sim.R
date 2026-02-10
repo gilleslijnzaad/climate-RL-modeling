@@ -96,7 +96,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
     dat <- dat %>%
       pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
       mutate(option = factor(option),
-            choice = factor(choice))
+             choice = factor(choice))
 
     p <- ggplot(dat, aes(x = trial,
                         y = Q,
@@ -104,9 +104,9 @@ run_sim <- function(params, save_to_JSON = FALSE) {
       geom_smooth(aes(fill = option)) +
       ylim(c(1, 10)) +
       labs(x = "Trial") +
-      scale_color_manual(values = c(my_teal, my_pink),
+      scale_color_manual(values = my_param_colors,
                         labels = c("Friendly", "Unfriendly")) +  
-      scale_fill_manual(values = c(my_teal, my_pink),
+      scale_fill_manual(values = my_param_colors,
                         labels = c("Friendly", "Unfriendly")) +
       my_theme +
       theme(legend.position = "inside",
@@ -129,11 +129,11 @@ run_sim <- function(params, save_to_JSON = FALSE) {
       
     p <- ggplot(dat, aes(x = trial)) +
       geom_smooth(aes(y = choice_is_F),
-                  color = paste0(my_teal, "30"),
-                  fill = paste0(my_teal, "30")) +
+                  color = my_param_colors[["F"]],
+                  fill = my_param_colors[["F"]]) +
       geom_smooth(aes(y = choice_is_U),
-                  color = paste0(my_pink, "30"),
-                  fill = paste0(my_pink, "30")) +
+                  color = my_param_colors[["U"]],
+                  fill = my_param_colors[["U"]]) +
       ylim(c(0, 1)) +
       labs(x = "Trial",
           y = "Proportion chosen") +

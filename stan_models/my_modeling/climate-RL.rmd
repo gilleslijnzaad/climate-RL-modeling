@@ -170,7 +170,7 @@ options(mc.cores = parallel::detectCores())
 
 # code allows for easily changing whether you want to refit or use a saved fit
 it <- 1000
-refit = TRUE
+refit = FALSE
 if (refit) {
   m <- cmdstan_model("climate-RL.stan")
   data_file <- paste0(sim_dir, "sim_dat.json")
@@ -196,7 +196,6 @@ posterior_density_plot(fit, c("LR", "inv_temp"), params)
 ```
 
 # Some next steps
-1. Implement rating in simulation;
 1. Hierarchically estimate parameter values for participants;
 1. Implement confirmation bias;
 1. Create a `generated quantities` block to see what Q values, choices and ratings the model predicts;
