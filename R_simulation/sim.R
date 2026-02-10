@@ -10,6 +10,7 @@ library(dplyr)
 # arguments: vector of parameter settings; whether or not to save data to JSON
 # returns: data frame of simulated data
 run_sim <- function(params, save_to_JSON = FALSE) {
+  library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
   n_part <- params$n_part
@@ -35,6 +36,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
     Q$U[1] <- params$initQU
     mu_R <- params$mu_R
     names(mu_R) <- c("F", "U")
+    sigma_R <- params$sigma_R
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -46,15 +48,10 @@ run_sim <- function(params, save_to_JSON = FALSE) {
                           prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      # 80% of the time, R is congruent with choice; 20% incongruent
-      congruent <- sample(c(1, 0),
-                          size = 1,
-                          prob = c(0.9, 0.1))
-      if (congruent) {
-        R[t] <- mu_R[[choice[t]]]
-      } else {
-        R[t] <- mu_R[[names(mu_R)[names(mu_R) != choice[t]]]]
-      }
+      R[t] <- round(rtruncnorm(n = 1, a = 0, b = 10,
+                               mean = mu_R[[choice[t]]], 
+                               sd = sigma_R),
+                    0)
 
       # learn
       pred_err[t] <- R[t] - Q[t, choice[t]]
@@ -154,8 +151,8 @@ my_annotation <- function(params, extra_vertical_spacing = FALSE) {
                  "\ninitQF = ", params$initQF,
                  "\ninitQU = ", params$initQU,
                  "\nmu_R_F = ", params$mu_R[1],
-                 "\nmu_R_U = ", params$mu_R[2]
-                #  ,"\nsigma_R = ", params$sigma_R
+                 "\nmu_R_U = ", params$mu_R[2],
+                 "\nsigma_R = ", params$sigma_R
                  )
   y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
   grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)

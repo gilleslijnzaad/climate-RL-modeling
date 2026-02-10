@@ -34,7 +34,8 @@ params <- list(
   inv_temp = 1,
   initQF = 5,
   initQU = 5,
-  mu_R = c(8, 2) # F and U
+  mu_R = c(8, 2), # F and U
+  sigma_R = 2
 )
 
 sim_dat <- run_sim(params, save_to_JSON = TRUE)
@@ -191,7 +192,6 @@ if (refit) {
 ## Inspect results
 ```{r inspect-results}
 source("../../plot_utils.R")
-
 posterior_density_plot(fit, c("LR", "inv_temp"), params)
 ```
 

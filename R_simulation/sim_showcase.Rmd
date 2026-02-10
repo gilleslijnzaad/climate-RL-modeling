@@ -38,7 +38,8 @@ params_std <- list(
   inv_temp = 0.5,
   initQF = 5,
   initQU = 5,
-  mu_R = c(8, 2) # F and U
+  mu_R = c(8, 2), # F and U
+  sigma_R = 1
 )
 
 dat <- run_sim(params_std)
