@@ -1,6 +1,6 @@
 util <- new.env()
 
-main_dir <- "../../"
+main_dir <- "~/research/climate-RL/"
 source(paste0(main_dir, "plot_utils.R"))
 sim_dir <- paste0(main_dir, "R_simulation/")
 
@@ -10,7 +10,6 @@ library(dplyr)
 # arguments: vector of parameter settings; whether or not to save data to JSON
 # returns: data frame of simulated data
 run_sim <- function(params, save_to_JSON = FALSE) {
-  library(truncnorm) # draw from a truncated normal distribution (for rating)
   dat <- data.frame()
 
   n_part <- params$n_part
@@ -36,7 +35,6 @@ run_sim <- function(params, save_to_JSON = FALSE) {
     Q$U[1] <- params$initQU
     mu_R <- params$mu_R
     names(mu_R) <- c("F", "U")
-    sigma_R <- params$sigma_R
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -48,10 +46,13 @@ run_sim <- function(params, save_to_JSON = FALSE) {
                            "U")
 
       # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 0, b = 10, 
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
+      # 80% of the time, get R that belongs to the choice.
+      # other 20%, get R that belongs to the other choice.
+      if (runif(1) < 0.8) {
+        R[t] <- mu_R[[choice[t]]]
+      } else {
+        R[t] <- mu_R[[names(mu_R)[names(mu_R) != choice[t]]]]
+      }
 
       # learn
       pred_err[t] <- R[t] - Q[t, choice[t]]
@@ -148,8 +149,9 @@ my_annotation <- function(params) {
                  "\ninitQF = ", params$initQF,
                  "\ninitQU = ", params$initQU,
                  "\nmu_R_F = ", params$mu_R[1],
-                 "\nmu_R_U = ", params$mu_R[2],
-                 "\nsigma_R = ", params$sigma_R)
+                 "\nmu_R_U = ", params$mu_R[2]
+                #  ,"\nsigma_R = ", params$sigma_R
+                 )
 
   grid.text(text, x = unit(0.98, "npc"), y = unit(0.95, "npc"), hjust = 1, vjust = 1)
 }

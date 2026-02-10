@@ -33,11 +33,7 @@ model {
       choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
       // prediction error
-      if (choice[j, t] == 1) {
-        pred_err = R[j, t] - Q[t, 1];
-      } else {
-        pred_err = R[j, t] - Q[t, 2];
-      }
+      pred_err = R[j, t] - Q[t, choice[j, t]];
 
       // update value (learn)
       if (t < n_trials) {    // no updating in the very last trial

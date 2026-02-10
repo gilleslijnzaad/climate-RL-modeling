@@ -6,7 +6,6 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----sim-code-----------------------------------------------------------------
 rm(list = ls())
-setwd("~/research/climate-RL/R_simulation")
 source("sim.R")
 temp <- readLines("sim.R")
 start <- grep("# === run_sim", temp)
@@ -15,14 +14,13 @@ cat(temp[start:end], sep = "\n")
 
 ## ----run-std------------------------------------------------------------------
 params_std <- list(
-  n_part = 10,
-  n_trials = 100,
+  n_part = 50,
+  n_trials = 30,
   LR = 0.4,
-  inv_temp = 1,
+  inv_temp = 0.3,
   initQF = 5,
   initQU = 5,
-  mu_R = c(8, 3), # F and U
-  sigma_R = 3
+  mu_R = c(8, 2) # F and U
 )
 
 dat <- run_sim(params_std)

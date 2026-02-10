@@ -10,21 +10,21 @@ sim_dir <- "../../R_simulation/"
 source(paste0(sim_dir, "sim.R"))
 
 params <- list(
-  n_part = 1,
-  n_trials = 100,
-  LR = 0.4,
-  inv_temp = 1,
+  n_part = 50,
+  n_trials = 30,
+  LR = 0.25,
+  inv_temp = 0.2,
   initQF = 5,
   initQU = 5,
-  mu_R = c(8, 3), # F and U
-  sigma_R = 3
+  mu_R = c(8, 2) # F and U
 )
 
 sim_dat <- run_sim(params, save_to_JSON = TRUE)
 
-dplyr::glimpse(sim_dat)
+cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
+cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
 
-## ----inspecting-data, echo = FALSE--------------------------------------------
+## ----inspecting-data, warning = FALSE-----------------------------------------
 library(grid)
 library(gridExtra)
 grid.arrange(plot_Q(sim_dat), plot_choice(sim_dat), nrow = 1,
@@ -84,11 +84,7 @@ mod <- paste0(mod, "
       choice[j, t] ~ categorical_logit(inv_temp * Q_t);
 
       // prediction error
-      if (choice[j, t] == 1) {
-        pred_err = R[j, t] - Q[t, 1];
-      } else {
-        pred_err = R[j, t] - Q[t, 2];
-      }
+      pred_err = R[j, t] - Q[t, choice[j, t]];
 
       // update value (learn)
       if (t < n_trials) {    // no updating in the very last trial
@@ -108,33 +104,29 @@ mod <- paste0(mod, "
 ## ----save-stan----------------------------------------------------------------
 write(mod, file = "climate-RL.stan")
 
-## ----run-model----------------------------------------------------------------
+## ----run-model, stdout = TRUE-------------------------------------------------
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
 
-# function allows for easily changing whether you want to refit or use a saved fit
+# code allows for easily changing whether you want to refit or use a saved fit
 it <- 10000
-fit_model <- function(refit) {
-  if (refit) {
-    m <- cmdstan_model("climate-RL.stan")
-    data_file <- paste0(sim_dir, "sim_dat.json")
-    fit <- m$sample(
-      data = data_file,
-      iter_sampling = it,
-      chains = 1,
-      thin = 1,
-      iter_warmup = it / 2,
-      refresh = it / 5,
-      seed = 1234
-    )
-    fit$save_object(file = "climate-RL_fit.rds")
-  } else {
-    fit <- readRDS(file = "climate-RL_fit.rds")
-  }
-  return(fit)
+refit = TRUE
+if (refit) {
+  m <- cmdstan_model("climate-RL.stan")
+  data_file <- paste0(sim_dir, "sim_dat.json")
+  fit <- m$sample(
+    data = data_file,
+    iter_sampling = it,
+    chains = 4,
+    thin = 1,
+    iter_warmup = it / 2,
+    refresh = it / 5,
+    seed = 1234
+  )
+  fit$save_object(file = "climate-RL_fit.rds")
+} else {
+  fit <- readRDS(file = "climate-RL_fit.rds")
 }
-
-fit <- fit_model(refit = TRUE)
 
 ## ----inspect-results----------------------------------------------------------
 source("../../plot_utils.R")
