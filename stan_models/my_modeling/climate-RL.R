@@ -10,17 +10,17 @@ sim_dir <- "../../R_simulation/"
 source(paste0(sim_dir, "sim.R"))
 
 params <- list(
-  n_part = 30,
+  n_part = 20,
   n_trials = 200,
-  LR = 0.25,
-  inv_temp = 1,
+  LR = 0.5,
+  inv_temp = 1.1,
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2), # F and U
-  sigma_R = 3
+  sigma_R = 2
 )
 
-sim_dat <- run_sim(params, save_to_JSON = TRUE)
+sim_dat <- run_sim(params, save_to_JSON = FALSE)
 
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
@@ -105,16 +105,16 @@ mod <- paste0(mod, "
 ## ----save-stan----------------------------------------------------------------
 write(mod, file = "climate-RL.stan")
 
-## ----run-model, stdout = TRUE-------------------------------------------------
+## ----run-model----------------------------------------------------------------
+data_file <- paste0(sim_dir, "sim_dat.json")
+refit <- did_sim_dat_change(data_file, sim_dat)
+save_sim_dat(params, sim_dat)
+
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
-
-# code allows for easily changing whether you want to refit or use a saved fit
-it <- 1000
-refit = FALSE
 if (refit) {
   m <- cmdstan_model("climate-RL.stan")
-  data_file <- paste0(sim_dir, "sim_dat.json")
+  it <- 1000
   fit <- m$sample(
     data = data_file,
     iter_sampling = it,

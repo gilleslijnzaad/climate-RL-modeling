@@ -174,13 +174,32 @@ save_sim_dat <- function(params, sim_dat) {
   initQU <- params$initQU
   choice <- matrix(as.numeric(sim_dat$choice == "U") + 1,
                    nrow = n_part,
-                   ncol = n_trials)
+                   ncol = n_trials,
+                   byrow = TRUE)
   R <- matrix(sim_dat$R,
               nrow = n_part,
-              ncol = n_trials)
+              ncol = n_trials,
+              byrow = TRUE)
   dat_names <- c("n_part", "n_trials", "initQF", "initQU", "choice", "R")
   list_dat <- setNames(mget(dat_names), dat_names)
   write_stan_json(list_dat, file = paste0(sim_dir, "sim_dat.json"))
+}
+
+# === did_sim_dat_change =================
+# arguments: file path for the JSON file, data frame of simulated data
+# returns: TRUE if sim_dat changed compared to saved JSON file, else FALSE
+did_sim_dat_change <- function(data_file, sim_dat) {
+  json_data <- rjson::fromJSON(file = data_file)
+  json_choice <- unlist(json_data$choice)
+  json_R <- unlist(json_data$R)
+  sim_choice <- as.numeric(sim_dat$choice == "U") + 1
+  sim_R <- sim_dat$R
+  if (identical(json_choice, sim_choice) & 
+      identical(json_R, sim_R)) {
+    return(FALSE)
+  } else {
+    return(TRUE)
+  }
 }
 
 # ---------------------------------------------
