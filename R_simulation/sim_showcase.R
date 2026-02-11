@@ -6,7 +6,8 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----sim-code-----------------------------------------------------------------
 rm(list = ls())
-source("sim.R")
+sim <- new.env()
+source("sim.R", local = sim)  # access functions by using sim$fun()
 temp <- readLines("sim.R")
 start <- grep("# === run_sim", temp)
 end <- grep("# === end of run_sim", temp) - 1
@@ -24,29 +25,33 @@ params_std <- list(
   sigma_R = 1
 )
 
-dat <- run_sim(params_std)
-gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
-my_annotation(params_std)
+dat <- sim$run_sim(params_std)
+
+plot <- new.env()
+source("../plot_utils.R", local = plot)  # access functions by using plot$fun()
+
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_std)
 
 ## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR = 0.2))
-dat <- run_sim(params)
-gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
-my_annotation(params)
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_std)
 
 params <- modifyList(params_std, list(LR = 0.8))
-dat <- run_sim(params)
-gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
-my_annotation(params)
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_std)
 
 ## ----run-std-inv-temp---------------------------------------------------------
 params <- modifyList(params_std, list(inv_temp = 0))
-dat <- run_sim(params)
-gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
-my_annotation(params)
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_std)
 
 params <- modifyList(params_std, list(inv_temp = 1.5))
-dat <- run_sim(params)
-gridExtra::grid.arrange(plot_Q(dat), plot_choice(dat), nrow = 1)
-my_annotation(params)
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_std)
 

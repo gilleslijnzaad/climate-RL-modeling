@@ -2,7 +2,7 @@
   "n_part": 20,
   "n_trials": 200,
   "LR": 0.5,
-  "inv_temp": 1.1,
+  "inv_temp": 1.2,
   "initQF": 5,
   "initQU": 5,
   "mu_R": [8, 2],

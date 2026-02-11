@@ -6,21 +6,23 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----create-data--------------------------------------------------------------
 rm(list = ls())
-sim_dir <- "../../R_simulation/"
-source(paste0(sim_dir, "sim.R"))
+main_dir <- "~/research/climate-RL/"
+sim_dir <- paste0(main_dir, "R_simulation/")
+sim <- new.env()
+source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
 
 params <- list(
   n_part = 20,
   n_trials = 200,
   LR = 0.5,
-  inv_temp = 1.1,
+  inv_temp = 1.2,
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2), # F and U
   sigma_R = 2
 )
 
-sim_dat <- run_sim(params, save_to_JSON = FALSE)
+sim_dat <- sim$run_sim(params, save_to_JSON = FALSE)
 
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
@@ -28,9 +30,13 @@ cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\
 ## ----inspecting-data, warning = FALSE-----------------------------------------
 library(grid)
 library(gridExtra)
-grid.arrange(plot_Q(sim_dat), plot_choice(sim_dat), nrow = 1,
-                        top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
-my_annotation(params, extra_vertical_spacing = TRUE)
+
+plot <- new.env()
+source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using plot$fun()
+
+grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
+             top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
+plot$param_annotation(params, extra_vertical_spacing = TRUE) 
 
 ## ----defmod-data--------------------------------------------------------------
 mod <- ""
@@ -107,8 +113,8 @@ write(mod, file = "climate-RL.stan")
 
 ## ----run-model----------------------------------------------------------------
 data_file <- paste0(sim_dir, "sim_dat.json")
-refit <- did_sim_dat_change(data_file, sim_dat)
-save_sim_dat(params, sim_dat)
+refit <- sim$did_sim_dat_change(data_file, sim_dat)
+sim$save_sim_dat(params, sim_dat)
 
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
@@ -130,6 +136,5 @@ if (refit) {
 }
 
 ## ----inspect-results----------------------------------------------------------
-source("../../plot_utils.R")
-posterior_density_plot(fit, c("LR", "inv_temp"), params)
+plot$posterior_density(fit, c("LR", "inv_temp"), params)
 

@@ -1,12 +1,6 @@
-util <- new.env()
-
-main_dir <- "~/research/climate-RL/"
-source(paste0(main_dir, "plot_utils.R"))
-sim_dir <- paste0(main_dir, "R_simulation/")
-
 library(dplyr)
 
-# === run_sim =============================
+# === run_sim() =============================
 # arguments: vector of parameter settings; whether or not to save data to JSON
 # returns: data frame of simulated data
 run_sim <- function(params, save_to_JSON = FALSE) {
@@ -87,78 +81,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
 }
 # === end of run_sim
 
-# === PLOT UTILS ====================
-  # === plot_Q ========================
-  # arguments: data frame of simulated data
-  # returns: ggplot object: smooth plot of Q values over time
-  plot_Q <- function(dat) {
-    # data to long format
-    dat <- dat %>%
-      pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
-      mutate(option = factor(option),
-             choice = factor(choice))
-
-    p <- ggplot(dat, aes(x = trial,
-                        y = Q,
-                        color = option)) +
-      geom_smooth(aes(fill = option)) +
-      ylim(c(1, 10)) +
-      labs(x = "Trial") +
-      scale_color_manual(values = my_param_colors,
-                        labels = c("Friendly", "Unfriendly")) +  
-      scale_fill_manual(values = my_param_colors,
-                        labels = c("Friendly", "Unfriendly")) +
-      my_theme +
-      theme(legend.position = "inside",
-            legend.position.inside = c(0.83, 0.91))
-
-    return(p)
-  }
-
-  # === plot_choice ========================
-  # arguments: data frame of simulated data
-  # returns: ggplot object: smooth plot of choices over time
-  plot_choice <- function(dat) {
-    # data to long format
-    dat <- dat %>%
-      pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
-      mutate(option = factor(option),
-            choice = factor(choice)) %>%
-      mutate(choice_is_F = as.numeric(choice == "F"),
-            choice_is_U = 1 - choice_is_F)
-      
-    p <- ggplot(dat, aes(x = trial)) +
-      geom_smooth(aes(y = choice_is_F),
-                  color = my_param_colors[["F"]],
-                  fill = my_param_colors[["F"]]) +
-      geom_smooth(aes(y = choice_is_U),
-                  color = my_param_colors[["U"]],
-                  fill = my_param_colors[["U"]]) +
-      ylim(c(0, 1)) +
-      labs(x = "Trial",
-          y = "Proportion chosen") +
-      my_theme
-    return(p)
-  }
-
-  # === my_annotation ======================
-# arguments: vector of parameter settings
-# returns: nothing
-my_annotation <- function(params, extra_vertical_spacing = FALSE) {
-  library(grid)
-  text <- paste0("LR = ", params$LR,
-                 "\ninv_temp = ", params$inv_temp,
-                 "\ninitQF = ", params$initQF,
-                 "\ninitQU = ", params$initQU,
-                 "\nmu_R_F = ", params$mu_R[1],
-                 "\nmu_R_U = ", params$mu_R[2],
-                 "\nsigma_R = ", params$sigma_R
-                 )
-  y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
-  grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)
-}
-
-# === save_sim_dat =======================
+# === save_sim_dat() =======================
 # arguments: vector of parameter settings; data frame of simulated data
 # returns: nothing
 save_sim_dat <- function(params, sim_dat) {
@@ -185,7 +108,7 @@ save_sim_dat <- function(params, sim_dat) {
   write_stan_json(list_dat, file = paste0(sim_dir, "sim_dat.json"))
 }
 
-# === did_sim_dat_change =================
+# === did_sim_dat_change() =================
 # arguments: file path for the JSON file, data frame of simulated data
 # returns: TRUE if sim_dat changed compared to saved JSON file, else FALSE
 did_sim_dat_change <- function(data_file, sim_dat) {
@@ -202,9 +125,3 @@ did_sim_dat_change <- function(data_file, sim_dat) {
   }
 }
 
-# ---------------------------------------------
-
-while ("util" %in% search())
-  detach("util")
-
-attach(util)
