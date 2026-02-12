@@ -7,6 +7,9 @@ data {
   int<lower=0, upper=10> initQU;
 }
 
+// transformed data {
+// }
+
 parameters {
   real<lower=0, upper=1> LR;
   real<lower=0, upper=5> inv_temp;
@@ -18,6 +21,7 @@ parameters {
 model {
   // this is where priors would go. leaving them empty leads to uninformative priors
 
+  // participant loop
   for (j in 1:n_part) {
     array[n_trials, 2] real Q;
     Q[1, 1] = initQF;
@@ -26,6 +30,7 @@ model {
 
     real pred_err;
 
+    // trial loop
     for (t in 1:n_trials) {
       Q_t = to_vector(Q[t]);
 
@@ -49,3 +54,5 @@ model {
   }
 }
 
+// generated quantities {
+// }

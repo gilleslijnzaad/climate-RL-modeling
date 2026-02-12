@@ -38,78 +38,46 @@ grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
              top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
 plot$param_annotation(params, extra_vertical_spacing = TRUE) 
 
-## ----defmod-data--------------------------------------------------------------
-mod <- ""
-mod <- paste0(mod, 
-"data {
-  int<lower=1> n_part;
-  int<lower=1> n_trials;
-  array[n_part, n_trials] int<lower=1, upper=2> choice;
-  array[n_part, n_trials] int<lower=0, upper=10> R;
-  int<lower=0, upper=10> initQF;
-  int<lower=0, upper=10> initQU;
-}
-")
+## ----explmod-data, comment = NA-----------------------------------------------
+mod_code <- readLines("climate-RL.stan")
+start <- grep("data \\{", mod_code)[1]
+end <- grep("transformed data \\{", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 
-## ----defmod-params------------------------------------------------------------
-mod <- paste0(mod, "
-parameters {
-  real<lower=0, upper=1> LR;
-  real<lower=0, upper=5> inv_temp;
-}
-")
+## ----explmod-transf-data, eval = FALSE, comment = NA--------------------------
+# start <- grep("transformed data \\{", mod_code)
+# end <- grep("parameters \\{", mod_code)[1] - 2
+# cat(mod_code[start:end], sep = "\n")
 
-## ----defmod-transf-params-----------------------------------------------------
-mod <- paste0(mod, "
-// transformed parameters {
-// }
-")
+## ----explmod-params, comment = NA---------------------------------------------
+start <- grep("parameters \\{", mod_code)[1]
+end <- grep("transformed parameters \\{", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 
-## ----defmod-model-priors------------------------------------------------------
-mod <- paste0(mod, "
-model {
-  // this is where priors would go. leaving them empty leads to uninformative priors
-")
+## ----explmod-transf-params, eval = FALSE, comment = NA------------------------
+# start <- grep("transformed parameters \\{", mod_code)
+# end <- grep("model \\{", mod_code) - 2
+# cat(mod_code[start:end], sep = "\n")
 
-## ----defmod-model-inits-------------------------------------------------------
-mod <- paste0(mod, "
-  for (j in 1:n_part) {
-    array[n_trials, 2] real Q;
-    Q[1, 1] = initQF;
-    Q[1, 2] = initQU;
-    vector[2] Q_t;
+## ----explmod-model-priors, comment = NA---------------------------------------
+start <- grep("model \\{", mod_code)
+end <- grep("participant loop", mod_code)[1] - 2
+cat(mod_code[start:end], sep = "\n")
 
-    real pred_err;
-")
+## ----explmod-model-part, comment = NA-----------------------------------------
+start <- grep("participant loop", mod_code) + 1
+end <- grep("trial loop", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 
-## ----defmod-data-trials-------------------------------------------------------
-mod <- paste0(mod, "
-    for (t in 1:n_trials) {
-      Q_t = to_vector(Q[t]);
+## ----explmod-model-trial, comment = NA----------------------------------------
+start <- grep("trial loop", mod_code) + 1
+end <- grep("generated quantities", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 
-      // sample choice (1 is F, 2 is U) via softmax
-      choice[j, t] ~ categorical_logit(inv_temp * Q_t);
-
-      // prediction error
-      pred_err = R[j, t] - Q[t, choice[j, t]];
-
-      // update value (learn)
-      if (t < n_trials) {    // no updating in the very last trial
-        if (choice[j, t] == 1) {
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-          Q[t+1, 2] = Q[t, 2];
-        } else {
-          Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
-        }
-      }
-    }
-  }
-}
-")
-
-## ----save-stan----------------------------------------------------------------
-write(mod, file = "climate-RL.stan")
+## ----explmod-gen-quant, eval = FALSE, comment = NA----------------------------
+# start <- grep("generated quantities", mod_code)
+# end <- length(mod_code)
+# cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
 data_file <- paste0(sim_dir, "sim_dat.json")

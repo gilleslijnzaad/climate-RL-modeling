@@ -61,8 +61,8 @@ grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
 plot$param_annotation(params, extra_vertical_spacing = TRUE) 
 ```
 
-# Defining the model
-I show the Stan model code bit by bit to explain what is happening.
+# Explaining the model
+I show the Stan model code bit by bit to explain what is happening. The full code can be found in [climate-RL.stan](climate-RL.stan).
 
 ## `data` block
 The data we supply to the model consist of:
@@ -72,18 +72,19 @@ The data we supply to the model consist of:
 1. an array of choices that a participant made: `choice[n_part, n_trials]`;
 1. an array of ratings that a participant gave: `R[n_part, n_trials]`. These are analogous to the array `outcomes[n_trials]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
 
-```{r defmod-data}
-mod <- ""
-mod <- paste0(mod, 
-"data {
-  int<lower=1> n_part;
-  int<lower=1> n_trials;
-  array[n_part, n_trials] int<lower=1, upper=2> choice;
-  array[n_part, n_trials] int<lower=0, upper=10> R;
-  int<lower=0, upper=10> initQF;
-  int<lower=0, upper=10> initQU;
-}
-")
+```{r explmod-data, comment = NA}
+mod_code <- readLines("climate-RL.stan")
+start <- grep("data \\{", mod_code)[1]
+end <- grep("transformed data \\{", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
+```
+
+## `transformed data` block
+Currently unused.
+```{r explmod-transf-data, eval = FALSE, comment = NA}
+start <- grep("transformed data \\{", mod_code)
+end <- grep("parameters \\{", mod_code)[1] - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `parameters` block
@@ -94,78 +95,49 @@ In the current model, we have two free parameters:
 
 When I make the model hierarchical, these parameters will be group-level means and standard deviations.
 
-```{r defmod-params}
-mod <- paste0(mod, "
-parameters {
-  real<lower=0, upper=1> LR;
-  real<lower=0, upper=5> inv_temp;
-}
-")
+```{r explmod-params, comment = NA}
+start <- grep("parameters \\{", mod_code)[1]
+end <- grep("transformed parameters \\{", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `transformed parameters` block
-In the future, I will use this block to define the individual parameter values based on the group mean.
-```{r defmod-transf-params}
-mod <- paste0(mod, "
-// transformed parameters {
-// }
-")
+Currently unused. Will be used to define individual parameter values based on the group mean.
+```{r explmod-transf-params, eval = FALSE, comment = NA}
+start <- grep("transformed parameters \\{", mod_code)
+end <- grep("model \\{", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `model` block
 ### The priors
-```{r defmod-model-priors}
-mod <- paste0(mod, "
-model {
-  // this is where priors would go. leaving them empty leads to uninformative priors
-")
+```{r explmod-model-priors, comment = NA}
+start <- grep("model \\{", mod_code)
+end <- grep("participant loop", mod_code)[1] - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
 ### Participant loop
 For every participant I initialize an array for holding the Q values. I also create a temporary vector `Q_t` that holds the two Q values (F, U) for the *current* trial, because otherwise the `categorical_logit` wouldn't work, somehow. This works for now, and maybe in the future I will find a more elegant solution.
-```{r defmod-model-inits}
-mod <- paste0(mod, "
-  for (j in 1:n_part) {
-    array[n_trials, 2] real Q;
-    Q[1, 1] = initQF;
-    Q[1, 2] = initQU;
-    vector[2] Q_t;
-
-    real pred_err;
-")
+```{r explmod-model-part, comment = NA}
+start <- grep("participant loop", mod_code) + 1
+end <- grep("trial loop", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
 ### Trial loop
-```{r defmod-data-trials}
-mod <- paste0(mod, "
-    for (t in 1:n_trials) {
-      Q_t = to_vector(Q[t]);
-
-      // sample choice (1 is F, 2 is U) via softmax
-      choice[j, t] ~ categorical_logit(inv_temp * Q_t);
-
-      // prediction error
-      pred_err = R[j, t] - Q[t, choice[j, t]];
-
-      // update value (learn)
-      if (t < n_trials) {    // no updating in the very last trial
-        if (choice[j, t] == 1) {
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-          Q[t+1, 2] = Q[t, 2];
-        } else {
-          Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
-        }
-      }
-    }
-  }
-}
-")
+```{r explmod-model-trial, comment = NA}
+start <- grep("trial loop", mod_code) + 1
+end <- grep("generated quantities", mod_code) - 2
+cat(mod_code[start:end], sep = "\n")
 ```
 
-## Save Stan code
-```{r save-stan}
-write(mod, file = "climate-RL.stan")
+## `generated quantities` block
+Currently unused. Will be used in the future to generate posterior predictions.
+```{r explmod-gen-quant, eval = FALSE, comment = NA}
+start <- grep("generated quantities", mod_code)
+end <- length(mod_code)
+cat(mod_code[start:end], sep = "\n")
 ```
 
 # Fitting the model
