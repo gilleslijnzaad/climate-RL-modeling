@@ -5,7 +5,7 @@ library(tidyverse)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
 my_dark_blue <- "#001199"
-my_blue <- "#00ccff"
+my_blue <- "#00aadd"
 my_colors <- c(my_teal, my_pink, my_dark_blue, my_blue)
 my_param_colors <- setNames(my_colors, c("F", "U", "inv_temp", "LR"))
 
