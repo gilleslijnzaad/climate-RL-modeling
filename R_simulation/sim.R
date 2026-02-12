@@ -42,7 +42,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
                           prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 0, b = 10,
+      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
                                mean = mu_R[[choice[t]]], 
                                sd = sigma_R),
                     0)

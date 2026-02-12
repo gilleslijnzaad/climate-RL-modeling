@@ -4,10 +4,10 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
-## ----sim-code-----------------------------------------------------------------
+## ----sim-code, comment = NA---------------------------------------------------
 rm(list = ls())
 sim <- new.env()
-source("sim.R", local = sim)  # access functions by using sim$fun()
+source("sim.R", local = sim)  # access functions using sim$fun()
 temp <- readLines("sim.R")
 start <- grep("# === run_sim", temp)
 end <- grep("# === end of run_sim", temp) - 1
@@ -28,7 +28,7 @@ params_std <- list(
 dat <- sim$run_sim(params_std)
 
 plot <- new.env()
-source("../plot_utils.R", local = plot)  # access functions by using plot$fun()
+source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params_std)

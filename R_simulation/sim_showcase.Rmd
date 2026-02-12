@@ -22,7 +22,7 @@ In this document, I demonstrate the behavior of the simulation by varying the pa
 
 # 0. Simulation code
 For ease of reference, here is the simulation code.
-```{r sim-code}
+```{r sim-code, comment = NA}
 rm(list = ls())
 sim <- new.env()
 source("sim.R", local = sim)  # access functions using sim$fun()
