@@ -114,7 +114,7 @@ posterior_density <- function(fit, to_plot, param_settings) {
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
     labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
-    facet_wrap(. ~ parameter, scales = "free") +
+    facet_wrap(. ~ factor(parameter, to_plot), scales = "free") +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = "legend", color = "none", fill = "none") +
