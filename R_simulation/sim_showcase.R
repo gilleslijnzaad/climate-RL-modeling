@@ -33,25 +33,36 @@ source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params_std)
 
+## ----run-std-sigma-init-------------------------------------------------------
+params <- modifyList(params_std, list(sigma_R = 2))
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params)
+
+params <- modifyList(params_std, list(initQF = 2, initQU = 8))
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params)
+
 ## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR = 0.2))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 
 params <- modifyList(params_std, list(LR = 0.8))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 
 ## ----run-std-inv-temp---------------------------------------------------------
 params <- modifyList(params_std, list(inv_temp = 0))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 
 params <- modifyList(params_std, list(inv_temp = 1.5))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 

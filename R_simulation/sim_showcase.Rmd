@@ -54,17 +54,30 @@ gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params_std)
 ```
 
+## 1a. Varying sigma_R and initQ
+```{r run-std-sigma-init}
+params <- modifyList(params_std, list(sigma_R = 2))
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params)
+
+params <- modifyList(params_std, list(initQF = 2, initQU = 8))
+dat <- sim$run_sim(params)
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params)
+```
+
 # 2. Varying learning rate
 ```{r run-std-LR}
 params <- modifyList(params_std, list(LR = 0.2))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 
 params <- modifyList(params_std, list(LR = 0.8))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 ```
 
 # 3. Varying inverse temperature
@@ -72,12 +85,12 @@ plot$param_annotation(params_std)
 params <- modifyList(params_std, list(inv_temp = 0))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 
 params <- modifyList(params_std, list(inv_temp = 1.5))
 dat <- sim$run_sim(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation(params)
 ```
 
 # 4. Confirmation bias
