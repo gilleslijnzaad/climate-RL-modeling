@@ -3,14 +3,14 @@ data {
   int<lower=1> n_trials;
   array[n_part, n_trials] int<lower=1, upper=2> choice;
   array[n_part, n_trials] int<lower=1, upper=10> R;
-  int<lower=1, upper=10> initQF;
-  int<lower=1, upper=10> initQU;
 }
 
 // transformed data {
 // }
 
 parameters {
+  real<lower=1, upper=10> initQF;
+  real<lower=1, upper=10> initQU;
   real<lower=0, upper=1> LR;
   real<lower=0, upper=5> inv_temp;
 }

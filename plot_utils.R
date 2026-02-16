@@ -6,8 +6,8 @@ my_teal <- "#008080"
 my_pink <- "#ff00dd"
 my_dark_blue <- "#001199"
 my_blue <- "#00aadd"
-my_colors <- c(my_teal, my_pink, my_dark_blue, my_blue)
-my_param_colors <- setNames(my_colors, c("F", "U", "inv_temp", "LR"))
+my_colors <- c(my_teal, my_pink, my_dark_blue, my_blue, my_teal, my_pink)
+my_param_colors <- setNames(my_colors, c("F", "U", "inv_temp", "LR", "initQF", "initQU"))
 
 my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 20, face = "bold")) +
@@ -29,16 +29,16 @@ Q <- function(sim_dat) {
   sim_dat <- sim_dat %>%
     pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
     mutate(option = factor(option),
-            choice = factor(choice))
+           choice = factor(choice))
 
   p <- ggplot(sim_dat, aes(x = trial,
-                      y = Q,
-                      color = option)) +
+                           y = Q,
+                           color = option)) +
     geom_smooth(aes(fill = option)) +
     ylim(c(1, 10)) +
     labs(x = "Trial") +
     scale_color_manual(values = my_param_colors,
-                      labels = c("Friendly", "Unfriendly")) +  
+                       labels = c("Friendly", "Unfriendly")) +  
     scale_fill_manual(values = my_param_colors,
                       labels = c("Friendly", "Unfriendly")) +
     my_theme +
@@ -117,7 +117,7 @@ posterior_density <- function(fit, to_plot, param_settings) {
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
     labs(title = "Posterior distribution", x = "Estimate", y = "Density") +
-    facet_grid(. ~ parameter, scales = "free") +
+    facet_wrap(. ~ parameter, scales = "free_x") +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = "legend", color = "none", fill = "none") +

@@ -13,13 +13,13 @@ source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun(
 
 params <- list(
   n_part = 20,
-  n_trials = 200,
+  n_trials = 100,
   LR = 0.5,
   inv_temp = 1.2,
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2), # F and U
-  sigma_R = 2
+  sigma_R = 2.4
 )
 
 sim_dat <- sim$run_sim(params, save_to_JSON = FALSE)
@@ -103,6 +103,6 @@ if (refit) {
   fit <- readRDS(file = "climate-RL_fit.rds")
 }
 
-## ----inspect-results----------------------------------------------------------
-plot$posterior_density(fit, c("LR", "inv_temp"), params)
+## ----inspect-results, fig.height = 8------------------------------------------
+plot$posterior_density(fit, c("LR", "inv_temp", "initQF", "initQU"), params)
 
