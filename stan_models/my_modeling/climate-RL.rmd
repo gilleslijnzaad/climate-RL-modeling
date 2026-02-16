@@ -34,10 +34,10 @@ params <- list(
   n_trials = 30,
   LR = 0.3,
   inv_temp = 1.2,
-  initQF = 4,
-  initQU = 6,
-  mu_R = c(7, 3), # F and U
-  sigma_R = 2.4
+  initQF = 3,
+  initQU = 7,
+  mu_R = c(5, 5), # F and U
+  sigma_R = 3
 )
 
 sim_dat <- sim$run_sim(params, save_to_JSON = FALSE)
@@ -88,10 +88,12 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `parameters` block
-In the current model, we have two free parameters:
+In the current model, we have four free parameters:
 
-1. learning rate 
-1. inverse temperature
+1. learning rate;
+1. inverse temperature;
+1. initial Q value for the climate-friendly option;
+1. initial Q value for the climate-unfriendly option.
 
 When I make the model hierarchical, these parameters will be group-level means and standard deviations.
 

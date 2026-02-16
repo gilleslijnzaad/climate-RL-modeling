@@ -16,10 +16,10 @@ params <- list(
   n_trials = 30,
   LR = 0.3,
   inv_temp = 1.2,
-  initQF = 4,
-  initQU = 6,
-  mu_R = c(7, 3), # F and U
-  sigma_R = 2.4
+  initQF = 3,
+  initQU = 7,
+  mu_R = c(5, 5), # F and U
+  sigma_R = 3
 )
 
 sim_dat <- sim$run_sim(params, save_to_JSON = FALSE)
