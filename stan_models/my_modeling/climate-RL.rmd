@@ -171,8 +171,39 @@ if (dat_changed | model_changed) {
 ```
 
 ## Inspect results
-```{r inspect-results, fig.height = 8}
+```{r posterior-plots, fig.height = 8}
 plot$posterior_density(fit, c("LR", "inv_temp", "initQF", "initQU"), params)
+```
+```{r posterior-table}
+cred_int <- function(posterior_dist) {
+  return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
+}
+
+print_posterior_table <- function(fit, to_show, param_settings) {
+  table_data <- data.frame()
+
+  for (param in to_show) {
+    sim_value <- param_settings[[param]]
+    dat <- data.frame(
+      parameter = param,
+      sim_value = sim_value,
+      median_CI = sprintf("%.2f [%.2f, %.2f]",
+                          median(fit$draws(param)),
+                          cred_int(fit$draws(param))[1],
+                          cred_int(fit$draws(param))[2])
+    )
+    table_data <- rbind(table_data, dat)
+  }
+  colnames <- c("Parameter", "Simulated value",
+                "Median [95% credibility interval]")
+  knitr::kable(table_data,
+               col.names = colnames,
+               align = "lll",
+               caption = "Posteriors for all free parameters") %>%
+  kableExtra::kable_styling(full_width = FALSE, position = "left")
+}
+
+print_posterior_table(fit, c("LR", "inv_temp", "initQF", "initQU"), params)
 ```
 
 # Some next steps
