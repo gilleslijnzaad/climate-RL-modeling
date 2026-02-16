@@ -10,12 +10,12 @@ my_colors <- c(my_teal, my_pink, my_dark_blue, my_blue, my_teal, my_pink)
 my_param_colors <- setNames(my_colors, c("F", "U", "inv_temp", "LR", "initQF", "initQU"))
 
 my_theme <- theme_bw() +
-  theme(plot.title = element_text(size = 20, face = "bold")) +
+  theme(plot.title = element_text(size = 22, face = "bold")) +
   theme(axis.text = element_text(size = 16),
         axis.title = element_text(size = 18)) +
   theme(legend.title = element_blank(),
         legend.text = element_text(size = 16)) +
-  theme(strip.text.x = element_text(size = 18, face = "bold"))
+  theme(strip.text = element_text(size = 18, face = "bold"))
 
 
 # --------------------------------------
@@ -54,11 +54,8 @@ Q <- function(sim_dat) {
 choice <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
-    pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
-    mutate(option = factor(option),
-          choice = factor(choice)) %>%
-    mutate(choice_is_F = as.numeric(choice == "F"),
-          choice_is_U = 1 - choice_is_F)
+    mutate(choice_is_F = as.numeric(choice == 1),
+           choice_is_U = 1 - choice_is_F)
     
   p <- ggplot(sim_dat, aes(x = trial)) +
     geom_smooth(aes(y = choice_is_F),
@@ -116,8 +113,8 @@ posterior_density <- function(fit, to_plot, param_settings) {
 
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
-    labs(title = "Posterior distribution", x = "Estimate", y = "Density") +
-    facet_wrap(. ~ parameter, scales = "free_x") +
+    labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
+    facet_wrap(. ~ parameter, scales = "free") +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = "legend", color = "none", fill = "none") +

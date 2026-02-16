@@ -29,7 +29,6 @@ run_sim <- function(params, save_to_JSON = FALSE) {
     Q$F[1] <- params$initQF
     Q$U[1] <- params$initQU
     mu_R <- params$mu_R
-    names(mu_R) <- c("F", "U")
     sigma_R <- params$sigma_R
 
     # --------- run trials ------------
@@ -37,7 +36,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
 
       # choose
       P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] <- sample(c("F", "U"), 
+      choice[t] <- sample(c(1, 2), 
                           size = 1,
                           prob = c(P_F[t], 1 - P_F[t]))
 
@@ -51,12 +50,12 @@ run_sim <- function(params, save_to_JSON = FALSE) {
       pred_err[t] <- R[t] - Q[t, choice[t]]
 
       if (t < n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == "F") {
-          Q[t+1, "F"] <- Q[t, "F"] + LR * pred_err[t]
-          Q[t+1, "U"] <- Q[t, "U"]
+        if (choice[t] == 1) {
+          Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
+          Q[t+1, 2] <- Q[t, 2]
         } else {
-          Q[t+1, "U"] <- Q[t, "U"] + LR * pred_err[t]
-          Q[t+1, "F"] <- Q[t, "F"]
+          Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
+          Q[t+1, 1] <- Q[t, 1]
         }
       }
     }
@@ -95,7 +94,7 @@ save_sim_dat <- function(params, sim_dat) {
   n_trials <- params$n_trials
   initQF <- params$initQF
   initQU <- params$initQU
-  choice <- matrix(as.numeric(sim_dat$choice == "U") + 1,
+  choice <- matrix(sim_dat$choice,
                    nrow = n_part,
                    ncol = n_trials,
                    byrow = TRUE)
@@ -115,7 +114,7 @@ did_sim_dat_change <- function(data_file, sim_dat) {
   json_data <- rjson::fromJSON(file = data_file)
   json_choice <- unlist(json_data$choice)
   json_R <- unlist(json_data$R)
-  sim_choice <- as.numeric(sim_dat$choice == "U") + 1
+  sim_choice <- sim_dat$choice
   sim_R <- sim_dat$R
   if (identical(json_choice, sim_choice) & 
       identical(json_R, sim_R)) {

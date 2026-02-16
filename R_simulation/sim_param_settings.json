@@ -1,10 +1,10 @@
 {
   "n_part": 20,
-  "n_trials": 200,
-  "LR": 0.5,
+  "n_trials": 30,
+  "LR": 0.3,
   "inv_temp": 1.2,
-  "initQF": 5,
-  "initQU": 5,
-  "mu_R": [8, 2],
-  "sigma_R": 2
+  "initQF": 4,
+  "initQU": 6,
+  "mu_R": [7, 3],
+  "sigma_R": 2.4
 }

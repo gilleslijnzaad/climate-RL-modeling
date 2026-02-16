@@ -31,12 +31,12 @@ source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun(
 
 params <- list(
   n_part = 20,
-  n_trials = 100,
-  LR = 0.5,
+  n_trials = 30,
+  LR = 0.3,
   inv_temp = 1.2,
-  initQF = 5,
-  initQU = 5,
-  mu_R = c(8, 2), # F and U
+  initQF = 4,
+  initQU = 6,
+  mu_R = c(7, 3), # F and U
   sigma_R = 2.4
 )
 
@@ -146,12 +146,13 @@ To save running time, I only refit the model if the simulated data have changed 
 
 ```{r run-model}
 data_file <- paste0(sim_dir, "sim_dat.json")
-refit <- sim$did_sim_dat_change(data_file, sim_dat)
+dat_changed <- sim$did_sim_dat_change(data_file, sim_dat)
 sim$save_sim_dat(params, sim_dat)
+model_changed <- FALSE
 
 library(cmdstanr)
 options(mc.cores = parallel::detectCores())
-if (refit) {
+if (dat_changed | model_changed) {
   m <- cmdstan_model("climate-RL.stan")
   it <- 1000
   fit <- m$sample(
