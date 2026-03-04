@@ -3,8 +3,8 @@
   "n_trials": 30,
   "LR": 0.3,
   "inv_temp": 1.2,
-  "initQF": 4,
-  "initQU": 6,
-  "mu_R": [7, 3],
-  "sigma_R": 2.4
+  "initQF": 3,
+  "initQU": 7,
+  "mu_R": [5, 5],
+  "sigma_R": 4
 }

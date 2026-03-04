@@ -1,9 +1,7 @@
-library(dplyr)
-
-# === run_sim() =============================
+# === run_std() =============================
 # arguments: vector of parameter settings; whether or not to save data to JSON
 # returns: data frame of simulated data
-run_sim <- function(params, save_to_JSON = FALSE) {
+run_std <- function(params, save_to_JSON = FALSE) {
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -78,7 +76,7 @@ run_sim <- function(params, save_to_JSON = FALSE) {
   }
   return(dat)
 }
-# === end of run_sim
+# === end of run_std
 
 # === save_sim_dat() =======================
 # arguments: vector of parameter settings; data frame of simulated data
@@ -124,3 +122,104 @@ did_sim_dat_change <- function(data_file, sim_dat) {
   }
 }
 
+# === run_LRN() =================
+# arguments: vector of parameter settings; which LR function to use
+# returns: data frame of simulated data
+run_LRN <- function(params, LR_function) {
+  library(truncnorm) # for drawing from truncated distribution
+  dat <- data.frame()
+
+  n_part <- params$n_part
+  n_trials <- params$n_trials
+
+  for (j in 1:n_part) {
+    set.seed(j)
+
+    # ------ init data frames & vectors -----
+    Q <- data.frame(
+      F = rep(NA, n_trials),
+      U = rep(NA, n_trials)
+    )
+    P_F <- c()
+    choice <- c()
+    R <- c()
+    pred_err <- c()
+
+    # ----- initialize parameters -----
+    LRs <- params$LRs
+    inv_temp <- params$inv_temp
+    Q$F[1] <- params$initQF
+    Q$U[1] <- params$initQU
+    mu_R <- params$mu_R
+    sigma_R <- params$sigma_R
+    margin <- params$margin
+
+    # --------- run trials ------------
+    for (t in 1:n_trials) {
+
+      # choose
+      P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
+      choice[t] <- sample(c(1, 2), 
+                          size = 1,
+                          prob = c(P_F[t], 1 - P_F[t]))
+
+      # rate
+      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
+                               mean = mu_R[[choice[t]]], 
+                               sd = sigma_R),
+                    0)
+
+      # learn
+      pred_err[t] <- R[t] - Q[t, choice[t]]
+
+      if (t < n_trials) {   # no updating Qs in the very last trial
+        if (choice[t] == 1) {
+          LR <- LRs[[ LR_function(R[t], Q[1, 1], margin) ]]
+          Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
+          Q[t+1, 2] <- Q[t, 2]
+        } else {
+          LR <- LRs[[ LR_function(R[t], Q[1, 2], margin) ]]
+          Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
+          Q[t+1, 1] <- Q[t, 1]
+        }
+      }
+    }
+
+    dat_p <- data.frame(
+      participant = rep(j, n_trials),
+      trial =       1:n_trials,
+      Q_F =         Q$F,
+      Q_U =         Q$U,
+      P_F =         P_F,
+      LR =          LR,
+      choice =      choice,
+      R =           R,
+      pred_err =    pred_err
+    )
+
+    dat <- rbind(dat, dat_p)
+  }
+  return(dat)
+}
+
+# === LRN_approx() =================
+# arguments: the rating of this trial; the belief to compare it to; the margin
+# returns: "conf" or "disconf"
+LR_approx <- function(R, belief, margin) {
+  if (abs(R - belief) <= margin) {
+    return("conf")
+  } else {
+    return("disconf")
+  }
+}
+
+# === LRN_geq() =================
+# arguments: the rating of this trial; the belief to compare it to; the margin
+# returns: "conf" or "disconf"
+LR_geq <- function(R, belief, margin) {
+  if (R + margin >= belief) {
+    return("conf")
+  } else {
+    return("disconf")
+  }
+}

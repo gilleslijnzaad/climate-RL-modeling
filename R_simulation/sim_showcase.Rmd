@@ -7,6 +7,7 @@ output:
     toc: TRUE
     toc_float:
       collapsed: TRUE
+    number_sections: TRUE
     highlight: tango
     code_folding: hide
 ---
@@ -20,19 +21,19 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 In this document, I demonstrate the behavior of the simulation by varying the parameter settings and visualizing the resulting behavior. The full simulation code can be found in [sim.R](sim.R), and all plot-related functions come from [plot_utils.R](../plot_utils.R).
 
-# 0. Simulation code
+# Simulation code {.unnumbered}
 For ease of reference, here is the simulation code.
 ```{r sim-code, comment = NA}
 rm(list = ls())
 sim <- new.env()
 source("sim.R", local = sim)  # access functions using sim$fun()
 temp <- readLines("sim.R")
-start <- grep("# === run_sim", temp)
-end <- grep("# === end of run_sim", temp) - 1
+start <- grep("# === run_std", temp)
+end <- grep("# === end of run_std", temp) - 1
 cat(temp[start:end], sep = "\n")
 ```
 
-# 1. Standard settings
+# Standard settings
 ```{r run-std}
 params_std <- list(
   n_part = 50,
@@ -42,10 +43,10 @@ params_std <- list(
   initQF = 5,
   initQU = 5,
   mu_R = c(8, 2), # F and U
-  sigma_R = 1
+  sigma_R = 2
 )
 
-dat <- sim$run_sim(params_std)
+dat <- sim$run_std(params_std)
 
 plot <- new.env()
 source("../plot_utils.R", local = plot)  # access functions using plot$fun()
@@ -54,57 +55,91 @@ gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params_std)
 ```
 
-## 1a. Varying sigma_R and initQ
+## Varying sigma_R and initQ
 ```{r run-std-sigma-init}
-params <- modifyList(params_std, list(sigma_R = 2))
-dat <- sim$run_sim(params)
+params <- modifyList(params_std, list(sigma_R = 3))
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 
 params <- modifyList(params_std, list(initQF = 2, initQU = 8))
-dat <- sim$run_sim(params)
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 ```
 
-# 2. Varying learning rate
+## Varying learning rate
 ```{r run-std-LR}
 params <- modifyList(params_std, list(LR = 0.2))
-dat <- sim$run_sim(params)
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 
 params <- modifyList(params_std, list(LR = 0.8))
-dat <- sim$run_sim(params)
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 ```
 
-# 3. Varying inverse temperature
+## Varying inverse temperature
 ```{r run-std-inv-temp}
 params <- modifyList(params_std, list(inv_temp = 0))
-dat <- sim$run_sim(params)
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 
 params <- modifyList(params_std, list(inv_temp = 1.5))
-dat <- sim$run_sim(params)
+dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
 plot$param_annotation(params)
 ```
 
-# 4. Confirmation bias
+# Confirmation bias
 
 The [decision tree](../confirmation_bias_overview/confirmation_bias_models_v3.pdf) shows the many options we have for implementing confirmation bias.
 
-The first differentiation is whether bias occurs at the level of learning (LRN) or the level of rating (RTN).
+The first differentiation is whether bias occurs at the level of learning (*LRN*) or the level of rating (*RTN*).
 
-## Learning: LRN
+## Learning: *LRN*
 We assume that the relationship between confirmation and learning rate (LR) is either discrete (discr) or continuous (cont).
 
-### Discrete (discr)
-Confirmatory and disconfirmatory outcomes have separate learning rates, where LR_conf > LR_disconf. As a standard, we say LR_conf = 0.7 and LR_disconf = 0.3.
+### Discrete: *discr*
+Confirmatory and disconfirmatory outcomes have separate learning rates, where LR_conf > LR_disconf. As a standard, we say `LR_conf` is 0.7, `LR_disconf` is 0.3 and `margin` is 2.
 
-### Continuous (cont)
+#### Close to belief: *approx*
+$$LR =
+\begin{cases}
+{LR}_\text{conf}      &\text{if}\ \left| R - \text{belief} \right| \leq \text{margin} \\
+LR_\text{disconf}   &\text{else}
+\end{cases}$$
+If the difference between the rating and belief is lesser than or equal to the defined margin, the outcome is treated as confirmatory. Else disconfirmatory. Name `approx` comes from the LaTeX code for the "approximately equal to" sign: $R \approx \text{belief}$.
+```{r}
+params_LRN_discr <- list(
+  n_part = 50,
+  n_trials = 30,
+  LRs = list(conf = 0.8, disconf = 0.2),
+  inv_temp = 0.5,
+  initQF = 8,
+  initQU = 2,
+  mu_R = c(5, 5), # F and U
+  sigma_R = 2,
+  margin = 2
+)
 
-## Rating: RTN
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx)
+
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation(params_LRN_discr)
+```
+
+#### Greater or equal to belief: *geq*
+$$LR =
+\begin{cases}
+{LR}_\text{conf}      &\text{if}\ R + \text{margin} \geq \text{belief} \\
+LR_\text{disconf}   &\text{else}
+\end{cases}$$
+If the sum of the rating and the defined margin is equal to or larger than the rating, the outcome is treated as confirmatory. Else disconfirmatory. Name `geq` comes from the LaTeX code for the "greater than or equal to" sign: $R \geq \text{belief}$.
+
+### Continuous: *cont*
+
+## Rating: *RTN*
