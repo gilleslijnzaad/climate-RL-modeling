@@ -70,7 +70,7 @@ The data we supply to the model consist of:
 1. the number of participants: `n_part`;
 1. the number of trials per participant: `n_trials`;
 1. an array of choices that a participant made: `choice[n_part, n_trials]`;
-1. an array of ratings that a participant gave: `R[n_part, n_trials]`. These are analogous to the array `outcomes[n_trials]` in the `2arm_bandit_example` (see [Stan code](https://github.com/gilleslijnzaad/climate-RL-modeling/blob/main/stan_models/2arm_bandit_example/2arm_bandit_example.stan) for this example).
+1. an array of ratings that a participant gave: `R[n_part, n_trials]`. These are analogous to the array `outcomes[n_trials]` in the `2arm_bandit_example` (see [Stan code](https://github.com/CCS-Lab/hBayesDM/blob/develop/commons/stan_files/bandit2arm_delta.stan) for this example).
 
 ```{r explmod-data, comment = NA}
 mod_code <- readLines("climate-RL.stan")
