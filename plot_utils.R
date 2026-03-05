@@ -71,41 +71,36 @@ choice <- function(sim_dat) {
   return(p)
 }
 
-# === param_annotation_std() ======================
-# arguments: vector of parameter settings; whether to include extra vertical spacing
-# returns: nothing
-param_annotation_std <- function(params, extra_vertical_spacing = FALSE) {
+# === param_annotation() ======================
+# arguments: vector of parameter settings
+# returns: textGrob
+param_annotation <- function(params) {
   library(grid)
-  text <- paste0("LR = ", params$LR,
-                 "\ninv_temp = ", params$inv_temp,
-                 "\ninitQF = ", params$initQF,
-                 "\ninitQU = ", params$initQU,
-                 "\nmu_R_F = ", params$mu_R[1],
-                 "\nmu_R_U = ", params$mu_R[2],
-                 "\nsigma_R = ", params$sigma_R
-                 )
-  y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
-  grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)
+  text <- c()
+  for (p in names(params)) {
+    for (val in params[[p]]) {
+      text <- paste0(text, p, " = ", val, "\n")
+    }
+  }
+  g <- textGrob(label = text, x = unit(1, "npc"), y = unit(0.98, "npc"), just = c("right", "top"))
+  return(g)
 }
 
-# === param_annotation_LRN() ======================
-# arguments: vector of parameter settings; whether to include extra vertical spacing
+# === sim_plots() ======================
+# arguments: simulated data; vector of parameter settings
 # returns: nothing
-param_annotation_LRN <- function(params, extra_vertical_spacing = FALSE) {
-  library(grid)
-  text <- paste0("LR_conf = ", params$LRs[["conf"]],
-                 "\nLR_disconf = ", params$LRs[["disconf"]],
-                 "\ninv_temp = ", params$inv_temp,
-                 "\ninitQF = ", params$initQF,
-                 "\ninitQU = ", params$initQU,
-                 "\nmu_R_F = ", params$mu_R[1],
-                 "\nmu_R_U = ", params$mu_R[2],
-                 "\nsigma_R = ", params$sigma_R
-                 )
-  y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
-  grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)
+sim_plots <- function(sim_dat, params) {
+  annotation <- param_annotation(params)
+  
+  gridExtra::grid.arrange(Q(sim_dat), 
+                          choice(sim_dat), 
+                          annotation,
+                          ncol = 3,
+                          widths = unit.c(unit(1, "null"),
+                                          unit(1, "null"),
+                                          grobWidth(annotation) + unit(2, "mm"))
+                         )
 }
-
 
 # --------------------------------
 #        PLOTS FOR MODELING

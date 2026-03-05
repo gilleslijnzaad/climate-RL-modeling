@@ -47,7 +47,7 @@ cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\
 ```
 
 ## Inspecting the data
-Just so I know what to expect of our model, I include plots of the Q values and choices over time.
+Just so I know what to expect of our model, I include plots of the simulated data: Q values and choices over time.
 
 ```{r inspecting-data, warning = FALSE}
 library(grid)
@@ -56,9 +56,7 @@ library(gridExtra)
 plot <- new.env()
 source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using plot$fun()
 
-grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
-             top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
-plot$param_annotation_std(params, extra_vertical_spacing = TRUE) 
+plot$sim_plots(sim_dat, params)
 ```
 
 # Explaining the model

@@ -34,9 +34,7 @@ library(gridExtra)
 plot <- new.env()
 source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using plot$fun()
 
-grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
-             top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
-plot$param_annotation_std(params, extra_vertical_spacing = TRUE) 
+plot$sim_plots(sim_dat, params)
 
 ## ----explmod-data, comment = NA-----------------------------------------------
 mod_code <- readLines("climate-RL.stan")
