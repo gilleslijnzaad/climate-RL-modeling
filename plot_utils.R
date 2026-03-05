@@ -71,12 +71,30 @@ choice <- function(sim_dat) {
   return(p)
 }
 
-# === param_annotation() ======================
+# === param_annotation_std() ======================
 # arguments: vector of parameter settings; whether to include extra vertical spacing
 # returns: nothing
-param_annotation <- function(params, extra_vertical_spacing = FALSE) {
+param_annotation_std <- function(params, extra_vertical_spacing = FALSE) {
   library(grid)
   text <- paste0("LR = ", params$LR,
+                 "\ninv_temp = ", params$inv_temp,
+                 "\ninitQF = ", params$initQF,
+                 "\ninitQU = ", params$initQU,
+                 "\nmu_R_F = ", params$mu_R[1],
+                 "\nmu_R_U = ", params$mu_R[2],
+                 "\nsigma_R = ", params$sigma_R
+                 )
+  y_offset <- if_else(extra_vertical_spacing, 0.87, 0.95)
+  grid.text(text, x = unit(0.98, "npc"), y = unit(y_offset, "npc"), hjust = 1, vjust = 1)
+}
+
+# === param_annotation_LRN() ======================
+# arguments: vector of parameter settings; whether to include extra vertical spacing
+# returns: nothing
+param_annotation_LRN <- function(params, extra_vertical_spacing = FALSE) {
+  library(grid)
+  text <- paste0("LR_conf = ", params$LRs[["conf"]],
+                 "\nLR_disconf = ", params$LRs[["disconf"]],
                  "\ninv_temp = ", params$inv_temp,
                  "\ninitQF = ", params$initQF,
                  "\ninitQU = ", params$initQU,

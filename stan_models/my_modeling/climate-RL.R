@@ -6,7 +6,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----create-data--------------------------------------------------------------
 rm(list = ls())
-main_dir <- "~/research/climate-RL/"
+main_dir <- "~/research/climate-RL-mod/"
 sim_dir <- paste0(main_dir, "R_simulation/")
 sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
@@ -22,7 +22,7 @@ params <- list(
   sigma_R = 3
 )
 
-sim_dat <- sim$run_sim(params, save_to_JSON = FALSE)
+sim_dat <- sim$run_std(params, save_to_JSON = FALSE)
 
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
@@ -36,7 +36,7 @@ source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using
 
 grid.arrange(plot$Q(sim_dat), plot$choice(sim_dat), nrow = 1,
              top = textGrob("Simulated data", gp = gpar(fontsize = 20, font = 2)))
-plot$param_annotation(params, extra_vertical_spacing = TRUE) 
+plot$param_annotation_std(params, extra_vertical_spacing = TRUE) 
 
 ## ----explmod-data, comment = NA-----------------------------------------------
 mod_code <- readLines("climate-RL.stan")
