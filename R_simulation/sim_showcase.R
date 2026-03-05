@@ -31,46 +31,46 @@ plot <- new.env()
 source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_std)
+plot$param_annotation_std(params_std)
 
 ## ----run-std-sigma-init-------------------------------------------------------
 params <- modifyList(params_std, list(sigma_R = 3))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 params <- modifyList(params_std, list(initQF = 2, initQU = 8))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 ## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR = 0.2))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 params <- modifyList(params_std, list(LR = 0.8))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 ## ----run-std-inv-temp---------------------------------------------------------
 params <- modifyList(params_std, list(inv_temp = 0))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 params <- modifyList(params_std, list(inv_temp = 1.5))
 dat <- sim$run_std(params)
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params)
+plot$param_annotation_std(params)
 
 ## -----------------------------------------------------------------------------
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
-  LRs = list(conf = 0.5, disconf = 0.2),
+  LRs = list(conf = 0.8, disconf = 0.2),
   inv_temp = 0.5,
   initQF = 8,
   initQU = 2,
@@ -82,5 +82,11 @@ params_LRN_discr <- list(
 dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx)
 
 gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
-plot$param_annotation(params_LRN_discr)
+plot$param_annotation_LRN(params_LRN_discr)
+
+## -----------------------------------------------------------------------------
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq)
+
+gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+plot$param_annotation_LRN(params_LRN_discr)
 
