@@ -22,9 +22,9 @@ params_std <- list(
   n_trials = 30,
   LR = 0.4,
   inv_temp = 0.5,
-  initQF = 5,
-  initQU = 5,
-  mu_R = c(8, 2), # F and U
+  initQF = 8,
+  initQU = 2,
+  mu_R = c(5, 5), # F and U
   sigma_R = 2
 )
 
@@ -71,12 +71,19 @@ params_LRN_discr <- list(
   margin = 2
 )
 
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx)
+## ----run-LRN-discr-approx-stat------------------------------------------------
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "stat")
 plot$sim_plots(dat, params_LRN_discr)
 
-## ----run-LRN-discr-geq--------------------------------------------------------
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq)
+## ----run-LRN-discr-approx-dyn-------------------------------------------------
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "dyn")
+plot$sim_plots(dat, params_LRN_discr)
 
-gridExtra::grid.arrange(plot$Q(dat), plot$choice(dat), nrow = 1)
+## ----run-LRN-discr-geq-stat---------------------------------------------------
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "stat")
+plot$sim_plots(dat, params_LRN_discr)
+
+## ----run-LRN-discr-geq-dyn----------------------------------------------------
+dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
 

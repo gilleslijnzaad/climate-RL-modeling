@@ -125,7 +125,7 @@ did_sim_dat_change <- function(data_file, sim_dat) {
 # === run_LRN() =================
 # arguments: vector of parameter settings; which LR function to use
 # returns: data frame of simulated data
-run_LRN <- function(params, LR_function) {
+run_LRN <- function(params, LR_function, belief_type) {
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -174,11 +174,13 @@ run_LRN <- function(params, LR_function) {
 
       if (t < n_trials) {   # no updating Qs in the very last trial
         if (choice[t] == 1) {
-          LR <- LRs[[ LR_function(R[t], Q[1, 1], margin) ]]
+          belief <- if (belief_type == "stat") Q[1, 1] else  Q[max(t-1, 1), 1]
+          LR <- LRs[[ LR_function(R[t], belief, margin) ]]
           Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
           Q[t+1, 2] <- Q[t, 2]
         } else {
-          LR <- LRs[[ LR_function(R[t], Q[1, 2], margin) ]]
+          belief <- if (belief_type == "stat") Q[1, 2] else Q[max(t-1, 1), 2]
+          LR <- LRs[[ LR_function(R[t], belief, margin) ]]
           Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
           Q[t+1, 1] <- Q[t, 1]
         }
