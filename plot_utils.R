@@ -17,6 +17,13 @@ my_theme <- theme_bw() +
         legend.text = element_text(size = 16)) +
   theme(strip.text = element_text(size = 18, face = "bold"))
 
+my_theme_classic <- theme_classic() +
+  theme(plot.title = element_text(size = 22, face = "bold")) +
+  theme(axis.text = element_text(size = 16),
+        axis.title = element_text(size = 18)) +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(size = 16)) +
+  theme(strip.text = element_text(size = 18, face = "bold"))
 
 # --------------------------------------
 #        PLOTS FOR SIMULATED DATA
