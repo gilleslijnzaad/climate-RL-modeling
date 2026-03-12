@@ -55,11 +55,11 @@ plot$sim_plots(dat, params_std)
 
 ## Varying sigma_R and initQ
 ```{r run-std-sigma-init}
-params <- modifyList(params_std, list(sigma_R = 3))
+params <- modifyList(params_std, list(sigma_R = 4))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
-params <- modifyList(params_std, list(initQF = 2, initQU = 8))
+params <- modifyList(params_std, list(initQF = 4, initQU = 8))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 ```
@@ -106,7 +106,7 @@ LR_\text{disconf}   &\text{else}
 \end{cases}$$
 If the difference between the rating and belief is lesser than or equal to the defined margin, the outcome is treated as confirmatory. Else disconfirmatory. Name `approx` comes from the LaTeX code for the "approximately equal to" sign: $R \approx \text{belief}$.
 
-```{r run-LRN-discr-approx}
+```{r params-discr-approx}
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
@@ -123,7 +123,7 @@ params_LRN_discr <- list(
 ##### *stat* {.unnumbered}
 Beliefs are the static "outside-world values" that one has before starting the experiment.
 ```{r run-LRN-discr-approx-stat}
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "stat")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "stat")
 plot$sim_plots(dat, params_LRN_discr)
 ```
 
@@ -131,7 +131,7 @@ plot$sim_plots(dat, params_LRN_discr)
 Beliefs are the dynamic "within-experiment values".
 
 ```{r run-LRN-discr-approx-dyn}
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "dyn")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
 ```
 
@@ -147,7 +147,7 @@ If the sum of the rating and the defined margin is equal to or larger than the r
 ##### *stat* {.unnumbered}
 Beliefs are the static "outside-world values" that one has before starting the experiment.
 ```{r run-LRN-discr-geq-stat}
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "stat")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "stat")
 plot$sim_plots(dat, params_LRN_discr)
 ```
 
@@ -155,10 +155,49 @@ plot$sim_plots(dat, params_LRN_discr)
 Beliefs are the dynamic "within-experiment values".
 
 ```{r run-LRN-discr-geq-dyn}
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "dyn")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
 ```
 
 ### Continuous: *cont*
+The learning rate is determined by the difference between rating and belief, multiplied by some weight. We define:
+\begin{alignat*}{2}
+{LR} &= w_{LR} \cdot {LR}'                   &\quad &\text{with } {LR}  \in [0, w_{LR}] \\
+{LR}' &= \min(\frac{1}{9} \cdot \text{diff} + 1, 1) &\quad &\text{with } {LR}' \in [0, 1] \\
+\text{diff} &= R - \text{belief}             &\quad &\text{with diff} \in [-9, 9]
+\end{alignat*}
+
+The relationship between LR' and the deviation from belief is also illustrated in the figure below.
+```{r illustrate-rel-LR, fig.width = 5}
+dummy <- data.frame(
+  diff = c(-9, 0, 9),
+  LR_prime = c(0, 1, 1)
+)
+ggplot(dummy) + 
+  geom_line(aes(x = diff, y = LR_prime)) +
+  xlim(-9, 9) +
+  labs(x = "R - Qi", y = "LR\'") +
+  plot$my_theme_classic
+```
+
+```{r run-LRN-cont}
+params_LRN_cont <- list(
+  n_part = 50,
+  n_trials = 30,
+  w_LR = 0.8,
+  inv_temp = 0.5,
+  initQF = 8,
+  initQU = 2,
+  mu_R = c(5, 5), # F and U
+  sigma_R = 2
+)
+
+dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
+plot$sim_plots(dat, params_LRN_cont)
+
+glimpse(dat)
+```
+
+TODO: illustrate how LR changes over trials based on ..., to verify if it works as intended
 
 ## Rating: *RTN*

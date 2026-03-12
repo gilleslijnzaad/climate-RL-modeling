@@ -32,11 +32,11 @@ dat <- sim$run_std(params_std)
 plot$sim_plots(dat, params_std)
 
 ## ----run-std-sigma-init-------------------------------------------------------
-params <- modifyList(params_std, list(sigma_R = 3))
+params <- modifyList(params_std, list(sigma_R = 4))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
-params <- modifyList(params_std, list(initQF = 2, initQU = 8))
+params <- modifyList(params_std, list(initQF = 4, initQU = 8))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
@@ -58,7 +58,7 @@ params <- modifyList(params_std, list(inv_temp = 1.5))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
-## ----run-LRN-discr-approx-----------------------------------------------------
+## ----params-discr-approx------------------------------------------------------
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
@@ -72,18 +72,46 @@ params_LRN_discr <- list(
 )
 
 ## ----run-LRN-discr-approx-stat------------------------------------------------
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "stat")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "stat")
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-approx-dyn-------------------------------------------------
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_approx, "dyn")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-geq-stat---------------------------------------------------
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "stat")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "stat")
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-geq-dyn----------------------------------------------------
-dat <- sim$run_LRN(params_LRN_discr, sim$LR_geq, "dyn")
+dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
+
+## ----illustrate-rel-LR, fig.width = 5-----------------------------------------
+dummy <- data.frame(
+  diff = c(-9, 0, 9),
+  LR_prime = c(0, 1, 1)
+)
+ggplot(dummy) + 
+  geom_line(aes(x = diff, y = LR_prime)) +
+  xlim(-9, 9) +
+  labs(x = "R - Qi", y = "LR\'") +
+  plot$my_theme_classic
+
+## ----run-LRN-cont-------------------------------------------------------------
+params_LRN_cont <- list(
+  n_part = 50,
+  n_trials = 30,
+  w_LR = 0.8,
+  inv_temp = 0.5,
+  initQF = 8,
+  initQU = 2,
+  mu_R = c(5, 5), # F and U
+  sigma_R = 2
+)
+
+dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
+plot$sim_plots(dat, params_LRN_cont)
+
+glimpse(dat)
 
