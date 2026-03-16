@@ -96,16 +96,22 @@ param_annotation <- function(params) {
 # === sim_plots() ======================
 # arguments: simulated data; vector of parameter settings
 # returns: nothing
-sim_plots <- function(sim_dat, params) {
+sim_plots <- function(sim_dat, params, plot_title = NA) {
   annotation <- param_annotation(params)
+  if (is.na(plot_title)) {
+    title <- NA
+  } else {
+    title <- textGrob(plot_title, gp = gpar(fontsize = 20, font = 2))
+  }
   
   gridExtra::grid.arrange(Q(sim_dat), 
                           choice(sim_dat), 
                           annotation,
                           ncol = 3,
-                          widths = unit.c(unit(1, "null"),
+                          widths = unit.c(unit(1, "null"), # fill space evenly
                                           unit(1, "null"),
-                                          grobWidth(annotation) + unit(2, "mm"))
+                                          grobWidth(annotation) + unit(2, "mm")),
+                          top = title
                          )
 }
 
