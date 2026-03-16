@@ -94,11 +94,13 @@ dummy <- data.frame(
 )
 ggplot(dummy) + 
   geom_line(aes(x = diff, y = LR_prime)) +
-  xlim(-9, 9) +
-  labs(x = "R - Qi", y = "LR\'") +
+  geom_vline(aes(xintercept = 0), lty = 2) +
+  scale_x_continuous(breaks = seq(-9, 9, 3)) +
+  scale_y_continuous(breaks = c(0, 1), labels = c("0", expression(w[LR]))) +
+  labs(x = "R - belief", y = "LR") +
   plot$my_theme_classic
 
-## ----run-LRN-cont-------------------------------------------------------------
+## ----run-LRN-cont-stat--------------------------------------------------------
 params_LRN_cont <- list(
   n_part = 50,
   n_trials = 30,
@@ -113,5 +115,7 @@ params_LRN_cont <- list(
 dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
 plot$sim_plots(dat, params_LRN_cont)
 
-glimpse(dat)
+## ----run-LRN-cont-dyn---------------------------------------------------------
+dat <- sim$run_LRN_cont(params_LRN_cont, "dyn")
+plot$sim_plots(dat, params_LRN_cont)
 
