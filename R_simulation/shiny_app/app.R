@@ -32,7 +32,7 @@ ui <- fluidPage(
           radioButtons("confirmatory", "An outcome is confirmatory when:",
                        c("R ≈ belief" = "approx", "R ≥ belief" = "geq"))
         ),
-        radioButtons("beliefs", "Beliefs are:",
+        radioButtons("belief_type", "Beliefs are:",
                      c("Static" = "stat", "Dynamic" = "dyn"))
       ),
       hr(),
@@ -41,71 +41,37 @@ ui <- fluidPage(
       tags$h3("Parameter settings"),
       # learning rate
       conditionalPanel(condition = "input.conf_bias == 'none'",
-        sliderInput("LR", "Learning rate:",
-                    min = 0, max = 1,
-                    value = 0.4, step = 0.1,
-                    ticks = FALSE)
+        sliderInput("LR", "Learning rate:", min = 0, max = 1,
+                    value = 0.4, step = 0.1, ticks = FALSE)
       ),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'discr'",
-        sliderInput("LR_conf", "Confirmatory learning rate:",
-                    min = 0, max = 1,
-                    value = 0.8, step = 0.1,
-                    ticks = FALSE),
-        sliderInput("LR_disconf", "Disconfirmatory learning rate:",
-                    min = 0, max = 1,
-                    value = 0.2, step = 0.1,
-                    ticks = FALSE)
+        sliderInput("LR_conf", "Confirmatory learning rate:", min = 0, max = 1,
+                    value = 0.8, step = 0.1, ticks = FALSE),
+        sliderInput("LR_disconf", "Disconfirmatory learning rate:", min = 0, max = 1,
+                    value = 0.2, step = 0.1, ticks = FALSE)
       ),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'cont'",
-        sliderInput("w_LR", "Weight for learning rate",
-                    min = 0, max = 1,
-                    value = 0.4, step = 0.1,
-                    ticks = FALSE)
+        sliderInput("w_LR", "Weight for learning rate", min = 0, max = 1,
+                    value = 0.4, step = 0.1, ticks = FALSE)
       ),
       
-      sliderInput(inputId = "inv_temp",
-                  label = "Inverse temperature:",
-                  min = 0,
-                  max = 2,
-                  value = 0.5,
-                  step = 0.1,
-                  ticks = FALSE),
-      sliderInput(inputId = "initQF",
-                  label = "Initial Q friendly:",
-                  min = 1,
-                  max = 10,
-                  value = 8,
-                  ticks = FALSE),
-      sliderInput(inputId = "initQU",
-                  label = "Initial Q unfriendly:",
-                  min = 1,
-                  max = 10,
-                  value = 2,
-                  ticks = FALSE),
-      sliderInput(inputId = "mu_R_F",
-                  label = "Mean R friendly:",
-                  min = 1,
-                  max = 10,
-                  value = 5,
-                  ticks = FALSE),
-      sliderInput(inputId = "mu_R_U",
-                  label = "Mean R unfriendly:",
-                  min = 1,
-                  max = 10,
-                  value = 5,
-                  ticks = FALSE),
-      sliderInput(inputId = "sigma_R",
-                  label = "Std dev R:",
-                  min = 0,
-                  max = 5,
-                  value = 2,
-                  ticks = FALSE),
+      sliderInput("inv_temp", "Inverse temperature:", min = 0, max = 2,
+                  value = 0.5, step = 0.1, ticks = FALSE),
+      sliderInput("initQF", "Initial Q friendly:", min = 1, max = 10, 
+                  value = 8, ticks = FALSE),
+      sliderInput("initQU", "Initial Q unfriendly:", min = 1, max = 10,
+                  value = 2, ticks = FALSE),
+      sliderInput("mu_R_F", "Mean R friendly:", min = 1, max = 10,
+                  value = 5, ticks = FALSE),
+      sliderInput("mu_R_U", "Mean R unfriendly:", min = 1, max = 10,
+                  value = 5, ticks = FALSE),
+      sliderInput("sigma_R", "Std dev R:", min = 0, max = 5,
+                  value = 2, ticks = FALSE),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'discr'",
-        sliderInput("margin", "Margin:",
-                    min = 0, max = 5,
+        sliderInput("margin", "Margin:", min = 0, max = 5,
                     value = 2, ticks = FALSE)
       ),
     ),
@@ -140,56 +106,62 @@ server <- function(input, output) {
         p$w_LR = input$w_LR
       }
     }
-    p
+    return(p)
   })
 
   sim <- new.env()
   source("../sim.R", local = sim)
 
+  # helper function
+  run_discr <- function(p, confirmatory, belief_type) {
+    LR_fun <- switch(confirmatory,
+                     approx = sim$LR_approx,
+                     geq    = sim$LR_geq,
+                     stop("error: not 'approx' or 'geq'!"))
+    return(sim$run_LRN_discr(p, LR_fun, belief_type))
+  }
+
   dat <- reactive({
-    if (input$conf_bias == 'none') {
-      d <- sim$run_std(params())
-    }
-    if (input$conf_bias == 'LRN') {
-      if (input$d_or_c == 'discr') {
-        if (input$confirmatory == 'approx') {
-          LR_fun <- sim$LR_approx
+    d <- switch(input$conf_bias,
+      none = sim$run_std(params()),
+
+      LRN = {
+        if (input$d_or_c == "discr") {
+          run_discr(params(), input$confirmatory, input$belief_type)
+        } else if (input$d_or_c == "cont") {
+          sim$run_LRN_cont(params(), input$belief_type)
+        } else {
+          stop("error: not 'discr' or 'cont'!")
         }
-        if (input$confirmatory == 'geq') {
-          LR_fun <- sim$LR_geq
-        }
-        d <- sim$run_LRN_discr(params(), LR_fun, input$beliefs)
-      }
-      if (input$d_or_c == 'cont') {
-        d <- sim$run_LRN_cont(params(), input$beliefs)
-      }
-    }
-    d
+      },
+
+      # RTN = ...
+
+      stop("error: not 'none' or 'LRN'!")
+    )
+    return(d)
   })
 
   plot <- new.env()
   source("../../plot_utils.R", local = plot)
 
   plot_title <- reactive({
-    t <- "Simulation type: "
-    if (input$conf_bias == 'none') {
-      t <- paste0(t, "std")
-    } 
-    if (input$conf_bias == 'LRN') {
-      t <- paste0(t, "LRN")
-      if (input$d_or_c == "discr") {
-        t <- paste(t, input$d_or_c, input$confirmatory, input$beliefs, sep = "_")
+    t <- switch(input$conf_bias,
+      none = {"std"},
 
-      }
-      if (input$d_or_c == "cont") {
-        t <- paste(t, input$d_or_c, input$beliefs, sep = "_")
-      }
-    }
-    t
+      LRN = {paste("LRN", switch(input$d_or_c,
+        discr = {paste("discr", input$confirmatory, input$belief_type, sep = "_")},
+        cont = {"cont"}
+        ), 
+        sep = "_")}
+      
+      # RTN = ...
+    )
+    return(paste0("Simulation type: ", t))
   })
   
   output$plot <- renderPlot({
-    plot$sim_plots(dat(), params(), plot_title())
+    plot$sim_plots(dat(), NA, plot_title())
  })
 }
 
