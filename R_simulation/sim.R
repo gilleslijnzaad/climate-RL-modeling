@@ -297,7 +297,7 @@ run_LRN_cont <- function(params, belief_type) {
       Q_F =         Q$F,
       Q_U =         Q$U,
       P_F =         P_F,
-      LR =          c(LR, 0),
+      LR =          c(LR, NA),
       choice =      choice,
       R =           R,
       pred_err =    pred_err
