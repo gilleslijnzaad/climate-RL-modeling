@@ -1,7 +1,7 @@
 # === run_std() =============================
-# arguments: vector of parameter settings; whether or not to save data to JSON
+# arguments: vector of parameter settings
 # returns: data frame of simulated data
-run_std <- function(params, save_to_JSON = FALSE) {
+run_std <- function(params) {
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -70,9 +70,6 @@ run_std <- function(params, save_to_JSON = FALSE) {
     )
 
     dat <- rbind(dat, dat_p)
-  }
-  if (save_to_JSON) {
-    save_sim_dat(params, dat)
   }
   return(dat)
 }
@@ -204,7 +201,7 @@ run_LRN_discr <- function(params, LR_function, belief_type) {
   return(dat)
 }
 
-# === LRN_approx() =================
+# === LR_approx() =================
 # arguments: the rating of this trial; the belief to compare it to; the margin
 # returns: "conf" or "disconf"
 LR_approx <- function(R, belief, margin) {
@@ -215,7 +212,7 @@ LR_approx <- function(R, belief, margin) {
   }
 }
 
-# === LRN_geq() =================
+# === LR_geq() =================
 # arguments: the rating of this trial; the belief to compare it to; the margin
 # returns: "conf" or "disconf"
 LR_geq <- function(R, belief, margin) {
@@ -308,6 +305,9 @@ run_LRN_cont <- function(params, belief_type) {
   return(dat)
 }
 
+# === LR_cont() =================
+# arguments: the rating of this trial; the belief to compare it to; the learning rate weight
+# returns: learning rate for this trial
 LR_cont <- function(R, belief, w_LR) {
   diff <- R - belief
   LR_prime <- min(1, 

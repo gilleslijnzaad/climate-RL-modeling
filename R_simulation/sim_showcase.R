@@ -87,7 +87,7 @@ plot$sim_plots(dat, params_LRN_discr)
 dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "dyn")
 plot$sim_plots(dat, params_LRN_discr)
 
-## ----illustrate-rel-LR, fig.width = 5-----------------------------------------
+## ----illustrate-rel-LR, fig.width = 5, fig.height = 3-------------------------
 dummy <- data.frame(
   diff = c(-9, 0, 9),
   LR_prime = c(0, 1, 1)

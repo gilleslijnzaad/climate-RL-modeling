@@ -170,7 +170,7 @@ The learning rate is determined by the difference between rating and belief, mul
 See figure below. In words: the learning rate is zero when the rating is maximally worse than the belief ($1 - 10 = -9$), and one when the rating is greater than or equal to the belief. In between, the deviation from belief is positively correlated to the learning rate.
 
 Outstanding question: should the *theoretical* "worst case scenario" be used here? A rating of 1 and a belief of 10 is an unlikely scenario. 
-```{r illustrate-rel-LR, fig.width = 5}
+```{r illustrate-rel-LR, fig.width = 5, fig.height = 3}
 dummy <- data.frame(
   diff = c(-9, 0, 9),
   LR_prime = c(0, 1, 1)
