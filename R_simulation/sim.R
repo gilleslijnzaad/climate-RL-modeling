@@ -73,7 +73,83 @@ run_std <- function(params) {
   }
   return(dat)
 }
-# === end of run_std
+# === end of run_std()
+
+run_std_hrch <- function(params) {
+  library(truncnorm) # for drawing from truncated distribution
+  dat <- data.frame()
+
+  n_part <- params$n_part
+  n_trials <- params$n_trials
+
+  for (j in 1:n_part) {
+    set.seed(j)
+
+    # ------ init data frames & vectors -----
+    Q <- data.frame(
+      F = rep(NA, n_trials),
+      U = rep(NA, n_trials)
+    )
+    P_F <- c()
+    choice <- c()
+    R <- c()
+    pred_err <- c()
+
+    # ----- initialize parameters -----
+    attach(params, warn.conflicts = FALSE)
+    LR <-       rtruncnorm(n = 1, a = 0, b = 1, mean = LR_group, sd = 0.2)
+    inv_temp <- rtruncnorm(n = 1, a = 0, b = Inf, mean = inv_temp_group, sd = 0.3)
+    Q$F[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQF_group, sd = 2)
+    Q$U[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQU_group, sd = 2)
+    mu_R <-   c(rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[1], sd = 2),
+                rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[2], sd = 2))
+    sigma_R <-  rtruncnorm(n = 1, a = 0, b = 10, mean = sigma_R_group, sd = 2)
+    detach(params)
+    # --------- run trials ------------
+    for (t in 1:n_trials) {
+
+      # choose
+      P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
+      choice[t] <- sample(c(1, 2), 
+                          size = 1,
+                          prob = c(P_F[t], 1 - P_F[t]))
+
+      # rate
+      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
+                               mean = mu_R[[choice[t]]], 
+                               sd = sigma_R),
+                    0)
+
+      # learn
+      pred_err[t] <- R[t] - Q[t, choice[t]]
+
+      if (t < n_trials) {   # no updating Qs in the very last trial
+        if (choice[t] == 1) {
+          Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
+          Q[t+1, 2] <- Q[t, 2]
+        } else {
+          Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
+          Q[t+1, 1] <- Q[t, 1]
+        }
+      }
+    }
+
+    dat_p <- data.frame(
+      participant = rep(j, n_trials),
+      trial =       1:n_trials,
+      Q_F =         Q$F,
+      Q_U =         Q$U,
+      P_F =         P_F,
+      choice =      choice,
+      R =           R,
+      pred_err =    pred_err
+    )
+
+    dat <- rbind(dat, dat_p)
+  }
+  return(dat)
+}
+
 
 # === save_sim_dat() =======================
 # arguments: vector of parameter settings; data frame of simulated data

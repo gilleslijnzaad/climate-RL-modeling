@@ -6,12 +6,33 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----sim-code, comment = NA---------------------------------------------------
 rm(list = ls())
+# setwd("R_simulation/")
+
 sim <- new.env()
 source("sim.R", local = sim)  # access functions using sim$fun()
+
 temp <- readLines("sim.R")
 start <- grep("# === run_std", temp)
-end <- grep("# === end of run_std", temp) - 1
+end <- grep("# === end of run_std()", temp) - 1
 cat(temp[start:end], sep = "\n")
+
+## ----run-std-hrch-------------------------------------------------------------
+params_std_hrch <- list(
+  n_part = 50,
+  n_trials = 30,
+  LR_group = 0.4,
+  inv_temp_group = 0.5,
+  initQF_group = 8,
+  initQU_group = 2,
+  mu_R_group = c(5, 5), # F and U
+  sigma_R_group = 2
+)
+plot <- new.env()
+source("../plot_utils.R", local = plot)  # access functions using plot$fun()
+
+dat <- sim$run_std_hrch(params_std_hrch)
+glimpse(dat)
+plot$sim_plots(dat, params_std_hrch)
 
 ## ----run-std------------------------------------------------------------------
 plot <- new.env()
