@@ -28,9 +28,13 @@ my_theme_classic <- theme_classic() +
 # --------------------------------------
 #        PLOTS FOR SIMULATED DATA
 # --------------------------------------
+
 # === Q() ========================
-# arguments: data frame of simulated data
-# returns: ggplot object: smooth plot of Q values over time
+# arguments: 
+# - sim_dat: data frame of simulated data
+# 
+# returns: 
+# - smooth plot of Q values over time (ggplot)
 Q <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
@@ -56,8 +60,11 @@ Q <- function(sim_dat) {
 }
 
 # === choice() ========================
-# arguments: data frame of simulated data
-# returns: ggplot object: smooth plot of choices over time
+# arguments: 
+# - sim_dat: data frame of simulated data
+# 
+# returns: 
+# - smooth plot of choices over time (ggplot)
 choice <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
@@ -79,8 +86,11 @@ choice <- function(sim_dat) {
 }
 
 # === param_annotation() ======================
-# arguments: vector of parameter settings
-# returns: textGrob
+# arguments: 
+# - named list of parameter settings
+# 
+# returns: 
+# - textGrob of parameter settings list
 param_annotation <- function(params) {
   library(grid)
   text <- c()
@@ -94,7 +104,11 @@ param_annotation <- function(params) {
 }
 
 # === sim_plots() ======================
-# arguments: simulated data; vector of parameter settings
+# arguments: 
+# - sim_dat: simulated data; 
+# - params: list of parameter settings;
+# - plot_title: string providing the title of the plot, or NA for no title
+# 
 # returns: nothing
 sim_plots <- function(sim_dat, params, plot_title = NA) {
   annotation <- param_annotation(params)
@@ -120,10 +134,12 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 # --------------------------------
 # === posterior_density() =============================
 # arguments:
-#   - fit: model fit obtained by cmdstanr::model$sample()
-#   - to_plot: character array of parameters to plot
-#   - param_settings: named list of parameter settings (e.g., list(LR = 0.5, inv_temp = 0.5))
-# returns: density plot of posterior distribution(s) with simulated value as dashed line
+# - fit: model fit obtained by cmdstanr::model$sample()
+# - to_plot: string array of parameters to plot
+# - param_settings: named list of parameter settings
+# 
+# returns: 
+# - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
 posterior_density <- function(fit, to_plot, param_settings) {
   plot_data <- data.frame()
 
