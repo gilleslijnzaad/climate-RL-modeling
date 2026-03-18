@@ -24,8 +24,8 @@ run_std <- function(params) {
     # ----- initialize parameters -----
     LR <- params$LR
     inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQF
-    Q$U[1] <- params$initQU
+    Q$F[1] <- params$initQ$F
+    Q$U[1] <- params$initQ$U
     mu_R <- params$mu_R
     sigma_R <- params$sigma_R
 
@@ -99,8 +99,8 @@ run_std_hrch <- function(params) {
     attach(params, warn.conflicts = FALSE)
     LR <-       rtruncnorm(n = 1, a = 0, b = 1, mean = LR_group, sd = 0.2)
     inv_temp <- rtruncnorm(n = 1, a = 0, b = Inf, mean = inv_temp_group, sd = 0.3)
-    Q$F[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQF_group, sd = 2)
-    Q$U[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQU_group, sd = 2)
+    Q$F[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQ_group$F, sd = 2)
+    Q$U[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQ_group$U, sd = 2)
     mu_R <-   c(rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[1], sd = 2),
                 rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[2], sd = 2))
     sigma_R <-  rtruncnorm(n = 1, a = 0, b = 10, mean = sigma_R_group, sd = 2)
@@ -221,8 +221,8 @@ run_LRN_discr <- function(params, LR_function, belief_type) {
     # ----- initialize parameters -----
     LRs <- params$LRs
     inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQF
-    Q$U[1] <- params$initQU
+    Q$F[1] <- params$initQ$F
+    Q$U[1] <- params$initQ$U
     mu_R <- params$mu_R
     sigma_R <- params$sigma_R
     margin <- params$margin
@@ -326,8 +326,8 @@ run_LRN_cont <- function(params, belief_type) {
     # ----- initialize parameters -----
     w_LR <- params$w_LR
     inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQF
-    Q$U[1] <- params$initQU
+    Q$F[1] <- params$initQ$F
+    Q$U[1] <- params$initQ$U
     mu_R <- params$mu_R
     sigma_R <- params$sigma_R
 

@@ -93,13 +93,20 @@ choice <- function(sim_dat) {
 # - textGrob of parameter settings list
 param_annotation <- function(params) {
   library(grid)
-  text <- c()
+  full_text <- c()
   for (p in names(params)) {
-    for (val in params[[p]]) {
-      text <- paste0(text, p, " = ", val, "\n")
+    if (length(params[[p]]) == 1) {
+      add_text <- paste0(p, " = ", params[[p]])
+      full_text <- paste(full_text, add_text, sep = "\n")
+    } else {
+      for (i in 1:length(params[[p]])) {
+        param_name <- paste0(p, "$", names(params[[p]][i]))
+        add_text <- paste0(param_name, " = ", params[[p]][i])
+        full_text <- paste(full_text, add_text, sep = "\n")
+      }
     }
   }
-  g <- textGrob(label = text, x = unit(1, "npc"), y = unit(0.98, "npc"), just = c("right", "top"))
+  g <- textGrob(label = full_text, x = unit(1, "npc"), y = unit(0.98, "npc"), just = c("right", "top"))
   return(g)
 }
 

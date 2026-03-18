@@ -22,16 +22,14 @@ params_std_hrch <- list(
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
-  initQF_group = 8,
-  initQU_group = 2,
-  mu_R_group = c(5, 5), # F and U
+  initQ_group = list(F = 8, U = 2),
+  mu_R_group = list(F = 5, U = 5),
   sigma_R_group = 2
 )
 plot <- new.env()
 source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 
 dat <- sim$run_std_hrch(params_std_hrch)
-glimpse(dat)
 plot$sim_plots(dat, params_std_hrch)
 
 ## ----run-std------------------------------------------------------------------
@@ -43,23 +41,13 @@ params_std <- list(
   n_trials = 30,
   LR = 0.4,
   inv_temp = 0.5,
-  initQF = 8,
-  initQU = 2,
-  mu_R = c(5, 5), # F and U
+  initQ = list(F = 8, U = 2),
+  mu_R = list(F = 5, U = 5),
   sigma_R = 2
 )
 
 dat <- sim$run_std(params_std)
 plot$sim_plots(dat, params_std)
-
-## ----run-std-sigma-init-------------------------------------------------------
-params <- modifyList(params_std, list(sigma_R = 4))
-dat <- sim$run_std(params)
-plot$sim_plots(dat, params)
-
-params <- modifyList(params_std, list(initQF = 4, initQU = 8))
-dat <- sim$run_std(params)
-plot$sim_plots(dat, params)
 
 ## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR = 0.2))
@@ -85,9 +73,8 @@ params_LRN_discr <- list(
   n_trials = 30,
   LRs = list(conf = 0.8, disconf = 0.2),
   inv_temp = 0.5,
-  initQF = 8,
-  initQU = 2,
-  mu_R = c(5, 5), # F and U
+  initQ = list(F = 8, U = 2),
+  mu_R = list(F = 5, U = 5),
   sigma_R = 2,
   margin = 2
 )
@@ -127,9 +114,8 @@ params_LRN_cont <- list(
   n_trials = 30,
   w_LR = 0.8,
   inv_temp = 0.5,
-  initQF = 8,
-  initQU = 2,
-  mu_R = c(5, 5), # F and U
+  initQ = list(F = 8, U = 2),
+  mu_R = list(F = 5, U = 5),
   sigma_R = 2
 )
 
