@@ -139,8 +139,6 @@ save_sim_dat <- function(params, sim_dat) {
   # data
   n_part <- params$n_part
   n_trials <- params$n_trials
-  initQF <- params$initQF
-  initQU <- params$initQU
   choice <- matrix(sim_dat$choice,
                    nrow = n_part,
                    ncol = n_trials,
@@ -149,7 +147,7 @@ save_sim_dat <- function(params, sim_dat) {
               nrow = n_part,
               ncol = n_trials,
               byrow = TRUE)
-  dat_names <- c("n_part", "n_trials", "initQF", "initQU", "choice", "R")
+  dat_names <- c("n_part", "n_trials", "choice", "R")
   list_dat <- setNames(mget(dat_names), dat_names)
   write_stan_json(list_dat, file = paste0(sim_dir, "sim_dat.json"))
 }

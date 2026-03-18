@@ -1,10 +1,15 @@
 {
-  "n_part": 20,
+  "n_part": 50,
   "n_trials": 30,
-  "LR": 0.3,
-  "inv_temp": 1.2,
-  "initQF": 3,
-  "initQU": 7,
-  "mu_R": [5, 5],
-  "sigma_R": 3
+  "LR_group": 0.4,
+  "inv_temp_group": 0.5,
+  "initQ_group": [
+    [8],
+    [2]
+  ],
+  "mu_R_group": [
+    [5],
+    [5]
+  ],
+  "sigma_R_group": 2
 }
