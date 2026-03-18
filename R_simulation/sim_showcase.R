@@ -16,8 +16,13 @@ start <- grep("# === run_std", temp)
 end <- grep("# === end of run_std()", temp) - 1
 cat(temp[start:end], sep = "\n")
 
-## ----run-std-hrch-------------------------------------------------------------
-params_std_hrch <- list(
+## ----param-stddevs, comment = NA----------------------------------------------
+start <- grep("# === param_stddevs", temp)
+end <- grep("# === end of param_stddevs", temp) - 1
+cat(temp[start:end], sep = "\n")
+
+## ----run-std------------------------------------------------------------------
+params_std <- list(
   n_part = 50,
   n_trials = 30,
   LR_group = 0.4,
@@ -29,41 +34,24 @@ params_std_hrch <- list(
 plot <- new.env()
 source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 
-dat <- sim$run_std_hrch(params_std_hrch)
-plot$sim_plots(dat, params_std_hrch)
-
-## ----run-std------------------------------------------------------------------
-plot <- new.env()
-source("../plot_utils.R", local = plot)  # access functions using plot$fun()
-
-params_std <- list(
-  n_part = 50,
-  n_trials = 30,
-  LR = 0.4,
-  inv_temp = 0.5,
-  initQ = list(F = 8, U = 2),
-  mu_R = list(F = 5, U = 5),
-  sigma_R = 2
-)
-
 dat <- sim$run_std(params_std)
 plot$sim_plots(dat, params_std)
 
 ## ----run-std-LR---------------------------------------------------------------
-params <- modifyList(params_std, list(LR = 0.2))
+params <- modifyList(params_std, list(LR_group = 0.2))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
-params <- modifyList(params_std, list(LR = 0.8))
+params <- modifyList(params_std, list(LR_group = 0.8))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
 ## ----run-std-inv-temp---------------------------------------------------------
-params <- modifyList(params_std, list(inv_temp = 0))
+params <- modifyList(params_std, list(inv_temp_group = 0))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
-params <- modifyList(params_std, list(inv_temp = 1.5))
+params <- modifyList(params_std, list(inv_temp_group = 1.5))
 dat <- sim$run_std(params)
 plot$sim_plots(dat, params)
 
@@ -71,12 +59,12 @@ plot$sim_plots(dat, params)
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
-  LRs = list(conf = 0.8, disconf = 0.2),
-  inv_temp = 0.5,
-  initQ = list(F = 8, U = 2),
-  mu_R = list(F = 5, U = 5),
-  sigma_R = 2,
-  margin = 2
+  LRs_group = list(conf = 0.8, disconf = 0.2),
+  inv_temp_group = 0.5,
+  initQ_group = list(F = 8, U = 2),
+  mu_R_group = list(F = 5, U = 5),
+  sigma_R_group = 2,
+  margin_group = 2
 )
 
 ## ----run-LRN-discr-approx-stat------------------------------------------------
@@ -112,11 +100,11 @@ ggplot(dummy) +
 params_LRN_cont <- list(
   n_part = 50,
   n_trials = 30,
-  w_LR = 0.8,
-  inv_temp = 0.5,
-  initQ = list(F = 8, U = 2),
-  mu_R = list(F = 5, U = 5),
-  sigma_R = 2
+  w_LR_group = 0.8,
+  inv_temp_group = 0.5,
+  initQ_group = list(F = 8, U = 2),
+  mu_R_group = list(F = 5, U = 5),
+  sigma_R_group = 2
 )
 
 dat <- sim$run_LRN_cont(params_LRN_cont, "stat")

@@ -1,6 +1,35 @@
+# === param_stddevs =============================
+# list of standard deviations for group-level means of parameters
+param_stddevs <- list(
+  LR_group = 0.2,
+  LRs_group = 0.2,
+  inv_temp_group = 0.3,
+  initQ_group = 2,
+  mu_R_group = 2,
+  sigma_R_group = 2,
+  margin_group = 2
+)
+# === end of param_stddevs
+
+# === param_bounds =============================
+# list of theoretical bounds for parameters
+param_bounds <- list(
+  LR_group = c(0, 1),
+  LRs_group = c(0, 1),
+  inv_temp_group = c(0, Inf),
+  initQ_group = c(1, 10),
+  mu_R_group = c(1, 10),
+  sigma_R_group = c(0, 10),
+  margin_group = c(0, 10)
+)
+
 # === run_std() =============================
-# arguments: vector of parameter settings
-# returns: data frame of simulated data
+# runs the standard simulation (no confirmation bias)
+# arguments: 
+# - params: vector of parameter settings
+# 
+# returns: 
+# - data frame of simulated data
 run_std <- function(params) {
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
@@ -22,12 +51,14 @@ run_std <- function(params) {
     pred_err <- c()
 
     # ----- initialize parameters -----
-    LR <- params$LR
-    inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQ$F
-    Q$U[1] <- params$initQ$U
-    mu_R <- params$mu_R
-    sigma_R <- params$sigma_R
+    # TODO: possibly replace this with a loop over params (more elegant)
+    LR <- draw_from_group_mean(params, "LR_group")
+    inv_temp <- draw_from_group_mean(params, "inv_temp_group")
+    initQ <- draw_from_group_mean(params, "initQ_group")
+    Q$F[1] <- initQ[1]
+    Q$U[1] <- initQ[2]
+    mu_R <- draw_from_group_mean(params, "mu_R_group")
+    sigma_R <- draw_from_group_mean(params, "sigma_R_group")    
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -59,7 +90,7 @@ run_std <- function(params) {
     }
 
     dat_p <- data.frame(
-      participant = rep(j, n_trials),
+      participant = j,
       trial =       1:n_trials,
       Q_F =         Q$F,
       Q_U =         Q$U,
@@ -75,84 +106,29 @@ run_std <- function(params) {
 }
 # === end of run_std()
 
-run_std_hrch <- function(params) {
+# === draw_from_group_mean() =======================
+# arguments: 
+# - param_settings: the list of parameter settings (i.e., group means)
+# - p: the parameter for which we want to draw from the group mean
+# 
+# returns:
+# - draw from the group mean of parameter p, keeping in mind the theoretical bounds of the parameter, the group mean and the standard deviation
+draw_from_group_mean <- function(param_settings, p) {
   library(truncnorm) # for drawing from truncated distribution
-  dat <- data.frame()
-
-  n_part <- params$n_part
-  n_trials <- params$n_trials
-
-  for (j in 1:n_part) {
-    set.seed(j)
-
-    # ------ init data frames & vectors -----
-    Q <- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
-    P_F <- c()
-    choice <- c()
-    R <- c()
-    pred_err <- c()
-
-    # ----- initialize parameters -----
-    attach(params, warn.conflicts = FALSE)
-    LR <-       rtruncnorm(n = 1, a = 0, b = 1, mean = LR_group, sd = 0.2)
-    inv_temp <- rtruncnorm(n = 1, a = 0, b = Inf, mean = inv_temp_group, sd = 0.3)
-    Q$F[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQ_group$F, sd = 2)
-    Q$U[1] <-   rtruncnorm(n = 1, a = 1, b = 10, mean = initQ_group$U, sd = 2)
-    mu_R <-   c(rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[1], sd = 2),
-                rtruncnorm(n = 1, a = 1, b = 10, mean = mu_R_group[2], sd = 2))
-    sigma_R <-  rtruncnorm(n = 1, a = 0, b = 10, mean = sigma_R_group, sd = 2)
-    detach(params)
-    # --------- run trials ------------
-    for (t in 1:n_trials) {
-
-      # choose
-      P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] <- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
-
-      # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
-
-      # learn
-      pred_err[t] <- R[t] - Q[t, choice[t]]
-
-      if (t < n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {
-          Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
-          Q[t+1, 2] <- Q[t, 2]
-        } else {
-          Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
-          Q[t+1, 1] <- Q[t, 1]
-        }
-      }
-    }
-
-    dat_p <- data.frame(
-      participant = rep(j, n_trials),
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err
-    )
-
-    dat <- rbind(dat, dat_p)
-  }
-  return(dat)
+  draw <- rtruncnorm(n = 1, 
+                     a = param_bounds[[p]][1],
+                     b = param_bounds[[p]][2],
+                     mean = param_settings[[p]],
+                     sd = param_stddevs[[p]])
+  return(draw)
 }
 
-
 # === save_sim_dat() =======================
-# arguments: vector of parameter settings; data frame of simulated data
+# saves parameter settings to file "sim_param_settings.json" and saves simulated data to file "sim_dat.json"
+# arguments: 
+# - params: vector of parameter settings
+# - sim_dat: data frame of simulated data
+# 
 # returns: nothing
 save_sim_dat <- function(params, sim_dat) {
   library(cmdstanr) # contains function write_stan_json()
@@ -179,8 +155,12 @@ save_sim_dat <- function(params, sim_dat) {
 }
 
 # === did_sim_dat_change() =================
-# arguments: file path for the JSON file, data frame of simulated data
-# returns: TRUE if sim_dat changed compared to saved JSON file, else FALSE
+# arguments: 
+# - data_file: file path for the JSON file
+# - sim_dat: data frame to compare to file
+# 
+# returns: 
+#  - TRUE if sim_dat changed compared to saved JSON file, else FALSE
 did_sim_dat_change <- function(data_file, sim_dat) {
   json_data <- rjson::fromJSON(file = data_file)
   json_choice <- unlist(json_data$choice)
@@ -196,8 +176,13 @@ did_sim_dat_change <- function(data_file, sim_dat) {
 }
 
 # === run_LRN_discr() =================
-# arguments: vector of parameter settings; which LR function to use; whether belief is stat or dyn
-# returns: data frame of simulated data
+# arguments: 
+# - params: vector of parameter settings; 
+# - LR_function: which LR function to use (LR_approx or LR_geq)
+# - belief_type: whether belief is "stat" or "dyn"
+# 
+# returns: 
+# - data frame of simulated data
 run_LRN_discr <- function(params, LR_function, belief_type) {
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
@@ -219,13 +204,16 @@ run_LRN_discr <- function(params, LR_function, belief_type) {
     pred_err <- c()
 
     # ----- initialize parameters -----
-    LRs <- params$LRs
-    inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQ$F
-    Q$U[1] <- params$initQ$U
-    mu_R <- params$mu_R
-    sigma_R <- params$sigma_R
-    margin <- params$margin
+    # TODO: possibly replace this with a loop over params (more elegant)
+    LRs <- draw_from_group_mean(params, "LRs_group")
+    names(LRs) <- c("conf", "disconf")
+    inv_temp <- draw_from_group_mean(params, "inv_temp_group")
+    initQ <- draw_from_group_mean(params, "initQ_group")
+    Q$F[1] <- initQ[1]
+    Q$U[1] <- initQ[2]
+    mu_R <- draw_from_group_mean(params, "mu_R_group")
+    sigma_R <- draw_from_group_mean(params, "sigma_R_group")
+    margin <- draw_from_group_mean(params, "margin_group")
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
