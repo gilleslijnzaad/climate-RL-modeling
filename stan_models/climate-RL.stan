@@ -9,10 +9,9 @@ data {
 // }
 
 parameters {
-  real<lower=1, upper=10> initQF;
-  real<lower=1, upper=10> initQU;
-  real<lower=0, upper=1> LR;
-  real<lower=0, upper=5> inv_temp;
+  array[2] real<lower=1, upper=10> initQ_group;
+  real<lower=0, upper=1> LR_group;
+  real<lower=0, upper=5> inv_temp_group;
 }
 
 // transformed parameters {
@@ -24,8 +23,8 @@ model {
   // participant loop
   for (j in 1:n_part) {
     array[n_trials, 2] real Q;
-    Q[1, 1] = initQF;
-    Q[1, 2] = initQU;
+    Q[1, 1] = initQ_group[1];
+    Q[1, 2] = initQ_group[2];
     vector[2] Q_t;
 
     real pred_err;
@@ -35,7 +34,7 @@ model {
       Q_t = to_vector(Q[t]);
 
       // sample choice (1 is F, 2 is U) via softmax
-      choice[j, t] ~ categorical_logit(inv_temp * Q_t);
+      choice[j, t] ~ categorical_logit(inv_temp_group * Q_t);
 
       // prediction error
       pred_err = R[j, t] - Q[t, choice[j, t]];
@@ -43,11 +42,11 @@ model {
       // update value (learn)
       if (t < n_trials) {    // no updating in the very last trial
         if (choice[j, t] == 1) {
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
+          Q[t+1, 1] = Q[t, 1] + LR_group * pred_err;
           Q[t+1, 2] = Q[t, 2];
         } else {
           Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
+          Q[t+1, 2] = Q[t, 2] + LR_group * pred_err;
         }
       }
     }

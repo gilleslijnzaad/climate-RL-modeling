@@ -4,33 +4,30 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
-## ----create-data--------------------------------------------------------------
+## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
 main_dir <- "~/research/climate-RL-mod/"
 sim_dir <- paste0(main_dir, "R_simulation/")
+
 sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
 
 params <- list(
-  n_part = 20,
+  n_part = 50,
   n_trials = 30,
-  LR = 0.3,
-  inv_temp = 1.2,
-  initQF = 3,
-  initQU = 7,
-  mu_R = c(5, 5), # F and U
-  sigma_R = 3
+  LR_group = 0.4,
+  inv_temp_group = 0.5,
+  initQ_group = list(F = 8, U = 2),
+  mu_R_group = list(F = 5, U = 5),
+  sigma_R_group = 2
 )
 
-sim_dat <- sim$run_std(params, save_to_JSON = FALSE)
+sim_dat <- sim$run_std(params)
 
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
 
 ## ----inspecting-data, warning = FALSE-----------------------------------------
-library(grid)
-library(gridExtra)
-
 plot <- new.env()
 source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using plot$fun()
 
@@ -101,38 +98,16 @@ if (dat_changed | model_changed) {
 } else {
   fit <- readRDS(file = "climate-RL_fit.rds")
 }
+draws <- posterior::as_draws_df(fit$draws())
+draws <- draws %>%
+  dplyr::rename(`initQ_group$F` = `initQ_group[1]`,
+                `initQ_group$U` = `initQ_group[2]`)
 
 ## ----posterior-plots, fig.height = 8------------------------------------------
-plot$posterior_density(fit, c("LR", "inv_temp", "initQF", "initQU"), params)
+plot$posterior_density(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
 
 ## ----posterior-table----------------------------------------------------------
-cred_int <- function(posterior_dist) {
-  return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
-}
-
-print_posterior_table <- function(fit, to_show, param_settings) {
-  table_data <- data.frame()
-
-  for (param in to_show) {
-    sim_value <- param_settings[[param]]
-    dat <- data.frame(
-      parameter = param,
-      sim_value = sim_value,
-      median_CI = sprintf("%.2f [%.2f, %.2f]",
-                          median(fit$draws(param)),
-                          cred_int(fit$draws(param))[1],
-                          cred_int(fit$draws(param))[2])
-    )
-    table_data <- rbind(table_data, dat)
-  }
-  colnames <- c("Parameter", "Simulated value",
-                "Median [95% credibility interval]")
-  knitr::kable(table_data,
-               col.names = colnames,
-               align = "lll",
-               caption = "Posteriors for all free parameters") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-}
-
-print_posterior_table(fit, c("LR", "inv_temp", "initQF", "initQU"), params)
+util <- new.env()
+source(paste0(main_dir, "utils.R"), local = util)  # access functions using util$fun()
+util$print_posterior_table(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
 
