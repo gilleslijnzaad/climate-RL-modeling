@@ -12,11 +12,11 @@ param_stddevs <- list(
 # === end of param_stddevs
 
 # === param_bounds =============================
-# list of theoretical bounds for parameters
+# list of theoretical bounds for parameters; same as in Stan
 param_bounds <- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
-  inv_temp_group = c(0, Inf),
+  inv_temp_group = c(0, 5),
   initQ_group = c(1, 10),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
@@ -97,7 +97,9 @@ run_std <- function(params) {
       P_F =         P_F,
       choice =      choice,
       R =           R,
-      pred_err =    pred_err
+      pred_err =    pred_err,
+      LR =          LR,
+      inv_temp =    inv_temp
     )
 
     dat <- rbind(dat, dat_p)
@@ -134,6 +136,8 @@ save_sim_dat <- function(params, sim_dat) {
   library(cmdstanr) # contains function write_stan_json()
 
   # parameter settings
+  params$LR <- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
+  params$inv_temp <- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   write_stan_json(params, file = paste0(sim_dir, "sim_param_settings.json"))
 
   # data
