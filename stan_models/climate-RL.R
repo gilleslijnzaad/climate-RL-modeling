@@ -6,6 +6,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
+# setwd("~/research/climate-RL-mod/stan_models")
 main_dir <- "~/research/climate-RL-mod/"
 sim_dir <- paste0(main_dir, "R_simulation/")
 
@@ -13,7 +14,7 @@ sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
 
 params <- list(
-  n_part = 50,
+  n_part = 10,
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
@@ -69,10 +70,10 @@ start <- grep("trial loop", mod_code) + 1
 end <- grep("generated quantities", mod_code) - 2
 cat(mod_code[start:end], sep = "\n")
 
-## ----explmod-gen-quant, eval = FALSE, comment = NA----------------------------
-# start <- grep("generated quantities", mod_code)
-# end <- length(mod_code)
-# cat(mod_code[start:end], sep = "\n")
+## ----explmod-gen-quant, comment = NA------------------------------------------
+start <- grep("generated quantities", mod_code)
+end <- length(mod_code)
+cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
 data_file <- paste0(sim_dir, "sim_dat.json")
@@ -98,16 +99,24 @@ if (dat_changed | model_changed) {
 } else {
   fit <- readRDS(file = "climate-RL_fit.rds")
 }
-draws <- posterior::as_draws_df(fit$draws())
+draws <- posterior::as_draws_df(fit$draws())  # df makes it easier to handle
 draws <- draws %>%
-  dplyr::rename(`initQ_group$F` = `initQ_group[1]`,
-                `initQ_group$U` = `initQ_group[2]`)
+  dplyr::rename(
+                # `initQ_group$F` = `initQ_group[1]`,
+                # `initQ_group$U` = `initQ_group[2]`,
+                LR_group = `means[1]`,
+                inv_temp_group = `means[2]`
+               )
 
-## ----posterior-plots, fig.height = 8------------------------------------------
-plot$posterior_density(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
+## ----posterior-plots, fig.height = 4------------------------------------------
+plot$posterior_density(draws, c("LR_group", "inv_temp_group"), params)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
 source(paste0(main_dir, "utils.R"), local = util)  # access functions using util$fun()
-util$print_posterior_table(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
+util$print_posterior_table(draws, params, c("LR_group", "inv_temp_group"))
+
+## ----corr-indiv-params--------------------------------------------------------
+params <- rjson::fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
+util$print_corr_indiv_table(draws, params, c("LR", "inv_temp"))
 

@@ -19,11 +19,15 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ```
 
+# Helper files {.unnumbered}
+In this R markdown I use code from the following files (click = download): [sim.R](../R_simulation/sim.R), [plot_utils.R](../plot_utils.R), [utils.R](../utils.R).
+
 # The data
 ## Running the simulation
-For the full simulation code, see [run_std()](../../R_simulation/sim_showcase.html#0_Simulation_code).
+For the full simulation code, see [run_std()](../R_simulation/sim_showcase.html#0_Simulation_code).
 ```{r create-data, comment = NA}
 rm(list = ls())
+# setwd("~/research/climate-RL-mod/stan_models")
 main_dir <- "~/research/climate-RL-mod/"
 sim_dir <- paste0(main_dir, "R_simulation/")
 
@@ -31,7 +35,7 @@ sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
 
 params <- list(
-  n_part = 50,
+  n_part = 10,
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
@@ -83,14 +87,12 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `parameters` block
-In the current model, we have four free parameters:
+In the current model, we have two free parameters:
 
 1. learning rate;
 1. inverse temperature;
-1. initial Q value for the climate-friendly option;
-1. initial Q value for the climate-unfriendly option.
 
-When I make the model hierarchical, these parameters will be group-level means and standard deviations.
+[explanation here]
 
 ```{r explmod-params, comment = NA}
 start <- grep("parameters \\{", mod_code)[1]
@@ -99,7 +101,7 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `transformed parameters` block
-Currently unused. Will be used to define individual parameter values based on the group mean.
+[explanation here]
 ```{r explmod-transf-params, eval = FALSE, comment = NA}
 start <- grep("transformed parameters \\{", mod_code)
 end <- grep("model \\{", mod_code) - 2
@@ -108,6 +110,7 @@ cat(mod_code[start:end], sep = "\n")
 
 ## `model` block
 ### The priors
+[explanation here]
 ```{r explmod-model-priors, comment = NA}
 start <- grep("model \\{", mod_code)
 end <- grep("participant loop", mod_code)[1] - 2
@@ -130,8 +133,8 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `generated quantities` block
-Currently unused. Will be used in the future to generate posterior predictions.
-```{r explmod-gen-quant, eval = FALSE, comment = NA}
+[explanation here]
+```{r explmod-gen-quant, comment = NA}
 start <- grep("generated quantities", mod_code)
 end <- length(mod_code)
 cat(mod_code[start:end], sep = "\n")
@@ -165,18 +168,27 @@ if (dat_changed | model_changed) {
 } else {
   fit <- readRDS(file = "climate-RL_fit.rds")
 }
-draws <- posterior::as_draws_df(fit$draws())
+draws <- posterior::as_draws_df(fit$draws())  # df makes it easier to handle
 draws <- draws %>%
-  dplyr::rename(`initQ_group$F` = `initQ_group[1]`,
-                `initQ_group$U` = `initQ_group[2]`)
+  dplyr::rename(
+                # `initQ_group$F` = `initQ_group[1]`,
+                # `initQ_group$U` = `initQ_group[2]`,
+                LR_group = `means[1]`,
+                inv_temp_group = `means[2]`
+               )
 ```
 
 ## Inspect results
-```{r posterior-plots, fig.height = 8}
-plot$posterior_density(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
+```{r posterior-plots, fig.height = 4}
+plot$posterior_density(draws, c("LR_group", "inv_temp_group"), params)
 ```
 ```{r posterior-table}
 util <- new.env()
 source(paste0(main_dir, "utils.R"), local = util)  # access functions using util$fun()
-util$print_posterior_table(draws, c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"), params)
+util$print_posterior_table(draws, params, c("LR_group", "inv_temp_group"))
+```
+
+```{r corr-indiv-params}
+params <- rjson::fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
+util$print_corr_indiv_table(draws, params, c("LR", "inv_temp"))
 ```
