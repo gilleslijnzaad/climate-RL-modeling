@@ -144,25 +144,29 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 # arguments:
 # - draws: data frame of posterior draws from model
 # - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings
+# - param_settings: named list of parameter settings; if NA, don't show simulated value
 # 
 # returns: 
 # - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
-posterior_density <- function(draws, to_plot, param_settings) {
+posterior_density <- function(draws, to_plot, param_settings = NULL) {
   plot_data <- data.frame()
 
   for (p in to_plot) {
-    if (grepl("\\$", p)) { # parameter is part of a list
-      split_name <- strsplit(p, "\\$")[[1]]
-      sim_value <- purrr::pluck(param_settings, split_name[1], split_name[2])
-    } else {
-      sim_value <- param_settings[[p]]
+    if (!is.null(param_settings)) {
+      if (grepl("\\$", p)) { # parameter is part of a list
+        split_name <- strsplit(p, "\\$")[[1]]
+        sim_value <- purrr::pluck(param_settings, split_name[1], split_name[2])
+      } else {
+        sim_value <- param_settings[[p]]
+      }
     }
     dat <- data.frame(
       parameter = as.factor(p),
-      estimate = draws[[p]],
-      sim_value = sim_value
-    )      
+      estimate = draws[[p]]
+    )
+    if (!is.null(param_settings)) {
+      dat$sim_value <- sim_value
+    }
     plot_data <- rbind(plot_data, dat)
   }
 
@@ -173,9 +177,13 @@ posterior_density <- function(draws, to_plot, param_settings) {
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = "legend", color = "none", fill = "none") +
-    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "sim_value")) +
-     scale_linetype_manual(values = c("sim_value" = 2), name = NULL) +
     my_theme
+
+  if (!is.null(param_settings)) {
+    plot <- plot + 
+    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "sim_value")) +
+    scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+  }
 
   return(plot)
 }
