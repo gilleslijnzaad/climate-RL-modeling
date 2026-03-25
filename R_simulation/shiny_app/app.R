@@ -41,37 +41,37 @@ ui <- fluidPage(
       tags$h3("Parameter settings (group-level means)"),
       # learning rate
       conditionalPanel(condition = "input.conf_bias == 'none'",
-        sliderInput("LR_group", "Learning rate:", min = 0, max = 1,
+        sliderInput("LR", "Learning rate:", min = 0, max = 1,
                     value = 0.4, step = 0.1, ticks = FALSE)
       ),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'discr'",
-        sliderInput("LR_conf_group", "Confirmatory learning rate:", min = 0, max = 1,
+        sliderInput("LR_conf", "Confirmatory learning rate:", min = 0, max = 1,
                     value = 0.8, step = 0.1, ticks = FALSE),
-        sliderInput("LR_disconf_group", "Disconfirmatory learning rate:", min = 0, max = 1,
+        sliderInput("LR_disconf", "Disconfirmatory learning rate:", min = 0, max = 1,
                     value = 0.2, step = 0.1, ticks = FALSE)
       ),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'cont'",
-        sliderInput("w_LR_group", "Weight for learning rate", min = 0, max = 1,
+        sliderInput("w_LR", "Weight for learning rate", min = 0, max = 1,
                     value = 0.4, step = 0.1, ticks = FALSE)
       ),
       
-      sliderInput("inv_temp_group", "Inverse temperature:", min = 0, max = 2,
+      sliderInput("inv_temp", "Inverse temperature:", min = 0, max = 2,
                   value = 0.5, step = 0.1, ticks = FALSE),
-      sliderInput("initQF_group", "Initial Q friendly:", min = 1, max = 10, 
+      sliderInput("initQF", "Initial Q friendly:", min = 1, max = 10, 
                   value = 8, ticks = FALSE),
-      sliderInput("initQU_group", "Initial Q unfriendly:", min = 1, max = 10,
+      sliderInput("initQU", "Initial Q unfriendly:", min = 1, max = 10,
                   value = 2, ticks = FALSE),
-      sliderInput("mu_R_F_group", "Mean R friendly:", min = 1, max = 10,
+      sliderInput("mu_R_F", "Mean R friendly:", min = 1, max = 10,
                   value = 5, ticks = FALSE),
-      sliderInput("mu_R_U_group", "Mean R unfriendly:", min = 1, max = 10,
+      sliderInput("mu_R_U", "Mean R unfriendly:", min = 1, max = 10,
                   value = 5, ticks = FALSE),
-      sliderInput("sigma_R_group", "Std dev R:", min = 0, max = 5,
+      sliderInput("sigma_R", "Std dev R:", min = 0, max = 5,
                   value = 2, ticks = FALSE),
       conditionalPanel(condition = "input.conf_bias == 'LRN' &&
                                     input.d_or_c == 'discr'",
-        sliderInput("margin_group", "Margin:", min = 0, max = 5,
+        sliderInput("margin", "Margin:", min = 0, max = 5,
                     value = 2, ticks = FALSE)
       ),
     ),
@@ -87,29 +87,29 @@ server <- function(input, output) {
     p <- list(
       n_part = input$n_part,
       n_trials = input$n_trials,
-      inv_temp_group = input$inv_temp_group,
-      initQ_group = list(F = input$initQF_group, U = input$initQU_group),
-      mu_R_group = list(F = input$mu_R_F_group, U = input$mu_R_U_group),
-      sigma_R_group = input$sigma_R_group
+      inv_temp = input$inv_temp,
+      initQ = list(F = input$initQF, U = input$initQU),
+      mu_R = list(F = input$mu_R_F, U = input$mu_R_U),
+      sigma_R = input$sigma_R
     )
 
     if (input$conf_bias == 'none') {
-      p$LR_group <- input$LR_group
+      p$LR <- input$LR
     }
     if (input$conf_bias == 'LRN') {
       if (input$d_or_c == 'discr') {
-        p$LRs_group = list(conf = input$LR_conf_group, disconf = input$LR_disconf_group)
-        p$margin_group = input$margin_group
+        p$LRs = list(conf = input$LR_conf, disconf = input$LR_disconf)
+        p$margin = input$margin
       }
       if (input$d_or_c == 'cont') {
-        p$w_LR_group = input$w_LR_group
+        p$w_LR = input$w_LR
       }
     }
     return(p)
   })
 
   sim <- new.env()
-  source("../sim.R", local = sim)
+  source("../sim_for_app.R", local = sim)
 
   # helper function
   run_discr <- function(p, confirmatory, belief_type) {
@@ -148,10 +148,11 @@ server <- function(input, output) {
     t <- switch(input$conf_bias,
       none = {"std"},
 
-      LRN = {paste("LRN", switch(input$d_or_c,
-        discr = {paste("discr", input$confirmatory, input$belief_type, sep = "_")},
-        cont = {"cont"}
-        ), 
+      LRN = {paste(
+        "LRN", switch(input$d_or_c,
+          discr = {paste("discr", input$confirmatory, input$belief_type, sep = "_")},
+          cont = {paste("cont", input$belief_type, sep = "_")}
+          ), 
         sep = "_")}
       
       # RTN = ...
