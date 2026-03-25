@@ -1,5 +1,6 @@
 # Climate-RL
 
 ## Quick links
-- R simulation [html of R markdown](https://gilleslijnzaad.github.io/climate-RL-modeling/R_simulation/sim_showcase.html)
-- Stan models + fits [html of R markdown](https://gilleslijnzaad.github.io/climate-RL-modeling/stan_models/climate-RL.html)
+- [Simulation showcase](https://gilleslijnzaad.github.io/climate-RL-modeling/sim_showcase.html)
+- [Stan models](https://gilleslijnzaad.github.io/climate-RL-modeling/climate-RL.html)
+- [All utility functions](https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html)
