@@ -1454,7 +1454,9 @@ border-radius: 0px;
 
 <div id="sim.r" class="section level1">
 <h1><code>sim.R</code></h1>
-<pre><code># === param_stddevs =============================
+<pre><code>set.seed(1234)
+
+# === param_stddevs =============================
 # list of standard deviations for group-level means of parameters
 param_stddevs &lt;- list(
   LR_group = 0.2,
