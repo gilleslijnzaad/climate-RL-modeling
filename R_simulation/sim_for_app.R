@@ -6,6 +6,8 @@
 # returns: 
 # - data frame of simulated data
 run_std <- function(params) {
+  set.seed(1234)
+
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -13,7 +15,6 @@ run_std <- function(params) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(
@@ -87,6 +88,8 @@ run_std <- function(params) {
 # returns: 
 # - data frame of simulated data
 run_LRN_discr <- function(params, LR_function, belief_type) {
+  set.seed(1234)
+
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -94,7 +97,6 @@ run_LRN_discr <- function(params, LR_function, belief_type) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(
@@ -193,6 +195,8 @@ LR_geq <- function(R, belief, margin) {
 # arguments: vector of parameter settings; whether belief is stat or dyn
 # returns: data frame of simulated data
 run_LRN_cont <- function(params, belief_type) {
+  set.seed(1234)
+
   library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
@@ -200,7 +204,6 @@ run_LRN_cont <- function(params, belief_type) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(

@@ -1,3 +1,5 @@
+set.seed(1234)
+
 # === param_stddevs =============================
 # list of standard deviations for group-level means of parameters
 param_stddevs <- list(
@@ -38,7 +40,6 @@ run_std <- function(params) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(
@@ -58,7 +59,7 @@ run_std <- function(params) {
     Q$F[1] <- initQ[1]
     Q$U[1] <- initQ[2]
     mu_R <- draw_from_group_mean(params, "mu_R_group")
-    sigma_R <- draw_from_group_mean(params, "sigma_R_group")    
+    sigma_R <- draw_from_group_mean(params, "sigma_R_group")
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -193,7 +194,6 @@ run_LRN_discr <- function(params, LR_function, belief_type) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(
@@ -300,7 +300,6 @@ run_LRN_cont <- function(params, belief_type) {
   n_trials <- params$n_trials
 
   for (j in 1:n_part) {
-    set.seed(j)
 
     # ------ init data frames & vectors -----
     Q <- data.frame(

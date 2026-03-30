@@ -156,16 +156,20 @@ plot$sim_plots(dat, params_LRN_discr)
 ```
 
 ### Continuous: *cont* {.tabset}
-The learning rate is determined by the difference between rating and belief, multiplied by some weight. We define:
+The learning rate relates to the deviation from belief in a continuous way, with limits at 0 and predefined LR_max. The relationship is defined by LR_slope.
+
 \begin{alignat*}{2}
-{LR} &= w_{LR} \cdot {LR}'                   &\quad &\text{with } {LR}  \in [0, w_{LR}] \\
-{LR}' &= \min(\text{diff}/9 + 1, 1) &\quad &\text{with } {LR}' \in [0, 1] \\
-\text{diff} &= R - \text{belief}             &\quad &\text{with diff} \in [-9, 9]
+LR = LR_{\max} \cdot & LR'\\
+& LR' =
+\begin{cases}
+1                                       &\text{if}\ R +
+\text{margin} \geq \text{belief} \\
+LR_\text{slope} \cdot \text{diff} + 1   &\text{else}
+\end{cases}\\
+\text{with } & LR' \in [0, 1]
 \end{alignat*}
 
-See figure below. In words: the learning rate is zero when the rating is maximally worse than the belief ($1 - 10 = -9$), and one when the rating is greater than or equal to the belief. In between, the deviation from belief is positively correlated to the learning rate.
-
-Outstanding question: should the *theoretical* "worst case scenario" be used here? A rating of 1 and a belief of 10 is an unlikely scenario. 
+See figure below (`LR_slope` = 0.25).
 ```{r illustrate-rel-LR, fig.width = 5, fig.height = 3}
 dummy <- data.frame(
   diff = c(-9, 0, 9),
