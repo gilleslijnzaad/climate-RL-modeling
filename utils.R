@@ -46,25 +46,3 @@ print_posterior_table <- function(draws, param_settings, to_show) {
                caption = "Posteriors for free parameters") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 }
-
-print_corr_indiv_table <- function(draws, param_settings, to_show) {
-  n_part <- param_settings$n_part
-  table_data <- c()
-  for (p in to_show) {
-    median_draws <- c()
-    for (j in 1:n_part) {
-      param_name <- paste0(p, "[", j, "]")
-      val <- median(draws[[param_name]])
-      median_draws <- c(median_draws, val)
-    }
-    corr <- round(cor(param_settings[[p]], median_draws), 2)
-    dat <- data.frame(parameter = p, corr = corr)
-    table_data <- rbind(table_data, dat)
-  }
-  colnames <- c("Parameter", "Correlation")
-  knitr::kable(table_data,
-               col.names = colnames,
-               align = "lll",
-               caption = "Correlation of simulated and estimated parameters, at the participant level") %>%
-  kableExtra::kable_styling(full_width = FALSE, position = "left")
-}
