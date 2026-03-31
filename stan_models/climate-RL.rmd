@@ -35,7 +35,7 @@ sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim) # access functions using sim$fun()
 
 params <- list(
-  n_part = 10,
+  n_part = 50,
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
@@ -87,10 +87,12 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `parameters` block
-In the current model, we have two free parameters:
+In the current model, we have four free parameters:
 
 1. learning rate;
 1. inverse temperature;
+1. initial Q for friendly;
+1. initial Q for unfriendly.
 
 [explanation here]
 
@@ -141,7 +143,7 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 # Fitting the model
-## Run it
+## Single run (demo)
 To save running time, I only refit the model if I changed the model or if the simulated data have changed (i.e., if I changed parameter settings). To this end, I compare the previously saved `sim_data.json` to the current `sim_dat`. After this comparison, I can save the new `sim_data` and refit the model if necessary.
 
 ```{r run-model}
@@ -164,9 +166,9 @@ if (dat_changed | model_changed) {
     refresh = it / 5,
     seed = 1234
   )
-  fit$save_object(file = "climate-RL_fit.rds")
+  fit$save_object(file = "climate-RL_single_fit.rds")
 } else {
-  fit <- readRDS(file = "climate-RL_fit.rds")
+  fit <- readRDS(file = "climate-RL_single_fit.rds")
 }
 draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
 draws <- draws %>%
@@ -178,8 +180,7 @@ draws <- draws %>%
   )
 ```
 
-## Inspect results
-### Group-level parameters
+### Group-level parameter recovery
 ```{r posterior-plots, fig.height = 8}
 to_inspect <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
 plot$posterior_density(draws, to_inspect, params)
@@ -190,9 +191,11 @@ source(paste0(main_dir, "utils.R"), local = util) # access functions using util$
 util$print_posterior_table(draws, params, to_inspect)
 ```
 
-### Participant-level parameters
+### Participant-level parameter recovery
 ```{r sim-vs-fit, fig.height = 8}
 params <- rjson::fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
 source(paste0(main_dir, "plot_utils.R"), local = plot)
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), params)
 ```
+
+## Many runs

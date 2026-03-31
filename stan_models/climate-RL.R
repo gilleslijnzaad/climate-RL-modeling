@@ -14,7 +14,7 @@ sim <- new.env()
 source(paste0(sim_dir, "sim.R"), local = sim) # access functions using sim$fun()
 
 params <- list(
-  n_part = 10,
+  n_part = 50,
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
@@ -95,9 +95,9 @@ if (dat_changed | model_changed) {
     refresh = it / 5,
     seed = 1234
   )
-  fit$save_object(file = "climate-RL_fit.rds")
+  fit$save_object(file = "climate-RL_single_fit.rds")
 } else {
-  fit <- readRDS(file = "climate-RL_fit.rds")
+  fit <- readRDS(file = "climate-RL_single_fit.rds")
 }
 draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
 draws <- draws %>%

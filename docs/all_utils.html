@@ -2056,12 +2056,11 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
     dat &lt;- data.frame(sim_value = sim_values, 
                       fit_value = median_draws)
     
-    sim &lt;- new.env()
-    source(&quot;~/research/climate-RL-mod/R_simulation/sim.R&quot;, local = sim)
+    bounds &lt;- range(sim_values)
 
     plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
       geom_point(color = my_param_colors[[p]]) +
-      lims(x = sim$param_bounds[[p]], y = sim$param_bounds[[p]]) +
+      lims(y = bounds) +
       labs(title = p, x = NULL, y = NULL) +
       my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
     plots[[p]] &lt;- plot
