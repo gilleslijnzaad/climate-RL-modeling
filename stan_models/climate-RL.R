@@ -11,7 +11,7 @@ main_dir <- "~/research/climate-RL-mod/"
 sim_dir <- paste0(main_dir, "R_simulation/")
 
 sim <- new.env()
-source(paste0(sim_dir, "sim.R"), local = sim)  # access functions using sim$fun()
+source(paste0(sim_dir, "sim.R"), local = sim) # access functions using sim$fun()
 
 params <- list(
   n_part = 10,
@@ -30,7 +30,7 @@ cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\
 
 ## ----inspecting-data, warning = FALSE-----------------------------------------
 plot <- new.env()
-source(paste0(main_dir, "plot_utils.R"), local = plot)  # access functions using plot$fun()
+source(paste0(main_dir, "plot_utils.R"), local = plot) # access functions using plot$fun()
 
 plot$sim_plots(sim_dat, params)
 
@@ -99,24 +99,26 @@ if (dat_changed | model_changed) {
 } else {
   fit <- readRDS(file = "climate-RL_fit.rds")
 }
-draws <- posterior::as_draws_df(fit$draws())  # df makes it easier to handle
+draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
 draws <- draws %>%
   dplyr::rename(
-                # `initQ_group$F` = `initQ_group[1]`,
-                # `initQ_group$U` = `initQ_group[2]`,
-                LR_group = `means[1]`,
-                inv_temp_group = `means[2]`
-               )
+    LR_group = `means[1]`,
+    inv_temp_group = `means[2]`,
+    `initQ_group$F` = `means[3]`,
+    `initQ_group$U` = `means[4]`
+  )
 
-## ----posterior-plots, fig.height = 4------------------------------------------
-plot$posterior_density(draws, c("LR_group", "inv_temp_group"), params)
+## ----posterior-plots, fig.height = 8------------------------------------------
+to_inspect <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
+plot$posterior_density(draws, to_inspect, params)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
-source(paste0(main_dir, "utils.R"), local = util)  # access functions using util$fun()
-util$print_posterior_table(draws, params, c("LR_group", "inv_temp_group"))
+source(paste0(main_dir, "utils.R"), local = util) # access functions using util$fun()
+util$print_posterior_table(draws, params, to_inspect)
 
-## ----corr-indiv-params--------------------------------------------------------
+## ----sim-vs-fit, fig.height = 8-----------------------------------------------
 params <- rjson::fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
-util$print_corr_indiv_table(draws, params, c("LR", "inv_temp"))
+source(paste0(main_dir, "plot_utils.R"), local = plot)
+plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), params)
 

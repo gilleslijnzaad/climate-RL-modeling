@@ -1474,8 +1474,12 @@ param_stddevs &lt;- list(
 param_bounds &lt;- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
+  LR = c(0, 1),
   inv_temp_group = c(0, 5),
+  inv_temp = c(0, 5),
   initQ_group = c(1, 10),
+  initQF = c(1, 10),
+  initQU = c(1, 10),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
   margin_group = c(0, 10)
@@ -1595,6 +1599,8 @@ save_sim_dat &lt;- function(params, sim_dat) {
   # parameter settings
   params$LR &lt;- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
   params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
+  params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
+  params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
   write_stan_json(params, file = paste0(sim_dir, &quot;sim_param_settings.json&quot;))
 
   # data
@@ -1846,8 +1852,8 @@ my_teal &lt;- &quot;#008080&quot;
 my_pink &lt;- &quot;#ff00dd&quot;
 my_blue &lt;- &quot;#00aadd&quot;
 my_dark_blue &lt;- &quot;#001199&quot;
-my_colors &lt;- c(my_teal, my_pink, my_blue, my_dark_blue, my_teal, my_pink)
-my_param_colors &lt;- setNames(my_colors, c(&quot;F&quot;, &quot;U&quot;, &quot;LR_group&quot;, &quot;inv_temp_group&quot;, &quot;initQ_group$F&quot;, &quot;initQ_group$U&quot;))
+my_colors &lt;- c(my_teal, my_pink, my_teal, my_pink, my_teal, my_pink, my_blue, my_dark_blue, my_blue, my_dark_blue)
+my_param_colors &lt;- setNames(my_colors, c(&quot;F&quot;, &quot;U&quot;, &quot;initQF&quot;, &quot;initQU&quot;, &quot;initQ_group$F&quot;, &quot;initQ_group$U&quot;, &quot;LR&quot;, &quot;inv_temp&quot;, &quot;LR_group&quot;, &quot;inv_temp_group&quot;))
 
 my_theme &lt;- theme_bw() +
   theme(plot.title = element_text(size = 22, face = &quot;bold&quot;)) +
@@ -1984,7 +1990,7 @@ sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
 # arguments:
 # - draws: data frame of posterior draws from model
 # - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings; if NA, don&#39;t show simulated value
+# - param_settings: named list of parameter settings; if NULL, don&#39;t show simulated value
 # 
 # returns: 
 # - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
@@ -2026,6 +2032,48 @@ posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
   }
 
   return(plot)
+}
+
+# === pp_level_param_fit() =============================
+# arguments:
+# - draws: data frame of posterior draws from model
+# - to_plot: string array of parameters to plot
+# - param_settings: named list of parameter settings
+# 
+# returns: 
+# - nothing
+pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
+  n_part &lt;- param_settings$n_part
+  plots &lt;- list()
+  for (p in to_plot) {
+    median_draws &lt;- c()
+    sim_values &lt;- c()
+    for (j in 1:n_part) {
+      sim_values &lt;- c(sim_values, param_settings[[p]][j])
+      param_name &lt;- paste0(p, &quot;[&quot;, j, &quot;]&quot;)
+      median_draws &lt;- c(median_draws, median(draws[[param_name]]))
+    }
+    dat &lt;- data.frame(sim_value = sim_values, 
+                      fit_value = median_draws)
+    
+    sim &lt;- new.env()
+    source(&quot;~/research/climate-RL-mod/R_simulation/sim.R&quot;, local = sim)
+
+    plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
+      geom_point(color = my_param_colors[[p]]) +
+      lims(x = sim$param_bounds[[p]], y = sim$param_bounds[[p]]) +
+      labs(title = p, x = NULL, y = NULL) +
+      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+    plots[[p]] &lt;- plot
+  }
+
+  library(grid)
+  gridExtra::grid.arrange(grobs = plots,
+                          ncol = 2,
+                          top = textGrob(&quot;Participant-level parameter estimations&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
+                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
+                         )
 }</code></pre>
 </div>
 <div id="utils.r" class="section level1">
@@ -2076,28 +2124,6 @@ print_posterior_table &lt;- function(draws, param_settings, to_show) {
                col.names = colnames,
                align = &quot;lll&quot;,
                caption = &quot;Posteriors for free parameters&quot;) %&gt;%
-  kableExtra::kable_styling(full_width = FALSE, position = &quot;left&quot;)
-}
-
-print_corr_indiv_table &lt;- function(draws, param_settings, to_show) {
-  n_part &lt;- param_settings$n_part
-  table_data &lt;- c()
-  for (p in to_show) {
-    median_draws &lt;- c()
-    for (j in 1:n_part) {
-      param_name &lt;- paste0(p, &quot;[&quot;, j, &quot;]&quot;)
-      val &lt;- median(draws[[param_name]])
-      median_draws &lt;- c(median_draws, val)
-    }
-    corr &lt;- round(cor(param_settings[[p]], median_draws), 2)
-    dat &lt;- data.frame(parameter = p, corr = corr)
-    table_data &lt;- rbind(table_data, dat)
-  }
-  colnames &lt;- c(&quot;Parameter&quot;, &quot;Correlation&quot;)
-  knitr::kable(table_data,
-               col.names = colnames,
-               align = &quot;lll&quot;,
-               caption = &quot;Correlation of simulated and estimated parameters, at the participant level&quot;) %&gt;%
   kableExtra::kable_styling(full_width = FALSE, position = &quot;left&quot;)
 }</code></pre>
 </div>

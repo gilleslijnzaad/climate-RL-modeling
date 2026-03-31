@@ -6,8 +6,8 @@ my_teal <- "#008080"
 my_pink <- "#ff00dd"
 my_blue <- "#00aadd"
 my_dark_blue <- "#001199"
-my_colors <- c(my_teal, my_pink, my_blue, my_dark_blue, my_teal, my_pink)
-my_param_colors <- setNames(my_colors, c("F", "U", "LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U"))
+my_colors <- c(my_teal, my_pink, my_teal, my_pink, my_teal, my_pink, my_blue, my_dark_blue, my_blue, my_dark_blue)
+my_param_colors <- setNames(my_colors, c("F", "U", "initQF", "initQU", "initQ_group$F", "initQ_group$U", "LR", "inv_temp", "LR_group", "inv_temp_group"))
 
 my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 22, face = "bold")) +
@@ -144,7 +144,7 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 # arguments:
 # - draws: data frame of posterior draws from model
 # - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings; if NA, don't show simulated value
+# - param_settings: named list of parameter settings; if NULL, don't show simulated value
 # 
 # returns: 
 # - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
@@ -186,4 +186,46 @@ posterior_density <- function(draws, to_plot, param_settings = NULL) {
   }
 
   return(plot)
+}
+
+# === pp_level_param_fit() =============================
+# arguments:
+# - draws: data frame of posterior draws from model
+# - to_plot: string array of parameters to plot
+# - param_settings: named list of parameter settings
+# 
+# returns: 
+# - nothing
+pp_level_param_fit <- function(draws, to_plot, param_settings) {
+  n_part <- param_settings$n_part
+  plots <- list()
+  for (p in to_plot) {
+    median_draws <- c()
+    sim_values <- c()
+    for (j in 1:n_part) {
+      sim_values <- c(sim_values, param_settings[[p]][j])
+      param_name <- paste0(p, "[", j, "]")
+      median_draws <- c(median_draws, median(draws[[param_name]]))
+    }
+    dat <- data.frame(sim_value = sim_values, 
+                      fit_value = median_draws)
+    
+    sim <- new.env()
+    source("~/research/climate-RL-mod/R_simulation/sim.R", local = sim)
+
+    plot <- ggplot(dat, aes(x = sim_value, y = fit_value)) +
+      geom_point(color = my_param_colors[[p]]) +
+      lims(x = sim$param_bounds[[p]], y = sim$param_bounds[[p]]) +
+      labs(title = p, x = NULL, y = NULL) +
+      my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+    plots[[p]] <- plot
+  }
+
+  library(grid)
+  gridExtra::grid.arrange(grobs = plots,
+                          ncol = 2,
+                          top = textGrob("Participant-level parameter estimations", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+                          bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
+                          left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
+                         )
 }
