@@ -76,9 +76,10 @@ end <- length(mod_code)
 cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
-data_file <- paste0(sim_dir, "sim_dat.json")
+dat_dir <- paste0(main_dir, "stan_models/single_run_dat/")
+data_file <- paste0(dat_dir, "sim_dat.json")
 dat_changed <- sim$did_sim_dat_change(data_file, sim_dat)
-sim$save_sim_dat(params, sim_dat)
+sim$save_sim_dat(params, sim_dat, dat_dir)
 model_changed <- FALSE
 
 library(cmdstanr)
@@ -95,9 +96,9 @@ if (dat_changed | model_changed) {
     refresh = it / 5,
     seed = 1234
   )
-  fit$save_object(file = "climate-RL_single_fit.rds")
+  fit$save_object(file = paste0(dat_dir, "climate-RL_single_fit.rds"))
 } else {
-  fit <- readRDS(file = "climate-RL_single_fit.rds")
+  fit <- readRDS(file = paste0(dat_dir, "climate-RL_single_fit.rds"))
 }
 draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
 draws <- draws %>%
@@ -118,7 +119,35 @@ source(paste0(main_dir, "utils.R"), local = util) # access functions using util$
 util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit, fig.height = 8-----------------------------------------------
-params <- rjson::fromJSON(file = paste0(sim_dir, "sim_param_settings.json"))
+participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings.json"))
 source(paste0(main_dir, "plot_utils.R"), local = plot)
-plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), params)
+plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
+
+## ----many-runs----------------------------------------------------------------
+n_runs <- 10
+
+# takes current params and randomizes the free params
+randomize_free_params <- function(params) {
+  to_randomize <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
+
+  for (p in to_randomize) {
+    if (grepl("\\$", p)) { # parameter is part of a list
+      split_name <- strsplit(p, "\\$")[[1]]
+      bounds <- sim$param_bounds[[split_name[1]]]
+      new_value <- runif(1, min = bounds[1], max = bounds[2])
+      params[[split_name[1]]][[split_name[2]]] <- new_value
+    } else {
+      bounds <- sim$param_bounds[[p]]
+      params[[p]] <- runif(1, min = bounds[1], max = bounds[2])
+    }
+  }
+
+  return(params)
+}
+
+for (run in 1:n_runs) {
+  # simulate
+
+  # fit
+}
 

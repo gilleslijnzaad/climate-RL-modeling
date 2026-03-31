@@ -1591,9 +1591,10 @@ draw_from_group_mean &lt;- function(param_settings, p) {
 # arguments: 
 # - params: vector of parameter settings
 # - sim_dat: data frame of simulated data
+# - dir: directory to save the data to
 # 
 # returns: nothing
-save_sim_dat &lt;- function(params, sim_dat) {
+save_sim_dat &lt;- function(params, sim_dat, dir) {
   library(cmdstanr) # contains function write_stan_json()
 
   # parameter settings
@@ -1601,7 +1602,7 @@ save_sim_dat &lt;- function(params, sim_dat) {
   params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
   params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  write_stan_json(params, file = paste0(sim_dir, &quot;sim_param_settings.json&quot;))
+  write_stan_json(params, file = paste0(dir, &quot;sim_param_settings.json&quot;))
 
   # data
   n_part &lt;- params$n_part
@@ -1616,7 +1617,7 @@ save_sim_dat &lt;- function(params, sim_dat) {
               byrow = TRUE)
   dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice&quot;, &quot;R&quot;)
   list_dat &lt;- setNames(mget(dat_names), dat_names)
-  write_stan_json(list_dat, file = paste0(sim_dir, &quot;sim_dat.json&quot;))
+  write_stan_json(list_dat, file = paste0(dir, &quot;sim_dat.json&quot;))
 }
 
 # === did_sim_dat_change() =================
