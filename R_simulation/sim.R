@@ -18,8 +18,12 @@ param_stddevs <- list(
 param_bounds <- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
+  LR = c(0, 1),
   inv_temp_group = c(0, 5),
+  inv_temp = c(0, 5),
   initQ_group = c(1, 10),
+  initQF = c(1, 10),
+  initQU = c(1, 10),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
   margin_group = c(0, 10)
@@ -139,6 +143,8 @@ save_sim_dat <- function(params, sim_dat) {
   # parameter settings
   params$LR <- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
   params$inv_temp <- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
+  params$initQF <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
+  params$initQU <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
   write_stan_json(params, file = paste0(sim_dir, "sim_param_settings.json"))
 
   # data
