@@ -2,7 +2,7 @@
 knitr::knit_hooks$set(purl = knitr::hook_purl) # creates an R file upon knitting the Rmd
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
-knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
@@ -28,7 +28,7 @@ sim_dat <- sim$run_std(params)
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
 
-## ----inspecting-data, warning = FALSE-----------------------------------------
+## ----inspecting-data, fig.height = 4------------------------------------------
 plot <- new.env()
 source(paste0(main_dir, "plot_utils.R"), local = plot) # access functions using plot$fun()
 
@@ -77,9 +77,9 @@ cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
 dat_dir <- paste0(main_dir, "stan_models/single_run_dat/")
-data_file <- paste0(dat_dir, "sim_dat.json")
-dat_changed <- sim$did_sim_dat_change(data_file, sim_dat)
-sim$save_sim_dat(params, sim_dat, dat_dir)
+dat_file <- paste0(dat_dir, "sim_dat.json")
+dat_changed <- sim$did_sim_dat_change(dat_file, sim_dat)
+sim$save_sim_dat(params, sim_dat, dat_file)
 model_changed <- FALSE
 
 library(cmdstanr)
@@ -88,7 +88,7 @@ if (dat_changed | model_changed) {
   m <- cmdstan_model("climate-RL.stan")
   it <- 1000
   fit <- m$sample(
-    data = data_file,
+    data = dat_file,
     iter_sampling = it,
     chains = 1,
     thin = 1,
@@ -109,7 +109,7 @@ draws <- draws %>%
     `initQ_group$U` = `means[4]`
   )
 
-## ----posterior-plots, fig.height = 8------------------------------------------
+## ----posterior-plots----------------------------------------------------------
 to_inspect <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
 plot$posterior_density(draws, to_inspect, params)
 
@@ -118,36 +118,81 @@ util <- new.env()
 source(paste0(main_dir, "utils.R"), local = util) # access functions using util$fun()
 util$print_posterior_table(draws, params, to_inspect)
 
-## ----sim-vs-fit, fig.height = 8-----------------------------------------------
+## ----sim-vs-fit---------------------------------------------------------------
 participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings.json"))
-source(paste0(main_dir, "plot_utils.R"), local = plot)
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
 
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 10
+dat_dir <- paste0(main_dir, "stan_models/many_runs_dat/")
+m <- cmdstan_model("climate-RL.stan")
+it <- 1000
+free_params <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
 
-# takes current params and randomizes the free params
+# takes current list of params, randomizes the free ones and returns the list
 randomize_free_params <- function(params) {
-  to_randomize <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
-
-  for (p in to_randomize) {
-    if (grepl("\\$", p)) { # parameter is part of a list
-      split_name <- strsplit(p, "\\$")[[1]]
-      bounds <- sim$param_bounds[[split_name[1]]]
-      new_value <- runif(1, min = bounds[1], max = bounds[2])
-      params[[split_name[1]]][[split_name[2]]] <- new_value
-    } else {
-      bounds <- sim$param_bounds[[p]]
-      params[[p]] <- runif(1, min = bounds[1], max = bounds[2])
-    }
+  for (p in free_params) {
+    bounds <- sim$param_bounds[[p]]
+    params[[p]] <- runif(1, min = bounds[1], max = bounds[2])
   }
 
   return(params)
 }
 
-for (run in 1:n_runs) {
-  # simulate
+if (FALSE) {
+  for (k in 1:n_runs) {
+    # simulate
+    params <- randomize_free_params(params)
+    sim_dat <- sim$run_std(params)
+    dat_file <- paste0(dat_dir, "sim_dat_", sprintf("%02d", k), ".json")
+    sim$save_sim_dat(params, sim_dat, dat_file)
 
-  # fit
+    # fit
+    fit <- m$sample(
+      data = dat_file,
+      iter_sampling = it,
+      chains = 1,
+      thin = 1,
+      iter_warmup = it / 2,
+      refresh = it / 5,
+      seed = 1234
+    )
+    fit_file <- paste0(dat_dir, "climate-RL_fit_", sprintf("%02d", k), ".rds")
+    fit$save_object(file = fit_file)
+  }
 }
+# run time: around 40 seconds per sim, 6-7 min total
+
+## ----inspect-many-runs--------------------------------------------------------
+sim_params <- data.frame(k = 1:n_runs)
+fit_params <- data.frame(k = 1:n_runs)
+
+for (k in 1:n_runs) {
+  sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%02d", k), ".json")
+  sim <- rjson::fromJSON(file = sim_file)
+
+  fit_file <- paste0(dat_dir, "climate-RL_fit_", sprintf("%02d", k), ".rds")
+  fit <- readRDS(fit_file)
+  draws <- posterior::as_draws_df(fit$draws()) %>%
+    dplyr::rename(
+      LR_group = `means[1]`,
+      inv_temp_group = `means[2]`,
+      `initQ_group$F` = `means[3]`,
+      `initQ_group$U` = `means[4]`
+    )
+
+  for (p in free_params) {
+    if (grepl("\\$", p)) { # parameter is part of a list
+      split_name <- strsplit(p, "\\$")[[1]]
+      sim_value <- sim[[split_name[1]]][(split_name[2] == "U") + 1]
+      sim_params[[p]][k] <- sim_value
+    } else {
+      sim_params[[p]][k] <- sim[[p]]
+    }
+    fit_params[[p]][k] <- median(draws[[p]])
+  }
+}
+
+source(paste0(main_dir, "plot_utils.R"), local = plot)
+plot$many_runs_param_fit(sim_params, fit_params, free_params)
 

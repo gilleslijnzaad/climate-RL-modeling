@@ -1478,6 +1478,8 @@ param_bounds &lt;- list(
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
+  `initQ_group$F` = c(1, 10),
+  `initQ_group$U` = c(1, 10),
   initQF = c(1, 10),
   initQU = c(1, 10),
   mu_R_group = c(1, 10),
@@ -1591,10 +1593,10 @@ draw_from_group_mean &lt;- function(param_settings, p) {
 # arguments: 
 # - params: vector of parameter settings
 # - sim_dat: data frame of simulated data
-# - dir: directory to save the data to
+# - dat_file_name: file to save data to
 # 
 # returns: nothing
-save_sim_dat &lt;- function(params, sim_dat, dir) {
+save_sim_dat &lt;- function(params, sim_dat, dat_file_name) {
   library(cmdstanr) # contains function write_stan_json()
 
   # parameter settings
@@ -1602,7 +1604,8 @@ save_sim_dat &lt;- function(params, sim_dat, dir) {
   params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
   params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  write_stan_json(params, file = paste0(dir, &quot;sim_param_settings.json&quot;))
+  param_file_name &lt;- stringr::str_replace(dat_file_name, &quot;sim_dat&quot;, &quot;sim_param_settings&quot;)
+  write_stan_json(params, file = param_file_name)
 
   # data
   n_part &lt;- params$n_part
@@ -1617,7 +1620,7 @@ save_sim_dat &lt;- function(params, sim_dat, dir) {
               byrow = TRUE)
   dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice&quot;, &quot;R&quot;)
   list_dat &lt;- setNames(mget(dat_names), dat_names)
-  write_stan_json(list_dat, file = paste0(dir, &quot;sim_dat.json&quot;))
+  write_stan_json(list_dat, file = dat_file_name)
 }
 
 # === did_sim_dat_change() =================
@@ -1848,6 +1851,8 @@ LR_cont &lt;- function(R, belief, w_LR) {
 <pre><code># ---------------------
 #        GENERAL
 # ---------------------
+main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
+sim_dir &lt;- paste0(main_dir, &quot;R_simulation/&quot;)
 library(tidyverse)
 my_teal &lt;- &quot;#008080&quot;
 my_pink &lt;- &quot;#ff00dd&quot;
@@ -2062,6 +2067,7 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
     plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
       geom_point(color = my_param_colors[[p]]) +
       lims(y = bounds) +
+      geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
       my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
     plots[[p]] &lt;- plot
@@ -2070,7 +2076,34 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
   library(grid)
   gridExtra::grid.arrange(grobs = plots,
                           ncol = 2,
-                          top = textGrob(&quot;Participant-level parameter estimations&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+                          top = textGrob(&quot;Participant-level parameter estimations\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
+                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
+                         )
+}
+
+many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
+  plots &lt;- list()
+  for (p in to_plot) {
+    sim &lt;- new.env()
+    source(paste0(sim_dir, &quot;sim.R&quot;), local = sim)
+    bounds &lt;- sim$param_bounds[[p]]
+
+    plot &lt;- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
+      geom_point(color = my_param_colors[[p]]) +
+      geom_abline(intercept = 0, slope = 1, linetype = 2) +
+      lims(x = bounds, y = bounds) +
+      labs(title = p, x = NULL, y = NULL) +
+      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+    plots[[p]] &lt;- plot
+  }
+
+  title &lt;- paste0(&quot;Parameter recovery for &quot;, max(sim_params$k), &quot; simulations&quot;)
+
+  library(grid)
+  gridExtra::grid.arrange(grobs = plots,
+                          ncol = 2,
+                          top = textGrob(title, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
                           bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
                           left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
                          )

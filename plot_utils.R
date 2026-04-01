@@ -1,6 +1,8 @@
 # ---------------------
 #        GENERAL
 # ---------------------
+main_dir <- "~/research/climate-RL-mod/"
+sim_dir <- paste0(main_dir, "R_simulation/")
 library(tidyverse)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
@@ -210,12 +212,12 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
     dat <- data.frame(sim_value = sim_values, 
                       fit_value = median_draws)
     
-    sim <- new.env()
-    source("~/research/climate-RL-mod/R_simulation/sim.R", local = sim)
+    bounds <- range(sim_values)
 
     plot <- ggplot(dat, aes(x = sim_value, y = fit_value)) +
       geom_point(color = my_param_colors[[p]]) +
-      lims(x = sim$param_bounds[[p]], y = sim$param_bounds[[p]]) +
+      lims(y = bounds) +
+      geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
       my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
     plots[[p]] <- plot
@@ -224,7 +226,34 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
   library(grid)
   gridExtra::grid.arrange(grobs = plots,
                           ncol = 2,
-                          top = textGrob("Participant-level parameter estimations", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+                          top = textGrob("Participant-level parameter estimations\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+                          bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
+                          left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
+                         )
+}
+
+many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
+  plots <- list()
+  for (p in to_plot) {
+    sim <- new.env()
+    source(paste0(sim_dir, "sim.R"), local = sim)
+    bounds <- sim$param_bounds[[p]]
+
+    plot <- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
+      geom_point(color = my_param_colors[[p]]) +
+      geom_abline(intercept = 0, slope = 1, linetype = 2) +
+      lims(x = bounds, y = bounds) +
+      labs(title = p, x = NULL, y = NULL) +
+      my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+    plots[[p]] <- plot
+  }
+
+  title <- paste0("Parameter recovery for ", max(sim_params$k), " simulations")
+
+  library(grid)
+  gridExtra::grid.arrange(grobs = plots,
+                          ncol = 2,
+                          top = textGrob(title, x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
                           bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
                           left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
                          )

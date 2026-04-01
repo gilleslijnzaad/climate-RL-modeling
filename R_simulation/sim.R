@@ -22,6 +22,8 @@ param_bounds <- list(
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
+  `initQ_group$F` = c(1, 10),
+  `initQ_group$U` = c(1, 10),
   initQF = c(1, 10),
   initQU = c(1, 10),
   mu_R_group = c(1, 10),
