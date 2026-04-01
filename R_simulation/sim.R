@@ -135,10 +135,10 @@ draw_from_group_mean <- function(param_settings, p) {
 # arguments: 
 # - params: vector of parameter settings
 # - sim_dat: data frame of simulated data
-# - dir: directory to save the data to
+# - dat_file_name: file to save data to
 # 
 # returns: nothing
-save_sim_dat <- function(params, sim_dat, dir) {
+save_sim_dat <- function(params, sim_dat, dat_file_name) {
   library(cmdstanr) # contains function write_stan_json()
 
   # parameter settings
@@ -146,7 +146,8 @@ save_sim_dat <- function(params, sim_dat, dir) {
   params$inv_temp <- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   params$initQF <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
   params$initQU <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  write_stan_json(params, file = paste0(dir, "sim_param_settings.json"))
+  param_file_name <- stringr::str_replace(dat_file_name, "sim_dat", "sim_param_settings")
+  write_stan_json(params, file = param_file_name)
 
   # data
   n_part <- params$n_part
@@ -161,7 +162,7 @@ save_sim_dat <- function(params, sim_dat, dir) {
               byrow = TRUE)
   dat_names <- c("n_part", "n_trials", "choice", "R")
   list_dat <- setNames(mget(dat_names), dat_names)
-  write_stan_json(list_dat, file = paste0(dir, "sim_dat.json"))
+  write_stan_json(list_dat, file = dat_file_name)
 }
 
 # === did_sim_dat_change() =================
