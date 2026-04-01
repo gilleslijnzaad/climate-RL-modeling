@@ -4,24 +4,13 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
-## ----sim-code, comment = NA---------------------------------------------------
+## ----run-std------------------------------------------------------------------
 rm(list = ls())
 # setwd("R_simulation/")
 
 sim <- new.env()
 source("sim.R", local = sim)  # access functions using sim$fun()
 
-temp <- readLines("sim.R")
-start <- grep("# === run_std", temp)
-end <- grep("# === end of run_std()", temp) - 1
-cat(temp[start:end], sep = "\n")
-
-## ----param-stddevs, comment = NA----------------------------------------------
-start <- grep("# === param_stddevs", temp)
-end <- grep("# === end of param_stddevs", temp) - 1
-cat(temp[start:end], sep = "\n")
-
-## ----run-std------------------------------------------------------------------
 params_std <- list(
   n_part = 50,
   n_trials = 30,

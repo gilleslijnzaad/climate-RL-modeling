@@ -6,7 +6,7 @@ output:
   html_document:
     toc: TRUE
     toc_float:
-      collapsed: TRUE
+      collapsed: FALSE
     number_sections: TRUE
     highlight: tango
     code_folding: hide
@@ -19,32 +19,16 @@ knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 ```
 
-In this document, I demonstrate the behavior of the simulation by varying the parameter settings and visualizing the resulting behavior. The full simulation code can be found in [sim.R](sim.R), and all plot-related functions come from [plot_utils.R](../plot_utils.R).
+In this document, I demonstrate the behavior of the simulation by varying the parameter settings and visualizing the resulting behavior. The full simulation code can be found in [sim.R](https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#simR), and all plot-related functions come from [plot_utils.R](https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#plot_utilsR).
 
-# Simulation code {.unnumbered}
-For ease of reference, here is the simulation code.
-```{r sim-code, comment = NA}
+# Standard settings
+```{r run-std}
 rm(list = ls())
 # setwd("R_simulation/")
 
 sim <- new.env()
 source("sim.R", local = sim)  # access functions using sim$fun()
 
-temp <- readLines("sim.R")
-start <- grep("# === run_std", temp)
-end <- grep("# === end of run_std()", temp) - 1
-cat(temp[start:end], sep = "\n")
-```
-
-The function `draw_from_group_mean()` makes use of a list of standard deviations for the parameters. These are static:
-```{r param-stddevs, comment = NA}
-start <- grep("# === param_stddevs", temp)
-end <- grep("# === end of param_stddevs", temp) - 1
-cat(temp[start:end], sep = "\n")
-```
-
-# Standard settings
-```{r run-std}
 params_std <- list(
   n_part = 50,
   n_trials = 30,
