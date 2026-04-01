@@ -11,7 +11,6 @@ param_stddevs <- list(
   sigma_R_group = 2,
   margin_group = 2
 )
-# === end of param_stddevs
 
 # === param_bounds =============================
 # list of theoretical bounds for parameters; same as in Stan
@@ -40,30 +39,29 @@ param_bounds <- list(
 # - data frame of simulated data
 run_std <- function(params) {
   library(truncnorm) # for drawing from truncated distribution
-  dat <- data.frame()
 
+  # ------ initialize ------
   n_part <- params$n_part
   n_trials <- params$n_trials
+  Q_F <- matrix(ncol = n_trials, nrow = n_part)
+  Q_U <- matrix(ncol = n_trials, nrow = n_part)
+  choice <- matrix(ncol = n_trials, nrow = n_part)
+  R <- matrix(ncol = n_trials, nrow = n_part)
+  pred_err <- matrix(ncol = n_trials, nrow = n_part)
+  LR <- c()
+  inv_temp <- c()
 
   for (j in 1:n_part) {
-
-    # ------ init data frames & vectors -----
-    Q <- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
     P_F <- c()
-    choice <- c()
-    R <- c()
     pred_err <- c()
 
     # ----- initialize parameters -----
     # TODO: possibly replace this with a loop over params (more elegant)
-    LR <- draw_from_group_mean(params, "LR_group")
-    inv_temp <- draw_from_group_mean(params, "inv_temp_group")
+    LR[j] <- draw_from_group_mean(params, "LR_group")
+    inv_temp[j] <- draw_from_group_mean(params, "inv_temp_group")
     initQ <- draw_from_group_mean(params, "initQ_group")
-    Q$F[1] <- initQ[1]
-    Q$U[1] <- initQ[2]
+    Q_F[j, 1] <- initQ[1]
+    Q_U[j, 1] <- initQ[2]
     mu_R <- draw_from_group_mean(params, "mu_R_group")
     sigma_R <- draw_from_group_mean(params, "sigma_R_group")
 
@@ -71,49 +69,44 @@ run_std <- function(params) {
     for (t in 1:n_trials) {
 
       # choose
-      P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] <- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
+      P_F[t] <- 1 / (1 + exp(-inv_temp[j] * (Q_F[j, t] - Q_U[j, t])))
+      choice[j, t] <- sample(c(1, 2), 
+                             size = 1,
+                             prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
+      R[j, t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
+                                  mean = mu_R[[choice[j, t]]], 
+                                  sd = sigma_R),
+                       0)
 
       # learn
-      pred_err[t] <- R[t] - Q[t, choice[t]]
-
       if (t < n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {
-          Q[t+1, 1] <- Q[t, 1] + LR * pred_err[t]
-          Q[t+1, 2] <- Q[t, 2]
+        if (choice[j, t] == 1) {
+          pred_err[t] <- R[j, t] - Q_F[j, t]
+          Q_F[j, t+1] <- Q_F[j, t] + LR[j] * pred_err[t]
+          Q_U[j, t+1] <- Q_U[j, t]
         } else {
-          Q[t+1, 2] <- Q[t, 2] + LR * pred_err[t]
-          Q[t+1, 1] <- Q[t, 1]
+          pred_err[t] <- R[j, t] - Q_U[j, t]
+          Q_U[j, t+1] <- Q_U[j, t] + LR[j] * pred_err[t]
+          Q_F[j, t+1] <- Q_F[j, t]
         }
       }
     }
-
-    dat_p <- data.frame(
-      participant = j,
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err,
-      LR =          LR,
-      inv_temp =    inv_temp
-    )
-
-    dat <- rbind(dat, dat_p)
   }
+
+  dat <- data.frame(
+    participant =   rep(seq_len(n_part), each = n_trials),
+    trial =         rep(seq_len(n_trials), n_part),
+    Q_F =           array(t(Q_F)),
+    Q_U =           array(t(Q_U)),
+    choice =        array(t(choice)),
+    R =             array(t(R)),
+    LR =            rep(LR, each = n_trials),
+    inv_temp =      rep(inv_temp, each = n_trials)
+  )
   return(dat)
 }
-# === end of run_std()
 
 # === draw_from_group_mean() =======================
 # arguments: 

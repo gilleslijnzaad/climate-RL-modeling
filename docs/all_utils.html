@@ -1467,7 +1467,6 @@ param_stddevs &lt;- list(
   sigma_R_group = 2,
   margin_group = 2
 )
-# === end of param_stddevs
 
 # === param_bounds =============================
 # list of theoretical bounds for parameters; same as in Stan
@@ -1496,30 +1495,29 @@ param_bounds &lt;- list(
 # - data frame of simulated data
 run_std &lt;- function(params) {
   library(truncnorm) # for drawing from truncated distribution
-  dat &lt;- data.frame()
 
+  # ------ initialize ------
   n_part &lt;- params$n_part
   n_trials &lt;- params$n_trials
+  Q_F &lt;- matrix(ncol = n_trials, nrow = n_part)
+  Q_U &lt;- matrix(ncol = n_trials, nrow = n_part)
+  choice &lt;- matrix(ncol = n_trials, nrow = n_part)
+  R &lt;- matrix(ncol = n_trials, nrow = n_part)
+  pred_err &lt;- matrix(ncol = n_trials, nrow = n_part)
+  LR &lt;- c()
+  inv_temp &lt;- c()
 
   for (j in 1:n_part) {
-
-    # ------ init data frames &amp; vectors -----
-    Q &lt;- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
     P_F &lt;- c()
-    choice &lt;- c()
-    R &lt;- c()
     pred_err &lt;- c()
 
     # ----- initialize parameters -----
     # TODO: possibly replace this with a loop over params (more elegant)
-    LR &lt;- draw_from_group_mean(params, &quot;LR_group&quot;)
-    inv_temp &lt;- draw_from_group_mean(params, &quot;inv_temp_group&quot;)
+    LR[j] &lt;- draw_from_group_mean(params, &quot;LR_group&quot;)
+    inv_temp[j] &lt;- draw_from_group_mean(params, &quot;inv_temp_group&quot;)
     initQ &lt;- draw_from_group_mean(params, &quot;initQ_group&quot;)
-    Q$F[1] &lt;- initQ[1]
-    Q$U[1] &lt;- initQ[2]
+    Q_F[j, 1] &lt;- initQ[1]
+    Q_U[j, 1] &lt;- initQ[2]
     mu_R &lt;- draw_from_group_mean(params, &quot;mu_R_group&quot;)
     sigma_R &lt;- draw_from_group_mean(params, &quot;sigma_R_group&quot;)
 
@@ -1527,49 +1525,44 @@ run_std &lt;- function(params) {
     for (t in 1:n_trials) {
 
       # choose
-      P_F[t] &lt;- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] &lt;- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
+      P_F[t] &lt;- 1 / (1 + exp(-inv_temp[j] * (Q_F[j, t] - Q_U[j, t])))
+      choice[j, t] &lt;- sample(c(1, 2), 
+                             size = 1,
+                             prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      R[t] &lt;- round(rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
+      R[j, t] &lt;- round(rtruncnorm(n = 1, a = 1, b = 10,
+                                  mean = mu_R[[choice[j, t]]], 
+                                  sd = sigma_R),
+                       0)
 
       # learn
-      pred_err[t] &lt;- R[t] - Q[t, choice[t]]
-
       if (t &lt; n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {
-          Q[t+1, 1] &lt;- Q[t, 1] + LR * pred_err[t]
-          Q[t+1, 2] &lt;- Q[t, 2]
+        if (choice[j, t] == 1) {
+          pred_err[t] &lt;- R[j, t] - Q_F[j, t]
+          Q_F[j, t+1] &lt;- Q_F[j, t] + LR[j] * pred_err[t]
+          Q_U[j, t+1] &lt;- Q_U[j, t]
         } else {
-          Q[t+1, 2] &lt;- Q[t, 2] + LR * pred_err[t]
-          Q[t+1, 1] &lt;- Q[t, 1]
+          pred_err[t] &lt;- R[j, t] - Q_U[j, t]
+          Q_U[j, t+1] &lt;- Q_U[j, t] + LR[j] * pred_err[t]
+          Q_F[j, t+1] &lt;- Q_F[j, t]
         }
       }
     }
-
-    dat_p &lt;- data.frame(
-      participant = j,
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err,
-      LR =          LR,
-      inv_temp =    inv_temp
-    )
-
-    dat &lt;- rbind(dat, dat_p)
   }
+
+  dat &lt;- data.frame(
+    participant =   rep(seq_len(n_part), each = n_trials),
+    trial =         rep(seq_len(n_trials), n_part),
+    Q_F =           array(t(Q_F)),
+    Q_U =           array(t(Q_U)),
+    choice =        array(t(choice)),
+    R =             array(t(R)),
+    LR =            rep(LR, each = n_trials),
+    inv_temp =      rep(inv_temp, each = n_trials)
+  )
   return(dat)
 }
-# === end of run_std()
 
 # === draw_from_group_mean() =======================
 # arguments: 
