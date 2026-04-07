@@ -11,7 +11,7 @@
 
 
 
-<title>all_utils.knit</title>
+<title>All utility code</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1448,6 +1448,7 @@ border-radius: 0px;
 
 
 
+<h1 class="title toc-ignore">All utility code</h1>
 
 </div>
 
@@ -2100,6 +2101,105 @@ many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
                           bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
                           left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
                          )
+}</code></pre>
+</div>
+<div id="fit_utils.r" class="section level1">
+<h1><code>fit_utils.R</code></h1>
+<pre><code>library(cmdstanr)
+options(mc.cores = parallel::detectCores())
+
+# -----------------------------
+#        SET DIRECTORIES
+# -----------------------------
+main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
+sim_dir &lt;- paste0(main_dir, &quot;R_simulation/&quot;)
+sim &lt;- new.env()
+source(paste0(sim_dir, &quot;sim.R&quot;), local = sim)
+mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
+
+# ---------------------------
+#        MODEL FITTING
+# ---------------------------
+
+# === get_draws() =======================
+# fits the model once, prints progress (Completed run k of n_runs), returns data frame of fit draws
+# arguments: 
+# - model: the CmdStanModel object
+# - dat_file: name of data file to feed to Stan
+# - k: run number (for progress print)
+# - n_runs: total number of runs (for progress print)
+# - show_iteration_progress: whether to show the progress of the individual iteration (i.e., chain updates)
+# 
+# returns: data frame of fit draws
+get_draws &lt;- function(model, dat_file, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
+  it &lt;- 1000
+  fit &lt;- model$sample(
+    data = dat_file,
+    iter_sampling = it,
+    chains = 1,
+    thin = 1,
+    iter_warmup = it / 2,
+    refresh = it / 5,
+    seed = 1234,
+    show_messages = show_iteration_progress
+  )
+  draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
+  draws &lt;- draws %&gt;%
+    dplyr::rename(
+      LR_group = `means[1]`,
+      inv_temp_group = `means[2]`,
+      `initQ_group$F` = `means[3]`,
+      `initQ_group$U` = `means[4]`
+    )
+  message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
+  return(draws)
+}
+
+# === randomize_free_params() =======================
+# randomizes given free parameters: uniform distribution over their bounds
+# arguments: 
+# - param_settings: list of parameter settings
+# - free_params: list of names of free parameters to randomize
+# 
+# returns: list of parameter settings with free_params randomized
+randomize_free_params &lt;- function(param_settings, free_params) {
+  for (p in free_params) {
+    bounds &lt;- sim$param_bounds[[p]]
+    if (grepl(&quot;\\$&quot;, p)) { # parameter is part of a list
+      split_name &lt;- strsplit(p, &quot;\\$&quot;)[[1]]
+      param_settings[[split_name[1]]][[split_name[2]]] &lt;- runif(1, min = bounds[1], max = bounds[2])
+    } else {
+      param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
+    }
+  }
+  return(param_settings)
+}
+
+# === sim_fit_many() =======================
+# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
+# arguments: 
+# - param_settings: list of parameter settings
+# - free_params: list of names of free parameters
+# - model_file: name of Stan file
+# - n_runs: number of times to run the simulation and model
+# 
+# returns: nothing
+sim_fit_many &lt;- function(param_settings, free_params, model_file, n_runs = 1) {
+  dat_dir &lt;- paste0(mod_dir, n_runs, &quot;_runs/&quot;)
+  if (!dir.exists(dat_dir)) dir.create(dat_dir)
+  model &lt;- cmdstan_model(model_file)
+  for (k in 1:n_runs) {
+    # simulate
+    params &lt;- randomize_free_params(param_settings, free_params)
+    sim_dat &lt;- sim$run_std(param_settings)
+    dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
+    sim$save_sim_dat(params, sim_dat, dat_file)
+
+    # fit
+    fit_file &lt;- paste0(dat_dir, &quot;fit_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.rds&quot;)
+    fit &lt;- get_draws(model, dat_file, k, n_runs)
+    saveRDS(fit, file = fit_file)
+  }
 }</code></pre>
 </div>
 <div id="utils.r" class="section level1">
