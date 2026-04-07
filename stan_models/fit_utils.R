@@ -79,7 +79,7 @@ sim_fit_many <- function(param_settings, free_params, model_file, n_runs = 1) {
   for (k in 1:n_runs) {
     # simulate
     params <- randomize_free_params(param_settings, free_params)
-    sim_dat <- sim$run_std(param_settings)
+    sim_dat <- sim$run_std(params)
     dat_file <- paste0(dat_dir, "sim_dat_", sprintf("%03d", k), ".json")
     sim$save_sim_dat(params, sim_dat, dat_file)
 

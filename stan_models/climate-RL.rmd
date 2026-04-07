@@ -215,6 +215,5 @@ for (k in 1:n_runs) {
   }
 }
 
-source(paste0(main_dir, "plot_utils.R"), local = plot)
 plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
