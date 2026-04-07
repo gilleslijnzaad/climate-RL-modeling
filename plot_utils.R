@@ -8,8 +8,13 @@ my_teal <- "#008080"
 my_pink <- "#ff00dd"
 my_blue <- "#00aadd"
 my_dark_blue <- "#001199"
-my_colors <- c(my_teal, my_pink, my_teal, my_pink, my_teal, my_pink, my_blue, my_dark_blue, my_blue, my_dark_blue)
-my_param_colors <- setNames(my_colors, c("F", "U", "initQF", "initQU", "initQ_group$F", "initQ_group$U", "LR", "inv_temp", "LR_group", "inv_temp_group"))
+my_param_colors <- c(
+  F = my_teal,            U = my_pink,
+  initQF = my_teal,       initQU = my_pink,
+  initQF_group = my_teal, initQU_group = my_pink,
+  LR = my_blue,           inv_temp = my_dark_blue,
+  LR_group = my_blue,     inv_temp_group = my_dark_blue
+)
 
 my_theme <- theme_bw() +
   theme(plot.title = element_text(size = 22, face = "bold")) +
@@ -155,12 +160,7 @@ posterior_density <- function(draws, to_plot, param_settings = NULL) {
 
   for (p in to_plot) {
     if (!is.null(param_settings)) {
-      if (grepl("\\$", p)) { # parameter is part of a list
-        split_name <- strsplit(p, "\\$")[[1]]
-        sim_value <- purrr::pluck(param_settings, split_name[1], split_name[2])
-      } else {
-        sim_value <- param_settings[[p]]
-      }
+      sim_value <- param_settings[[p]]
     }
     dat <- data.frame(
       parameter = as.factor(p),

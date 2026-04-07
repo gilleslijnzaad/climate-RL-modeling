@@ -7,6 +7,8 @@ param_stddevs <- list(
   LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
+  initQF_group = 2,
+  initQU_group = 2,
   mu_R_group = 2,
   sigma_R_group = 2,
   margin_group = 2
@@ -21,8 +23,8 @@ param_bounds <- list(
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
-  `initQ_group$F` = c(1, 10),
-  `initQ_group$U` = c(1, 10),
+  initQF_group = c(1, 10),
+  initQU_group = c(1, 10),
   initQF = c(1, 10),
   initQU = c(1, 10),
   mu_R_group = c(1, 10),
@@ -59,9 +61,8 @@ run_std <- function(params) {
     # TODO: possibly replace this with a loop over params (more elegant)
     LR[j] <- draw_from_group_mean(params, "LR_group")
     inv_temp[j] <- draw_from_group_mean(params, "inv_temp_group")
-    initQ <- draw_from_group_mean(params, "initQ_group")
-    Q_F[j, 1] <- initQ[1]
-    Q_U[j, 1] <- initQ[2]
+    Q_F[j, 1] <- draw_from_group_mean(params, "initQF_group")
+    Q_U[j, 1] <- draw_from_group_mean(params, "initQU_group")
     mu_R <- draw_from_group_mean(params, "mu_R_group")
     sigma_R <- draw_from_group_mean(params, "sigma_R_group")
 
@@ -180,6 +181,8 @@ did_sim_dat_change <- function(data_file, sim_dat) {
     return(TRUE)
   }
 }
+
+# TODO: vectorize everything below (as in run_std)
 
 # === run_LRN_discr() =================
 # arguments: 

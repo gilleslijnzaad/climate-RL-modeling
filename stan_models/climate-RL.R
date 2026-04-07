@@ -18,7 +18,8 @@ params <- list(
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
-  initQ_group = list(F = 8, U = 2),
+  initQF_group = 8,
+  initQU_group = 2,
   mu_R_group = list(F = 5, U = 5),
   sigma_R_group = 2
 )
@@ -94,7 +95,7 @@ if (dat_changed | model_changed) {
 }
 
 ## ----posterior-plots----------------------------------------------------------
-to_inspect <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
+to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 plot$posterior_density(draws, to_inspect, params)
 
 ## ----posterior-table----------------------------------------------------------
@@ -107,17 +108,16 @@ participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
 
 ## ----many-runs----------------------------------------------------------------
-n_runs <- 100
-free_params <- c("LR_group", "inv_temp_group", "initQ_group$F", "initQ_group$U")
+n_runs <- 10
+free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 
-source(paste0(main_dir, "stan_models/fit_utils.R"), local = fitting)
 # fitting$sim_fit_many(params, free_params, "climate-RL.stan", n_runs)
 
 ## ----inspect-many-runs--------------------------------------------------------
 sim_params <- data.frame(k = 1:n_runs)
 fit_params <- data.frame(k = 1:n_runs)
 
-dat_dir <- paste0(main_dir, "stan_models/dat/100_runs/")
+dat_dir <- paste0(main_dir, "stan_models/dat/10_runs/")
 
 for (k in 1:n_runs) {
   sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")
@@ -128,13 +128,7 @@ for (k in 1:n_runs) {
 
   # calculate medians
   for (p in free_params) {
-    if (grepl("\\$", p)) { # parameter is part of a list
-      split_name <- strsplit(p, "\\$")[[1]]
-      sim_value <- sim_dat[[split_name[1]]][(split_name[2] == "U") + 1]
-      sim_params[[p]][k] <- sim_value
-    } else {
-      sim_params[[p]][k] <- sim_dat[[p]]
-    }
+    sim_params[[p]][k] <- sim_dat[[p]]
     fit_params[[p]][k] <- median(fit_dat[[p]])
   }
 }

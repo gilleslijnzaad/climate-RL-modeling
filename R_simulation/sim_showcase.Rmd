@@ -34,7 +34,8 @@ params_std <- list(
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
-  initQ_group = list(F = 8, U = 2),
+  initQF_group = 8,
+  initQU_group = 2,
   mu_R_group = list(F = 5, U = 5),
   sigma_R_group = 2
 )

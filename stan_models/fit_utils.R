@@ -41,8 +41,8 @@ get_draws <- function(model, dat_file, k = 1, n_runs = 1, show_iteration_progres
     dplyr::rename(
       LR_group = `means[1]`,
       inv_temp_group = `means[2]`,
-      `initQ_group$F` = `means[3]`,
-      `initQ_group$U` = `means[4]`
+      initQF_group = `means[3]`,
+      initQU_group = `means[4]`
     )
   message("Completed run ", k, " of ", n_runs, " in ", round(fit$time()$total, 1), " seconds.")
   return(draws)
@@ -58,12 +58,7 @@ get_draws <- function(model, dat_file, k = 1, n_runs = 1, show_iteration_progres
 randomize_free_params <- function(param_settings, free_params) {
   for (p in free_params) {
     bounds <- sim$param_bounds[[p]]
-    if (grepl("\\$", p)) { # parameter is part of a list
-      split_name <- strsplit(p, "\\$")[[1]]
-      param_settings[[split_name[1]]][[split_name[2]]] <- runif(1, min = bounds[1], max = bounds[2])
-    } else {
-      param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
-    }
+    param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
   }
   return(param_settings)
 }

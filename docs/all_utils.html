@@ -1464,6 +1464,8 @@ param_stddevs &lt;- list(
   LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
+  initQF_group = 2,
+  initQU_group = 2,
   mu_R_group = 2,
   sigma_R_group = 2,
   margin_group = 2
@@ -1478,8 +1480,8 @@ param_bounds &lt;- list(
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
-  `initQ_group$F` = c(1, 10),
-  `initQ_group$U` = c(1, 10),
+  initQF_group = c(1, 10),
+  initQU_group = c(1, 10),
   initQF = c(1, 10),
   initQU = c(1, 10),
   mu_R_group = c(1, 10),
@@ -1516,9 +1518,8 @@ run_std &lt;- function(params) {
     # TODO: possibly replace this with a loop over params (more elegant)
     LR[j] &lt;- draw_from_group_mean(params, &quot;LR_group&quot;)
     inv_temp[j] &lt;- draw_from_group_mean(params, &quot;inv_temp_group&quot;)
-    initQ &lt;- draw_from_group_mean(params, &quot;initQ_group&quot;)
-    Q_F[j, 1] &lt;- initQ[1]
-    Q_U[j, 1] &lt;- initQ[2]
+    Q_F[j, 1] &lt;- draw_from_group_mean(params, &quot;initQF_group&quot;)
+    Q_U[j, 1] &lt;- draw_from_group_mean(params, &quot;initQU_group&quot;)
     mu_R &lt;- draw_from_group_mean(params, &quot;mu_R_group&quot;)
     sigma_R &lt;- draw_from_group_mean(params, &quot;sigma_R_group&quot;)
 
@@ -1637,6 +1638,8 @@ did_sim_dat_change &lt;- function(data_file, sim_dat) {
     return(TRUE)
   }
 }
+
+# TODO: vectorize everything below (as in run_std)
 
 # === run_LRN_discr() =================
 # arguments: 
@@ -1852,8 +1855,13 @@ my_teal &lt;- &quot;#008080&quot;
 my_pink &lt;- &quot;#ff00dd&quot;
 my_blue &lt;- &quot;#00aadd&quot;
 my_dark_blue &lt;- &quot;#001199&quot;
-my_colors &lt;- c(my_teal, my_pink, my_teal, my_pink, my_teal, my_pink, my_blue, my_dark_blue, my_blue, my_dark_blue)
-my_param_colors &lt;- setNames(my_colors, c(&quot;F&quot;, &quot;U&quot;, &quot;initQF&quot;, &quot;initQU&quot;, &quot;initQ_group$F&quot;, &quot;initQ_group$U&quot;, &quot;LR&quot;, &quot;inv_temp&quot;, &quot;LR_group&quot;, &quot;inv_temp_group&quot;))
+my_param_colors &lt;- c(
+  F = my_teal,            U = my_pink,
+  initQF = my_teal,       initQU = my_pink,
+  initQF_group = my_teal, initQU_group = my_pink,
+  LR = my_blue,           inv_temp = my_dark_blue,
+  LR_group = my_blue,     inv_temp_group = my_dark_blue
+)
 
 my_theme &lt;- theme_bw() +
   theme(plot.title = element_text(size = 22, face = &quot;bold&quot;)) +
@@ -1999,12 +2007,7 @@ posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
 
   for (p in to_plot) {
     if (!is.null(param_settings)) {
-      if (grepl(&quot;\\$&quot;, p)) { # parameter is part of a list
-        split_name &lt;- strsplit(p, &quot;\\$&quot;)[[1]]
-        sim_value &lt;- purrr::pluck(param_settings, split_name[1], split_name[2])
-      } else {
-        sim_value &lt;- param_settings[[p]]
-      }
+      sim_value &lt;- param_settings[[p]]
     }
     dat &lt;- data.frame(
       parameter = as.factor(p),
@@ -2148,8 +2151,8 @@ get_draws &lt;- function(model, dat_file, k = 1, n_runs = 1, show_iteration_prog
     dplyr::rename(
       LR_group = `means[1]`,
       inv_temp_group = `means[2]`,
-      `initQ_group$F` = `means[3]`,
-      `initQ_group$U` = `means[4]`
+      initQF_group = `means[3]`,
+      initQU_group = `means[4]`
     )
   message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
   return(draws)
@@ -2165,12 +2168,7 @@ get_draws &lt;- function(model, dat_file, k = 1, n_runs = 1, show_iteration_prog
 randomize_free_params &lt;- function(param_settings, free_params) {
   for (p in free_params) {
     bounds &lt;- sim$param_bounds[[p]]
-    if (grepl(&quot;\\$&quot;, p)) { # parameter is part of a list
-      split_name &lt;- strsplit(p, &quot;\\$&quot;)[[1]]
-      param_settings[[split_name[1]]][[split_name[2]]] &lt;- runif(1, min = bounds[1], max = bounds[2])
-    } else {
-      param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
-    }
+    param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
   }
   return(param_settings)
 }
