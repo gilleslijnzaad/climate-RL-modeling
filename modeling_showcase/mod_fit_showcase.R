@@ -6,12 +6,13 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
-setwd("~/research/climate-RL-mod/stan_models")
+setwd("~/research/climate-RL-mod/modeling_showcase")
 main_dir <- "~/research/climate-RL-mod/"
-sim_dir <- paste0(main_dir, "R_simulation/")
+util_dir <- paste0(main_dir, "utilities/")
+model_path <- paste0(main_dir, "models/std.stan")
 
 sim <- new.env()
-source(paste0(sim_dir, "sim.R"), local = sim) # access functions using sim$fun()
+source(paste0(util_dir, "sim.R"), local = sim) # access functions using sim$fun()
 
 params <- list(
   n_part = 50,
@@ -31,12 +32,12 @@ cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\
 
 ## ----inspecting-data, fig.height = 4------------------------------------------
 plot <- new.env()
-source(paste0(main_dir, "plot_utils.R"), local = plot) # access functions using plot$fun()
+source(paste0(util_dir, "plot_utils.R"), local = plot) # access functions using plot$fun()
 
 plot$sim_plots(sim_dat, params)
 
 ## ----explmod-data, comment = NA-----------------------------------------------
-mod_code <- readLines("climate-RL.stan")
+mod_code <- readLines(model_path)
 start <- grep("data \\{", mod_code)[1]
 end <- grep("transformed data \\{", mod_code) - 2
 cat(mod_code[start:end], sep = "\n")
@@ -77,7 +78,7 @@ end <- length(mod_code)
 cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
-dat_dir <- paste0(main_dir, "stan_models/dat/1_runs/")
+dat_dir <- paste0(main_dir, "modeling_showcase/dat/1_run/")
 dat_file <- paste0(dat_dir, "sim_dat_001.json")
 
 dat_changed <- sim$did_sim_dat_change(dat_file, sim_dat)
@@ -85,9 +86,9 @@ sim$save_sim_dat(params, sim_dat, dat_file)
 model_changed <- FALSE
 
 fitting <- new.env()
-source(paste0(main_dir, "stan_models/fit_utils.R"), local = fitting) # access functions using fitting$fun()
+source(paste0(util_dir, "fit_utils.R"), local = fitting) # access functions using fitting$fun()
 if (dat_changed | model_changed) {
-  model <- cmdstan_model("climate-RL.stan")
+  model <- cmdstan_model(model_path)
   draws <- fitting$get_draws(model, dat_file, show_iteration_progress = TRUE)
   saveRDS(draws, paste0(dat_dir, "fit_001.rds"))
 } else {
@@ -100,7 +101,7 @@ plot$posterior_density(draws, to_inspect, params)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
-source(paste0(main_dir, "utils.R"), local = util) # access functions using util$fun()
+source(paste0(util_dir, "utils.R"), local = util) # access functions using util$fun()
 util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit---------------------------------------------------------------
@@ -108,16 +109,18 @@ participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
 
 ## ----many-runs----------------------------------------------------------------
-n_runs <- 10
+n_runs <- 100
 free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
+dat_dir <- paste0(main_dir, "modeling_showcase/dat/")
 
-# fitting$sim_fit_many(params, free_params, "climate-RL.stan", n_runs)
+# running this bit below takes at least an hour
+# fitting$sim_fit_many(params, free_params, model_path, dat_dir, n_runs)
 
 ## ----inspect-many-runs--------------------------------------------------------
 sim_params <- data.frame(k = 1:n_runs)
 fit_params <- data.frame(k = 1:n_runs)
 
-dat_dir <- paste0(main_dir, "stan_models/dat/10_runs/")
+dat_dir <- paste0(main_dir, "modeling_showcase/dat/100_runs/")
 
 for (k in 1:n_runs) {
   sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")

@@ -2,7 +2,9 @@
 #        GENERAL
 # ---------------------
 main_dir <- "~/research/climate-RL-mod/"
-sim_dir <- paste0(main_dir, "R_simulation/")
+util_dir <- paste0(main_dir, "utilities/")
+sim <- new.env()
+source(paste0(util_dir, "sim.R"), local = sim)
 library(tidyverse)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
@@ -215,7 +217,7 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
     bounds <- range(sim_values)
 
     plot <- ggplot(dat, aes(x = sim_value, y = fit_value)) +
-      geom_point(color = my_param_colors[[p]]) +
+      geom_point(color = my_param_colors[[p]], size = 2) +
       lims(y = bounds) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
@@ -235,12 +237,10 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
 many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
   plots <- list()
   for (p in to_plot) {
-    sim <- new.env()
-    source(paste0(sim_dir, "sim.R"), local = sim)
     bounds <- sim$param_bounds[[p]]
 
     plot <- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
-      geom_point(color = my_param_colors[[p]]) +
+      geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = bounds, y = bounds) +
       labs(title = p, x = NULL, y = NULL) +

@@ -6,10 +6,15 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----run-std------------------------------------------------------------------
 rm(list = ls())
-# setwd("R_simulation/")
+# setwd("~/research/climate-RL-mod/simulation_showcase")
+main_dir <- "~/research/climate-RL-mod/"
+util_dir <- paste0(main_dir, "utilities/")
 
 sim <- new.env()
-source("sim.R", local = sim)  # access functions using sim$fun()
+source(paste0(util_dir, "sim.R"), local = sim)  # access functions using sim$fun()
+
+plot <- new.env()
+source(paste0(util_dir,"plot_utils.R"), local = plot)  # access functions using plot$fun()
 
 params_std <- list(
   n_part = 50,
@@ -21,8 +26,6 @@ params_std <- list(
   mu_R_group = list(F = 5, U = 5),
   sigma_R_group = 2
 )
-plot <- new.env()
-source("../plot_utils.R", local = plot)  # access functions using plot$fun()
 
 dat <- sim$run_std(params_std)
 plot$sim_plots(dat, params_std)

@@ -1849,7 +1849,9 @@ LR_cont &lt;- function(R, belief, w_LR) {
 #        GENERAL
 # ---------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-sim_dir &lt;- paste0(main_dir, &quot;R_simulation/&quot;)
+util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
+sim &lt;- new.env()
+source(paste0(util_dir, &quot;sim.R&quot;), local = sim)
 library(tidyverse)
 my_teal &lt;- &quot;#008080&quot;
 my_pink &lt;- &quot;#ff00dd&quot;
@@ -2062,7 +2064,7 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
     bounds &lt;- range(sim_values)
 
     plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
-      geom_point(color = my_param_colors[[p]]) +
+      geom_point(color = my_param_colors[[p]], size = 2) +
       lims(y = bounds) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
@@ -2082,12 +2084,10 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
 many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
   plots &lt;- list()
   for (p in to_plot) {
-    sim &lt;- new.env()
-    source(paste0(sim_dir, &quot;sim.R&quot;), local = sim)
     bounds &lt;- sim$param_bounds[[p]]
 
     plot &lt;- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
-      geom_point(color = my_param_colors[[p]]) +
+      geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = bounds, y = bounds) +
       labs(title = p, x = NULL, y = NULL) +
@@ -2115,9 +2115,9 @@ options(mc.cores = parallel::detectCores())
 #        SET DIRECTORIES
 # -----------------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-sim_dir &lt;- paste0(main_dir, &quot;R_simulation/&quot;)
+util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
 sim &lt;- new.env()
-source(paste0(sim_dir, &quot;sim.R&quot;), local = sim)
+source(paste0(util_dir, &quot;sim.R&quot;), local = sim)
 mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
 
 # ---------------------------
@@ -2179,17 +2179,18 @@ randomize_free_params &lt;- function(param_settings, free_params) {
 # - param_settings: list of parameter settings
 # - free_params: list of names of free parameters
 # - model_file: name of Stan file
+# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
 # - n_runs: number of times to run the simulation and model
 # 
 # returns: nothing
-sim_fit_many &lt;- function(param_settings, free_params, model_file, n_runs = 1) {
-  dat_dir &lt;- paste0(mod_dir, n_runs, &quot;_runs/&quot;)
+sim_fit_many &lt;- function(param_settings, free_params, model_file, save_dat_to, n_runs = 1) {
+  dat_dir &lt;- paste0(save_dat_to, n_runs, &quot;_runs/&quot;)
   if (!dir.exists(dat_dir)) dir.create(dat_dir)
   model &lt;- cmdstan_model(model_file)
   for (k in 1:n_runs) {
     # simulate
     params &lt;- randomize_free_params(param_settings, free_params)
-    sim_dat &lt;- sim$run_std(param_settings)
+    sim_dat &lt;- sim$run_std(params)
     dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
     sim$save_sim_dat(params, sim_dat, dat_file)
 

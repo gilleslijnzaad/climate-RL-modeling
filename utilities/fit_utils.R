@@ -5,9 +5,9 @@ options(mc.cores = parallel::detectCores())
 #        SET DIRECTORIES
 # -----------------------------
 main_dir <- "~/research/climate-RL-mod/"
-sim_dir <- paste0(main_dir, "R_simulation/")
+util_dir <- paste0(main_dir, "utilities/")
 sim <- new.env()
-source(paste0(sim_dir, "sim.R"), local = sim)
+source(paste0(util_dir, "sim.R"), local = sim)
 mod_dir <- paste0(main_dir, "stan_models/dat/")
 
 # ---------------------------
@@ -69,11 +69,12 @@ randomize_free_params <- function(param_settings, free_params) {
 # - param_settings: list of parameter settings
 # - free_params: list of names of free parameters
 # - model_file: name of Stan file
+# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
 # - n_runs: number of times to run the simulation and model
 # 
 # returns: nothing
-sim_fit_many <- function(param_settings, free_params, model_file, n_runs = 1) {
-  dat_dir <- paste0(mod_dir, n_runs, "_runs/")
+sim_fit_many <- function(param_settings, free_params, model_file, save_dat_to, n_runs = 1) {
+  dat_dir <- paste0(save_dat_to, n_runs, "_runs/")
   if (!dir.exists(dat_dir)) dir.create(dat_dir)
   model <- cmdstan_model(model_file)
   for (k in 1:n_runs) {
