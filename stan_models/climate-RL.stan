@@ -39,6 +39,7 @@ model {
   // priors
   means_probit ~ normal(0, 1);
   sigmas ~ normal(0, 0.2);
+  
   LR_probit ~ normal(0, 1);
   inv_temp_probit ~ normal(0, 1);
   initQF_probit ~ normal(0, 1); 
