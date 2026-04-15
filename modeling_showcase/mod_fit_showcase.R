@@ -6,13 +6,14 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
-setwd("~/research/climate-RL-mod/modeling_showcase")
+# setwd("~/research/climate-RL-mod/modeling_showcase")
 main_dir <- "~/research/climate-RL-mod/"
 util_dir <- paste0(main_dir, "utilities/")
-model_path <- paste0(main_dir, "models/std.stan")
+mod_dir <- paste0(main_dir, "models/")
+model_path <- paste0(mod_dir, "1_std.stan")
 
 sim <- new.env()
-source(paste0(util_dir, "sim.R"), local = sim) # access functions using sim$fun()
+source(paste0(mod_dir, "1_std.R"), local = sim) # access functions using sim$fun()
 
 params <- list(
   n_part = 50,
@@ -25,7 +26,7 @@ params <- list(
   sigma_R_group = 2
 )
 
-sim_dat <- sim$run_std(params)
+sim_dat <- sim$run(params)
 
 cat(paste0("PARAMETER SETTINGS:"), capture.output(dplyr::glimpse(params)), sep = "\n")
 cat(paste0("SIMULATED DATA:"), capture.output(dplyr::glimpse(sim_dat)), sep = "\n")
@@ -81,8 +82,11 @@ cat(mod_code[start:end], sep = "\n")
 dat_dir <- paste0(main_dir, "modeling_showcase/dat/1_run/")
 dat_file <- paste0(dat_dir, "sim_dat_001.json")
 
-dat_changed <- sim$did_sim_dat_change(dat_file, sim_dat)
-sim$save_sim_dat(params, sim_dat, dat_file)
+sim_utils <- new.env()
+source(paste0(util_dir, "sim_utils.R"), local = sim_utils) # access functions using sim_utils$fun()
+
+dat_changed <- sim_utils$did_sim_dat_change(dat_file, sim_dat)
+sim_utils$save_sim_dat(params, sim_dat, dat_file)
 model_changed <- FALSE
 
 fitting <- new.env()

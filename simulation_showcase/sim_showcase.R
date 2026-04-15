@@ -8,10 +8,8 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 rm(list = ls())
 # setwd("~/research/climate-RL-mod/simulation_showcase")
 main_dir <- "~/research/climate-RL-mod/"
+model_dir <- paste0(main_dir, "models/")
 util_dir <- paste0(main_dir, "utilities/")
-
-sim <- new.env()
-source(paste0(util_dir, "sim.R"), local = sim)  # access functions using sim$fun()
 
 plot <- new.env()
 source(paste0(util_dir,"plot_utils.R"), local = plot)  # access functions using plot$fun()
@@ -27,25 +25,28 @@ params_std <- list(
   sigma_R_group = 2
 )
 
-dat <- sim$run_std(params_std)
+sim <- new.env()
+source(paste0(model_dir, "1_std.R"), local = sim)  # access functions using sim$fun()
+
+dat <- sim$run(params_std)
 plot$sim_plots(dat, params_std)
 
 ## ----run-std-LR---------------------------------------------------------------
 params <- modifyList(params_std, list(LR_group = 0.2))
-dat <- sim$run_std(params)
+dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
 params <- modifyList(params_std, list(LR_group = 0.8))
-dat <- sim$run_std(params)
+dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
 ## ----run-std-inv-temp---------------------------------------------------------
 params <- modifyList(params_std, list(inv_temp_group = 0))
-dat <- sim$run_std(params)
+dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
 params <- modifyList(params_std, list(inv_temp_group = 1.5))
-dat <- sim$run_std(params)
+dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
 ## ----params-discr-approx------------------------------------------------------
@@ -61,19 +62,31 @@ params_LRN_discr <- list(
 )
 
 ## ----run-LRN-discr-approx-stat------------------------------------------------
-dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "stat")
+sim <- new.env()
+source(paste0(model_dir, "2_LRN_discr_approx_stat.R"), local = sim)
+
+dat <- sim$run(params_LRN_discr)
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-approx-dyn-------------------------------------------------
-dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_approx, "dyn")
+sim <- new.env()
+source(paste0(model_dir, "3_LRN_discr_approx_dyn.R"), local = sim)
+
+dat <- sim$run(params_LRN_discr)
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-geq-stat---------------------------------------------------
-dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "stat")
+sim <- new.env()
+source(paste0(model_dir, "4_LRN_discr_geq_stat.R"), local = sim)
+
+dat <- sim$run(params_LRN_discr)
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----run-LRN-discr-geq-dyn----------------------------------------------------
-dat <- sim$run_LRN_discr(params_LRN_discr, sim$LR_geq, "dyn")
+sim <- new.env()
+source(paste0(model_dir, "5_LRN_discr_geq_dyn.R"), local = sim)
+
+dat <- sim$run(params_LRN_discr)
 plot$sim_plots(dat, params_LRN_discr)
 
 ## ----illustrate-rel-LR, fig.width = 5, fig.height = 3-------------------------
@@ -90,6 +103,9 @@ ggplot(dummy) +
   plot$my_theme_classic
 
 ## ----run-LRN-cont-stat--------------------------------------------------------
+sim <- new.env()
+source(paste0(util_dir, "sim_utils.R"), local = sim)
+
 params_LRN_cont <- list(
   n_part = 50,
   n_trials = 30,

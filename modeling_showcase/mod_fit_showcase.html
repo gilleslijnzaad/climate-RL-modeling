@@ -11,7 +11,7 @@
 
 <meta name="author" content="Gilles Lijnzaad" />
 
-<meta name="date" content="2026-04-07" />
+<meta name="date" content="2026-04-15" />
 
 <title>Model fit showcase</title>
 
@@ -1879,7 +1879,7 @@ font-size: 0.95em;
 
 <h1 class="title toc-ignore">Model fit showcase</h1>
 <h4 class="author">Gilles Lijnzaad</h4>
-<h4 class="date">2026-04-07</h4>
+<h4 class="date">2026-04-15</h4>
 
 </div>
 
@@ -1891,7 +1891,7 @@ parameter recovery.</p>
 </blockquote>
 <div id="helper-files" class="section level1 unnumbered">
 <h1 class="unnumbered">Helper files</h1>
-<p>In this R markdown I use code from the following files: <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#simR">sim.R</a>,
+<p>In this R markdown I use code from the following files: <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#sim_utilsR">sim_utils.R</a>,
 <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#plot_utilsR">plot_utils.R</a>,
 <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#fit_utilsR">fit_utils.R</a>,
 and <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#utilsR">utils.R</a>.</p>
@@ -1902,30 +1902,30 @@ and <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html
 <div id="running-the-simulation" class="section level2" number="1.1">
 <h2><span class="header-section-number">1.1</span> Running the
 simulation</h2>
-<p>For the full simulation code, see <code>run_std()</code> in <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html#simR">sim.R</a>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">setwd</span>(<span class="st">&quot;~/research/climate-RL-mod/modeling_showcase&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># setwd(&quot;~/research/climate-RL-mod/modeling_showcase&quot;)</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>main_dir <span class="ot">&lt;-</span> <span class="st">&quot;~/research/climate-RL-mod/&quot;</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>util_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;utilities/&quot;</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>model_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;models/std.stan&quot;</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(util_dir, <span class="st">&quot;sim.R&quot;</span>), <span class="at">local =</span> sim) <span class="co"># access functions using sim$fun()</span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="at">n_part =</span> <span class="dv">50</span>,</span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  <span class="at">n_trials =</span> <span class="dv">30</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="at">LR_group =</span> <span class="fl">0.4</span>,</span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">inv_temp_group =</span> <span class="fl">0.5</span>,</span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="at">initQF_group =</span> <span class="dv">8</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  <span class="at">initQU_group =</span> <span class="dv">2</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  <span class="at">mu_R_group =</span> <span class="fu">list</span>(<span class="at">F =</span> <span class="dv">5</span>, <span class="at">U =</span> <span class="dv">5</span>),</span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="at">sigma_R_group =</span> <span class="dv">2</span></span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>)</span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a></span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>sim_dat <span class="ot">&lt;-</span> sim<span class="sc">$</span><span class="fu">run_std</span>(params)</span>
-<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a></span>
-<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">paste0</span>(<span class="st">&quot;PARAMETER SETTINGS:&quot;</span>), <span class="fu">capture.output</span>(dplyr<span class="sc">::</span><span class="fu">glimpse</span>(params)), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>mod_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;models/&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>model_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(mod_dir, <span class="st">&quot;1_std.stan&quot;</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(mod_dir, <span class="st">&quot;1_std.R&quot;</span>), <span class="at">local =</span> sim) <span class="co"># access functions using sim$fun()</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  <span class="at">n_part =</span> <span class="dv">50</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="at">n_trials =</span> <span class="dv">30</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">LR_group =</span> <span class="fl">0.4</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="at">inv_temp_group =</span> <span class="fl">0.5</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  <span class="at">initQF_group =</span> <span class="dv">8</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  <span class="at">initQU_group =</span> <span class="dv">2</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="at">mu_R_group =</span> <span class="fu">list</span>(<span class="at">F =</span> <span class="dv">5</span>, <span class="at">U =</span> <span class="dv">5</span>),</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>  <span class="at">sigma_R_group =</span> <span class="dv">2</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>)</span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>sim_dat <span class="ot">&lt;-</span> sim<span class="sc">$</span><span class="fu">run</span>(params)</span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">paste0</span>(<span class="st">&quot;PARAMETER SETTINGS:&quot;</span>), <span class="fu">capture.output</span>(dplyr<span class="sc">::</span><span class="fu">glimpse</span>(params)), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
 <pre><code>PARAMETER SETTINGS:
 List of 8
  $ n_part        : num 50
@@ -2138,19 +2138,22 @@ model if necessary.</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;modeling_showcase/dat/1_run/&quot;</span>)</span>
 <span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>dat_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;sim_dat_001.json&quot;</span>)</span>
 <span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a></span>
-<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>dat_changed <span class="ot">&lt;-</span> sim<span class="sc">$</span><span class="fu">did_sim_dat_change</span>(dat_file, sim_dat)</span>
-<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>sim<span class="sc">$</span><span class="fu">save_sim_dat</span>(params, sim_dat, dat_file)</span>
-<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>model_changed <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
-<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a></span>
-<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>fitting <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
-<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(util_dir, <span class="st">&quot;fit_utils.R&quot;</span>), <span class="at">local =</span> fitting) <span class="co"># access functions using fitting$fun()</span></span>
-<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="cf">if</span> (dat_changed <span class="sc">|</span> model_changed) {</span>
-<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a>  model <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(model_path)</span>
-<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> fitting<span class="sc">$</span><span class="fu">get_draws</span>(model, dat_file, <span class="at">show_iteration_progress =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a>  <span class="fu">saveRDS</span>(draws, <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;fit_001.rds&quot;</span>))</span>
-<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;fit_001.rds&quot;</span>))</span>
-<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>sim_utils <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(util_dir, <span class="st">&quot;sim_utils.R&quot;</span>), <span class="at">local =</span> sim_utils) <span class="co"># access functions using sim_utils$fun()</span></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>dat_changed <span class="ot">&lt;-</span> sim_utils<span class="sc">$</span><span class="fu">did_sim_dat_change</span>(dat_file, sim_dat)</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>sim_utils<span class="sc">$</span><span class="fu">save_sim_dat</span>(params, sim_dat, dat_file)</span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a>model_changed <span class="ot">&lt;-</span> <span class="cn">FALSE</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a>fitting <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(util_dir, <span class="st">&quot;fit_utils.R&quot;</span>), <span class="at">local =</span> fitting) <span class="co"># access functions using fitting$fun()</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="cf">if</span> (dat_changed <span class="sc">|</span> model_changed) {</span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a>  model <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(model_path)</span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> fitting<span class="sc">$</span><span class="fu">get_draws</span>(model, dat_file, <span class="at">show_iteration_progress =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a>  <span class="fu">saveRDS</span>(draws, <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;fit_001.rds&quot;</span>))</span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb20-18"><a href="#cb20-18" tabindex="-1"></a>  draws <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;fit_001.rds&quot;</span>))</span>
+<span id="cb20-19"><a href="#cb20-19" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="group-level-parameters" class="section level3" number="3.1.2">
 <h3><span class="header-section-number">3.1.2</span> Group-level

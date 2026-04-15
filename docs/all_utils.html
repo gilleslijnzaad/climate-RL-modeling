@@ -1453,8 +1453,8 @@ border-radius: 0px;
 </div>
 
 
-<div id="sim.r" class="section level1">
-<h1><code>sim.R</code></h1>
+<div id="sim_utils.r" class="section level1">
+<h1><code>sim_utils.R</code></h1>
 <pre><code>set.seed(1234)
 
 # === param_stddevs =============================
@@ -1489,81 +1489,19 @@ param_bounds &lt;- list(
   margin_group = c(0, 10)
 )
 
-# === run_std() =============================
-# runs the standard simulation (no confirmation bias)
+# === randomize_free_params() =======================
+# randomizes given free parameters: uniform distribution over their bounds
 # arguments: 
-# - params: vector of parameter settings
+# - param_settings: list of parameter settings
+# - free_params: list of names of free parameters to randomize
 # 
-# returns: 
-# - data frame of simulated data
-run_std &lt;- function(params) {
-  library(truncnorm) # for drawing from truncated distribution
-
-  # ------ initialize ------
-  n_part &lt;- params$n_part
-  n_trials &lt;- params$n_trials
-  Q_F &lt;- matrix(ncol = n_trials, nrow = n_part)
-  Q_U &lt;- matrix(ncol = n_trials, nrow = n_part)
-  choice &lt;- matrix(ncol = n_trials, nrow = n_part)
-  R &lt;- matrix(ncol = n_trials, nrow = n_part)
-  pred_err &lt;- matrix(ncol = n_trials, nrow = n_part)
-  LR &lt;- c()
-  inv_temp &lt;- c()
-
-  for (j in 1:n_part) {
-    P_F &lt;- c()
-    pred_err &lt;- c()
-
-    # ----- initialize parameters -----
-    # TODO: possibly replace this with a loop over params (more elegant)
-    LR[j] &lt;- draw_from_group_mean(params, &quot;LR_group&quot;)
-    inv_temp[j] &lt;- draw_from_group_mean(params, &quot;inv_temp_group&quot;)
-    Q_F[j, 1] &lt;- draw_from_group_mean(params, &quot;initQF_group&quot;)
-    Q_U[j, 1] &lt;- draw_from_group_mean(params, &quot;initQU_group&quot;)
-    mu_R &lt;- draw_from_group_mean(params, &quot;mu_R_group&quot;)
-    sigma_R &lt;- draw_from_group_mean(params, &quot;sigma_R_group&quot;)
-
-    # --------- run trials ------------
-    for (t in 1:n_trials) {
-
-      # choose
-      P_F[t] &lt;- 1 / (1 + exp(-inv_temp[j] * (Q_F[j, t] - Q_U[j, t])))
-      choice[j, t] &lt;- sample(c(1, 2), 
-                             size = 1,
-                             prob = c(P_F[t], 1 - P_F[t]))
-
-      # rate
-      R[j, t] &lt;- round(rtruncnorm(n = 1, a = 1, b = 10,
-                                  mean = mu_R[[choice[j, t]]], 
-                                  sd = sigma_R),
-                       0)
-
-      # learn
-      if (t &lt; n_trials) {   # no updating Qs in the very last trial
-        if (choice[j, t] == 1) {
-          pred_err[t] &lt;- R[j, t] - Q_F[j, t]
-          Q_F[j, t+1] &lt;- Q_F[j, t] + LR[j] * pred_err[t]
-          Q_U[j, t+1] &lt;- Q_U[j, t]
-        } else {
-          pred_err[t] &lt;- R[j, t] - Q_U[j, t]
-          Q_U[j, t+1] &lt;- Q_U[j, t] + LR[j] * pred_err[t]
-          Q_F[j, t+1] &lt;- Q_F[j, t]
-        }
-      }
-    }
+# returns: list of parameter settings with free_params randomized
+randomize_free_params &lt;- function(param_settings, free_params) {
+  for (p in free_params) {
+    bounds &lt;- sim$param_bounds[[p]]
+    param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
   }
-
-  dat &lt;- data.frame(
-    participant =   rep(seq_len(n_part), each = n_trials),
-    trial =         rep(seq_len(n_trials), n_part),
-    Q_F =           array(t(Q_F)),
-    Q_U =           array(t(Q_U)),
-    choice =        array(t(choice)),
-    R =             array(t(R)),
-    LR =            rep(LR, each = n_trials),
-    inv_temp =      rep(inv_temp, each = n_trials)
-  )
-  return(dat)
+  return(param_settings)
 }
 
 # === draw_from_group_mean() =======================
@@ -1592,15 +1530,14 @@ draw_from_group_mean &lt;- function(param_settings, p) {
 # 
 # returns: nothing
 save_sim_dat &lt;- function(params, sim_dat, dat_file_name) {
-  library(cmdstanr) # contains function write_stan_json()
 
-  # parameter settings
+  # parameter settings -&gt; group means are already in params, now we add participant-level settings 
   params$LR &lt;- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
   params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
   params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
   param_file_name &lt;- stringr::str_replace(dat_file_name, &quot;sim_dat&quot;, &quot;sim_param_settings&quot;)
-  write_stan_json(params, file = param_file_name)
+  cmdstanr::write_stan_json(params, file = param_file_name)
 
   # data
   n_part &lt;- params$n_part
@@ -1615,7 +1552,7 @@ save_sim_dat &lt;- function(params, sim_dat, dat_file_name) {
               byrow = TRUE)
   dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice&quot;, &quot;R&quot;)
   list_dat &lt;- setNames(mget(dat_names), dat_names)
-  write_stan_json(list_dat, file = dat_file_name)
+  cmdstanr::write_stan_json(list_dat, file = dat_file_name)
 }
 
 # === did_sim_dat_change() =================
@@ -1636,119 +1573,6 @@ did_sim_dat_change &lt;- function(data_file, sim_dat) {
     return(FALSE)
   } else {
     return(TRUE)
-  }
-}
-
-# TODO: vectorize everything below (as in run_std)
-
-# === run_LRN_discr() =================
-# arguments: 
-# - params: vector of parameter settings; 
-# - LR_function: which LR function to use (LR_approx or LR_geq)
-# - belief_type: whether belief is &quot;stat&quot; or &quot;dyn&quot;
-# 
-# returns: 
-# - data frame of simulated data
-run_LRN_discr &lt;- function(params, LR_function, belief_type) {
-  library(truncnorm) # for drawing from truncated distribution
-  dat &lt;- data.frame()
-
-  n_part &lt;- params$n_part
-  n_trials &lt;- params$n_trials
-
-  for (j in 1:n_part) {
-
-    # ------ init data frames &amp; vectors -----
-    Q &lt;- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
-    P_F &lt;- c()
-    choice &lt;- c()
-    R &lt;- c()
-    pred_err &lt;- c()
-
-    # ----- initialize parameters -----
-    # TODO: possibly replace this with a loop over params (more elegant)
-    LRs &lt;- draw_from_group_mean(params, &quot;LRs_group&quot;)
-    names(LRs) &lt;- c(&quot;conf&quot;, &quot;disconf&quot;)
-    inv_temp &lt;- draw_from_group_mean(params, &quot;inv_temp_group&quot;)
-    initQ &lt;- draw_from_group_mean(params, &quot;initQ_group&quot;)
-    Q$F[1] &lt;- initQ[1]
-    Q$U[1] &lt;- initQ[2]
-    mu_R &lt;- draw_from_group_mean(params, &quot;mu_R_group&quot;)
-    sigma_R &lt;- draw_from_group_mean(params, &quot;sigma_R_group&quot;)
-    margin &lt;- draw_from_group_mean(params, &quot;margin_group&quot;)
-
-    # --------- run trials ------------
-    for (t in 1:n_trials) {
-
-      # choose
-      P_F[t] &lt;- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] &lt;- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
-
-      # rate
-      R[t] &lt;- round(rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
-
-      # learn
-      pred_err[t] &lt;- R[t] - Q[t, choice[t]]
-
-      if (t &lt; n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {
-          belief &lt;- if (belief_type == &quot;stat&quot;) Q[1, 1] else  Q[max(t-1, 1), 1]
-          LR &lt;- LRs[[ LR_function(R[t], belief, margin) ]]
-          Q[t+1, 1] &lt;- Q[t, 1] + LR * pred_err[t]
-          Q[t+1, 2] &lt;- Q[t, 2]
-        } else {
-          belief &lt;- if (belief_type == &quot;stat&quot;) Q[1, 2] else Q[max(t-1, 1), 2]
-          LR &lt;- LRs[[ LR_function(R[t], belief, margin) ]]
-          Q[t+1, 2] &lt;- Q[t, 2] + LR * pred_err[t]
-          Q[t+1, 1] &lt;- Q[t, 1]
-        }
-      }
-    }
-
-    dat_p &lt;- data.frame(
-      participant = rep(j, n_trials),
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      LR =          LR,
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err
-    )
-
-    dat &lt;- rbind(dat, dat_p)
-  }
-  return(dat)
-}
-
-# === LR_approx() =================
-# arguments: the rating of this trial; the belief to compare it to; the margin
-# returns: &quot;conf&quot; or &quot;disconf&quot;
-LR_approx &lt;- function(R, belief, margin) {
-  if (abs(R - belief) &lt;= margin) {
-    return(&quot;conf&quot;)
-  } else {
-    return(&quot;disconf&quot;)
-  }
-}
-
-# === LR_geq() =================
-# arguments: the rating of this trial; the belief to compare it to; the margin
-# returns: &quot;conf&quot; or &quot;disconf&quot;
-LR_geq &lt;- function(R, belief, margin) {
-  if (R + margin &gt;= belief) {
-    return(&quot;conf&quot;)
-  } else {
-    return(&quot;disconf&quot;)
   }
 }
 
@@ -1845,13 +1669,17 @@ LR_cont &lt;- function(R, belief, w_LR) {
 </div>
 <div id="plot_utils.r" class="section level1">
 <h1><code>plot_utils.R</code></h1>
-<pre><code># ---------------------
-#        GENERAL
-# ---------------------
+<pre><code># -----------------------------
+#        SET DIRECTORIES
+# -----------------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
 util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
-sim &lt;- new.env()
-source(paste0(util_dir, &quot;sim.R&quot;), local = sim)
+sim_utils &lt;- new.env()
+source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
+
+# ---------------------
+#        GENERAL
+# ---------------------
 library(tidyverse)
 my_teal &lt;- &quot;#008080&quot;
 my_pink &lt;- &quot;#ff00dd&quot;
@@ -2081,10 +1909,13 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
                          )
 }
 
+# === many_runs_param_fit() =============================
+# description: TODO
+# 
 many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
   plots &lt;- list()
   for (p in to_plot) {
-    bounds &lt;- sim$param_bounds[[p]]
+    bounds &lt;- sim_utils$param_bounds[[p]]
 
     plot &lt;- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
@@ -2116,13 +1947,40 @@ options(mc.cores = parallel::detectCores())
 # -----------------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
 util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
-sim &lt;- new.env()
-source(paste0(util_dir, &quot;sim.R&quot;), local = sim)
+sim_utils &lt;- new.env()
+source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
 
 # ---------------------------
 #        MODEL FITTING
 # ---------------------------
+# === sim_fit_many() =======================
+# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
+# arguments: 
+# - param_settings: list of parameter settings
+# - free_params: list of names of free parameters
+# - model_file: name of Stan file
+# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
+# - n_runs: number of times to run the simulation and model
+# 
+# returns: nothing
+sim_fit_many &lt;- function(param_settings, free_params, model_file, save_fit_to, n_runs = 1) {
+  dat_dir &lt;- paste0(save_fit_to, n_runs, &quot;_runs/&quot;)
+  if (!dir.exists(dat_dir)) dir.create(dat_dir)
+  model &lt;- cmdstan_model(model_file)
+  for (k in 1:n_runs) {
+    # simulate
+    params &lt;- sim_utils$randomize_free_params(param_settings, free_params)
+    sim_dat &lt;- sim_utils$run_std(params)
+    dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
+    sim$save_sim_dat(params, sim_dat, dat_file)
+
+    # fit
+    fit_file &lt;- paste0(dat_dir, &quot;fit_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.rds&quot;)
+    fit &lt;- get_draws(model, dat_file, k, n_runs)
+    saveRDS(fit, file = fit_file)
+  }
+}
 
 # === get_draws() =======================
 # fits the model once, prints progress (Completed run k of n_runs), returns data frame of fit draws
@@ -2147,57 +2005,31 @@ get_draws &lt;- function(model, dat_file, k = 1, n_runs = 1, show_iteration_prog
     show_messages = show_iteration_progress
   )
   draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
-  draws &lt;- draws %&gt;%
-    dplyr::rename(
-      LR_group = `means[1]`,
-      inv_temp_group = `means[2]`,
-      initQF_group = `means[3]`,
-      initQU_group = `means[4]`
-    )
   message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
   return(draws)
 }
 
-# === randomize_free_params() =======================
-# randomizes given free parameters: uniform distribution over their bounds
+# === fit_many() =======================
+# runs model [n_runs] times and saves results as rds files
 # arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters to randomize
-# 
-# returns: list of parameter settings with free_params randomized
-randomize_free_params &lt;- function(param_settings, free_params) {
-  for (p in free_params) {
-    bounds &lt;- sim$param_bounds[[p]]
-    param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
-  }
-  return(param_settings)
-}
-
-# === sim_fit_many() =======================
-# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters
-# - model_file: name of Stan file
-# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
-# - n_runs: number of times to run the simulation and model
+# - TODO
 # 
 # returns: nothing
-sim_fit_many &lt;- function(param_settings, free_params, model_file, save_dat_to, n_runs = 1) {
-  dat_dir &lt;- paste0(save_dat_to, n_runs, &quot;_runs/&quot;)
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  model &lt;- cmdstan_model(model_file)
+fit_many &lt;- function(sim_dat_dir, model_path, fit_dir, n_runs, free_params = NULL) {
+  model &lt;- cmdstan_model(model_path)
   for (k in 1:n_runs) {
-    # simulate
-    params &lt;- randomize_free_params(param_settings, free_params)
-    sim_dat &lt;- sim$run_std(params)
-    dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
-    sim$save_sim_dat(params, sim_dat, dat_file)
+    k_code &lt;- sprintf(&quot;%03d&quot;, k)
+    sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
+    fit_path &lt;- paste0(fit_dir, &quot;fit_&quot;, k_code, &quot;.rds&quot;)
+    fit &lt;- get_draws(model, sim_dat_path, k, n_runs)
 
-    # fit
-    fit_file &lt;- paste0(dat_dir, &quot;fit_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.rds&quot;)
-    fit &lt;- get_draws(model, dat_file, k, n_runs)
-    saveRDS(fit, file = fit_file)
+    # rename the parameter columns 
+    for (p in free_params) {
+      old_name &lt;- paste0(&quot;means[&quot;, which(free_params == p), &quot;]&quot;)
+      new_name &lt;- p
+      names(fit)[names(fit) == old_name] &lt;- new_name
+    }
+    saveRDS(fit, file = fit_path)
   }
 }</code></pre>
 </div>

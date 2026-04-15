@@ -1,10 +1,14 @@
+# -----------------------------
+#        SET DIRECTORIES
+# -----------------------------
+main_dir <- "~/research/climate-RL-mod/"
+util_dir <- paste0(main_dir, "utilities/")
+sim_utils <- new.env()
+source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
+
 # ---------------------
 #        GENERAL
 # ---------------------
-main_dir <- "~/research/climate-RL-mod/"
-util_dir <- paste0(main_dir, "utilities/")
-sim <- new.env()
-source(paste0(util_dir, "sim.R"), local = sim)
 library(tidyverse)
 my_teal <- "#008080"
 my_pink <- "#ff00dd"
@@ -234,10 +238,13 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
                          )
 }
 
+# === many_runs_param_fit() =============================
+# description: TODO
+# 
 many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
   plots <- list()
   for (p in to_plot) {
-    bounds <- sim$param_bounds[[p]]
+    bounds <- sim_utils$param_bounds[[p]]
 
     plot <- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
