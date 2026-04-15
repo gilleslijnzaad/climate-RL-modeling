@@ -55,8 +55,7 @@ randomize_free_params <- function(param_settings, free_params) {
 # returns:
 # - draw from the group mean of parameter p, keeping in mind the theoretical bounds of the parameter, the group mean and the standard deviation
 draw_from_group_mean <- function(param_settings, p) {
-  library(truncnorm) # for drawing from truncated distribution
-  draw <- rtruncnorm(n = 1, 
+  draw <- truncnorm::rtruncnorm(n = 1, 
                      a = param_bounds[[p]][1],
                      b = param_bounds[[p]][2],
                      mean = param_settings[[p]],
@@ -123,7 +122,6 @@ did_sim_dat_change <- function(data_file, sim_dat) {
 # arguments: vector of parameter settings; whether belief is stat or dyn
 # returns: data frame of simulated data
 run_LRN_cont <- function(params, belief_type) {
-  library(truncnorm) # for drawing from truncated distribution
   dat <- data.frame()
 
   n_part <- params$n_part
@@ -160,7 +158,7 @@ run_LRN_cont <- function(params, belief_type) {
                           prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      R[t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
+      R[t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
                                mean = mu_R[[choice[t]]], 
                                sd = sigma_R),
                     0)

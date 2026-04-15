@@ -9,8 +9,6 @@ source("~/research/climate-RL-mod/utilities/sim_utils.R", local = sim_utils)
 # returns: 
 # - data frame of simulated data
 run <- function(params) {
-  library(truncnorm) # for drawing from truncated distribution
-
   # ------ initialize ------
   n_part <- params$n_part
   n_trials <- params$n_trials
@@ -45,7 +43,7 @@ run <- function(params) {
                              prob = c(P_F[t], 1 - P_F[t]))
 
       # rate
-      R[j, t] <- round(rtruncnorm(n = 1, a = 1, b = 10,
+      R[j, t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
                                   mean = mu_R[[choice[j, t]]], 
                                   sd = sigma_R),
                        0)
