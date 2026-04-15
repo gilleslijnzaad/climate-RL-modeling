@@ -1,0 +1,119 @@
+---
+title: "Model recovery"
+author: "Gilles Lijnzaad"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: TRUE
+    toc_depth: 2
+    toc_float:
+      collapsed: FALSE
+    number_sections: FALSE
+    highlight: tango
+    code_folding: show
+---
+
+> In this document I run simulations for each model and fit these data to each other model. I do this 100 times, each time tallying which model won (fits are compared with the `bridgesampling` package). This results in a confusion matrix at the end.
+
+```{r rmd-setup, include = FALSE}
+knitr::knit_hooks$set(purl = knitr::hook_purl) # creates an R file upon knitting the Rmd
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
+```
+
+```{r setup}
+rm(list = ls())
+# setwd("~/research/climate-RL-mod/model_recovery")
+main_dir <- "~/research/climate-RL-mod/"
+recov_dir <- paste0(main_dir, "model_recovery/")
+util_dir <- paste0(main_dir, "utilities/")
+models_dir <- paste0(main_dir, "models/")
+
+n_runs <- 100
+
+settings <- list(
+  n_part = 50,
+  n_trials = 30,
+  mu_R_group = list(F = 5, U = 5),
+  sigma_R_group = 2
+)
+
+fitting <- new.env()
+source(paste0(util_dir, "fit_utils.R"), local = fitting)
+```
+
+# Part A: Fitting the models
+## 0. `null` ("guessing") {.tabset}
+### Simulate data
+```{r sim-0}
+sim_model_name <- "0_null"
+sim_path <- paste0(models_dir, sim_model_name, ".R")
+sim <- new.env()
+source(sim_path, local = sim)
+
+sim_dir <- paste0(recov_dir, "dat/", sim_model_name, "/sim/")
+if (!dir.exists(sim_dir)) dir.create(sim_dir)
+
+sim$run_many(settings, sim_dir, n_runs)
+```
+
+### 0.0 Fit to `null`
+```{r fit-0.0}
+fit_model_name <- "0_null"
+
+model_path <- paste0(models_dir, fit_model_name, ".stan")
+fit_dir <- paste0(recov_dir, "dat/", sim_model_name, "/", fit_model_name, "/")
+if (!dir.exists(fit_dir)) dir.create(fit_dir)
+
+# DOES NOT WORK YET
+# fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)
+```
+
+### 0.1 Fit to `std`
+### 0.2 Fit to `LRN_discr_approx_stat`
+### 0.3 Fit to `LRN_discr_approx_dyn`
+### 0.4 Fit to `LRN_discr_geq_stat`
+### 0.5 Fit to `LRN_discr_geq_dyn`
+
+---
+
+## 1. `std` (no confirmation bias) {.tabset}
+### Simulate data
+```{r sim-1}
+sim_model_name <- "1_std"
+sim_path <- paste0(models_dir, sim_model_name, ".R")
+sim <- new.env()
+source(sim_path, local = sim)
+
+sim_dir <- paste0(recov_dir, "dat/", sim_model_name, "/sim/")
+if (!dir.exists(sim_dir)) dir.create(sim_dir)
+
+sim$run_many(settings, sim_dir, n_runs)
+```
+
+### 1.0 Fit to `null`
+
+### 1.1 Fit to `std`
+```{r fit-1.1}
+fit_model_name <- "1_std"
+
+model_path <- paste0(models_dir, fit_model_name, ".stan")
+fit_dir <- paste0(recov_dir, "dat/", sim_model_name, "/", fit_model_name, "/")
+if (!dir.exists(fit_dir)) dir.create(fit_dir)
+
+# WOULD TAKE AROUND AN HOUR TO RUN
+# fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)
+```
+
+## 2. `LRN_discr_approx_stat`
+## 3. `LRN_discr_approx_dyn`
+## 4. `LRN_discr_geq_stat`
+## 5. `LRN_discr_geq_dyn`
+
+---
+
+# Part B: Comparing fits
+```{r}
+library(bridgesampling)
+```

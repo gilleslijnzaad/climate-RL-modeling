@@ -9,9 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Gilles Lijnzaad" />
 
+<meta name="date" content="2026-04-15" />
 
-<title>All utility code</title>
+<title>Model recovery</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1275,6 +1277,83 @@ window.buildTabsets = function(tocID) {
 };
 
 </script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.julia, pre.foldable');
+  rCodeBlocks.each(function() {
+    // skip if the block has fold-none class
+    if ($(this).hasClass('fold-none')) return;
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    var showThis = (show || $(this).hasClass('fold-show')) && !$(this).hasClass('fold-hide');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (showThis ? 'Hide' : 'Show') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm code-folding-btn pull-right float-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-bs-toggle', 'collapse') // BS5
+        .attr('data-target', '#' + id)
+        .attr('data-bs-target', '#' + id)   // BS5
+        .attr('aria-expanded', showThis)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // show the div if necessary
+    if (showThis) div.collapse('show');
+
+    // update state of button on show/hide
+    //   * Change text
+    //   * add a class for intermediate states styling
+    div.on('hide.bs.collapse', function () {
+      showCodeText.text('Show');
+      showCodeButton.addClass('btn-collapsing');
+    });
+    div.on('hidden.bs.collapse', function () {
+      showCodeButton.removeClass('btn-collapsing');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Hide');
+      showCodeButton.addClass('btn-expanding');
+    });
+    div.on('shown.bs.collapse', function () {
+      showCodeButton.removeClass('btn-expanding');
+    });
+
+  });
+
+}
+</script>
 
 <style type="text/css">
 code{white-space: pre-wrap;}
@@ -1287,6 +1366,115 @@ ul.task-list{list-style: none;}
 
 
 
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+.sourceCode .row {
+width: 100%;
+}
+.sourceCode {
+overflow-x: auto;
+}
+.code-folding-btn {
+margin-right: -30px;
+}
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
 
 
 
@@ -1369,6 +1557,9 @@ display: none;
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -1420,6 +1611,12 @@ font-size: 0.90em;
 .tocify .list-group-item {
 border-radius: 0px;
 }
+.tocify-subheader {
+display: inline;
+}
+.tocify-subheader .tocify-item {
+font-size: 0.95em;
+}
 </style>
 
 
@@ -1446,641 +1643,137 @@ border-radius: 0px;
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
 
 
-<h1 class="title toc-ignore">All utility code</h1>
+
+<h1 class="title toc-ignore">Model recovery</h1>
+<h4 class="author">Gilles Lijnzaad</h4>
+<h4 class="date">2026-04-15</h4>
 
 </div>
 
 
-<div id="sim_utils.r" class="section level1">
-<h1><code>sim_utils.R</code></h1>
-<pre><code>set.seed(1234)
-
-# === param_stddevs =============================
-# list of standard deviations for group-level means of parameters
-param_stddevs &lt;- list(
-  LR_group = 0.2,
-  LRs_group = 0.2,
-  inv_temp_group = 0.3,
-  initQ_group = 2,
-  initQF_group = 2,
-  initQU_group = 2,
-  mu_R_group = 2,
-  sigma_R_group = 2,
-  margin_group = 2
-)
-
-# === param_bounds =============================
-# list of theoretical bounds for parameters; same as in Stan
-param_bounds &lt;- list(
-  LR_group = c(0, 1),
-  LRs_group = c(0, 1),
-  LR = c(0, 1),
-  inv_temp_group = c(0, 5),
-  inv_temp = c(0, 5),
-  initQ_group = c(1, 10),
-  initQF_group = c(1, 10),
-  initQU_group = c(1, 10),
-  initQF = c(1, 10),
-  initQU = c(1, 10),
-  mu_R_group = c(1, 10),
-  sigma_R_group = c(0, 10),
-  margin_group = c(0, 10)
-)
-
-# === randomize_free_params() =======================
-# randomizes given free parameters: uniform distribution over their bounds
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters to randomize
-# 
-# returns: list of parameter settings with free_params randomized
-randomize_free_params &lt;- function(param_settings, free_params) {
-  for (p in free_params) {
-    bounds &lt;- param_bounds[[p]]
-    param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
-  }
-  return(param_settings)
-}
-
-# === draw_from_group_mean() =======================
-# arguments: 
-# - param_settings: the list of parameter settings (i.e., group means)
-# - p: the parameter for which we want to draw from the group mean
-# 
-# returns:
-# - draw from the group mean of parameter p, keeping in mind the theoretical bounds of the parameter, the group mean and the standard deviation
-draw_from_group_mean &lt;- function(param_settings, p) {
-  library(truncnorm) # for drawing from truncated distribution
-  draw &lt;- rtruncnorm(n = 1, 
-                     a = param_bounds[[p]][1],
-                     b = param_bounds[[p]][2],
-                     mean = param_settings[[p]],
-                     sd = param_stddevs[[p]])
-  return(draw)
-}
-
-# === save_sim_dat() =======================
-# saves parameter settings to file &quot;sim_param_settings.json&quot; and saves simulated data to file &quot;sim_dat.json&quot;
-# arguments: 
-# - params: vector of parameter settings
-# - sim_dat: data frame of simulated data
-# - dat_file_name: file to save data to
-# 
-# returns: nothing
-save_sim_dat &lt;- function(params, sim_dat, dat_file_name) {
-
-  # parameter settings -&gt; group means are already in params, now we add participant-level settings 
-  params$LR &lt;- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
-  params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
-  params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
-  params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  param_file_name &lt;- stringr::str_replace(dat_file_name, &quot;dat_&quot;, &quot;param_settings_&quot;)
-  cmdstanr::write_stan_json(params, file = param_file_name)
-
-  # data
-  n_part &lt;- params$n_part
-  n_trials &lt;- params$n_trials
-  choice &lt;- matrix(sim_dat$choice,
-                   nrow = n_part,
-                   ncol = n_trials,
-                   byrow = TRUE)
-  R &lt;- matrix(sim_dat$R,
-              nrow = n_part,
-              ncol = n_trials,
-              byrow = TRUE)
-  dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice&quot;, &quot;R&quot;)
-  list_dat &lt;- setNames(mget(dat_names), dat_names)
-  cmdstanr::write_stan_json(list_dat, file = dat_file_name)
-}
-
-# === did_sim_dat_change() =================
-# arguments: 
-# - data_file: file path for the JSON file
-# - sim_dat: data frame to compare to file
-# 
-# returns: 
-#  - TRUE if sim_dat changed compared to saved JSON file, else FALSE
-did_sim_dat_change &lt;- function(data_file, sim_dat) {
-  json_data &lt;- rjson::fromJSON(file = data_file)
-  json_choice &lt;- unlist(json_data$choice)
-  json_R &lt;- unlist(json_data$R)
-  sim_choice &lt;- sim_dat$choice
-  sim_R &lt;- sim_dat$R
-  if (identical(json_choice, sim_choice) &amp; 
-      identical(json_R, sim_R)) {
-    return(FALSE)
-  } else {
-    return(TRUE)
-  }
-}
-
-# === run_LRN_cont() =================
-# arguments: vector of parameter settings; whether belief is stat or dyn
-# returns: data frame of simulated data
-run_LRN_cont &lt;- function(params, belief_type) {
-  library(truncnorm) # for drawing from truncated distribution
-  dat &lt;- data.frame()
-
-  n_part &lt;- params$n_part
-  n_trials &lt;- params$n_trials
-
-  for (j in 1:n_part) {
-
-    # ------ init data frames &amp; vectors -----
-    Q &lt;- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
-    P_F &lt;- c()
-    choice &lt;- c()
-    R &lt;- c()
-    LR &lt;- c()
-    pred_err &lt;- c()
-
-    # ----- initialize parameters -----
-    w_LR &lt;- params$w_LR
-    inv_temp &lt;- params$inv_temp
-    Q$F[1] &lt;- params$initQ$F
-    Q$U[1] &lt;- params$initQ$U
-    mu_R &lt;- params$mu_R
-    sigma_R &lt;- params$sigma_R
-
-    # --------- run trials ------------
-    for (t in 1:n_trials) {
-
-      # choose
-      P_F[t] &lt;- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] &lt;- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
-
-      # rate
-      R[t] &lt;- round(rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
-
-      # learn
-      pred_err[t] &lt;- R[t] - Q[t, choice[t]]
-
-      if (t &lt; n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {                                 # since t = 0 doesn&#39;t exist
-          belief &lt;- if (belief_type == &quot;stat&quot;) Q[1, 1] else Q[max(t-1, 1), 1]
-          LR[t] &lt;- LR_cont(R[t], belief, w_LR)
-          Q[t+1, 1] &lt;- Q[t, 1] + LR[t] * pred_err[t]
-          Q[t+1, 2] &lt;- Q[t, 2]
-        } else {
-          belief &lt;- if (belief_type == &quot;stat&quot;) Q[1, 2] else Q[max(t-1, 1), 2]
-          LR[t] &lt;- LR_cont(R[t], belief, w_LR)
-          Q[t+1, 2] &lt;- Q[t, 2] + LR[t] * pred_err[t]
-          Q[t+1, 1] &lt;- Q[t, 1]
-        }
-      }
-    }
-
-    dat_p &lt;- data.frame(
-      participant = rep(j, n_trials),
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      LR =          c(LR, NA),
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err
-    )
-
-    dat &lt;- rbind(dat, dat_p)
-  }
-  return(dat)
-}
-
-# === LR_cont() =================
-# arguments: the rating of this trial; the belief to compare it to; the learning rate weight
-# returns: learning rate for this trial
-LR_cont &lt;- function(R, belief, w_LR) {
-  diff &lt;- R - belief
-  LR_prime &lt;- min(1, 
-                  1/9 * diff + 1)
-  return(w_LR * LR_prime)
-}</code></pre>
+<blockquote>
+<p>In this document I run simulations for each model and fit these data
+to each other model. I do this 100 times, each time tallying which model
+won (fits are compared with the <code>bridgesampling</code> package).
+This results in a confusion matrix at the end.</p>
+</blockquote>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># setwd(&quot;~/research/climate-RL-mod/model_recovery&quot;)</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>main_dir <span class="ot">&lt;-</span> <span class="st">&quot;~/research/climate-RL-mod/&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>recov_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;model_recovery/&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>util_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;utilities/&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>models_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;models/&quot;</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>n_runs <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>settings <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="at">n_part =</span> <span class="dv">50</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  <span class="at">n_trials =</span> <span class="dv">30</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="at">mu_R_group =</span> <span class="fu">list</span>(<span class="at">F =</span> <span class="dv">5</span>, <span class="at">U =</span> <span class="dv">5</span>),</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">sigma_R_group =</span> <span class="dv">2</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>)</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>fitting <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">paste0</span>(util_dir, <span class="st">&quot;fit_utils.R&quot;</span>), <span class="at">local =</span> fitting)</span></code></pre></div>
+<div id="part-a-fitting-the-models" class="section level1">
+<h1>Part A: Fitting the models</h1>
+<div id="null-guessing" class="section level2 tabset">
+<h2 class="tabset">0. <code>null</code> (“guessing”)</h2>
+<div id="simulate-data" class="section level3">
+<h3>Simulate data</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>sim_model_name <span class="ot">&lt;-</span> <span class="st">&quot;0_null&quot;</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>sim_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(models_dir, sim_model_name, <span class="st">&quot;.R&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">source</span>(sim_path, <span class="at">local =</span> sim)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>sim_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(recov_dir, <span class="st">&quot;dat/&quot;</span>, sim_model_name, <span class="st">&quot;/sim/&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(sim_dir)) <span class="fu">dir.create</span>(sim_dir)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>sim<span class="sc">$</span><span class="fu">run_many</span>(settings, sim_dir, n_runs)</span></code></pre></div>
 </div>
-<div id="plot_utils.r" class="section level1">
-<h1><code>plot_utils.R</code></h1>
-<pre><code># -----------------------------
-#        SET DIRECTORIES
-# -----------------------------
-main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
-sim_utils &lt;- new.env()
-source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
-
-# ---------------------
-#        GENERAL
-# ---------------------
-library(tidyverse)
-my_teal &lt;- &quot;#008080&quot;
-my_pink &lt;- &quot;#ff00dd&quot;
-my_blue &lt;- &quot;#00aadd&quot;
-my_dark_blue &lt;- &quot;#001199&quot;
-my_param_colors &lt;- c(
-  F = my_teal,            U = my_pink,
-  initQF = my_teal,       initQU = my_pink,
-  initQF_group = my_teal, initQU_group = my_pink,
-  LR = my_blue,           inv_temp = my_dark_blue,
-  LR_group = my_blue,     inv_temp_group = my_dark_blue
-)
-
-my_theme &lt;- theme_bw() +
-  theme(plot.title = element_text(size = 22, face = &quot;bold&quot;)) +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 18)) +
-  theme(legend.title = element_blank(),
-        legend.text = element_text(size = 16)) +
-  theme(strip.text = element_text(size = 18, face = &quot;bold&quot;))
-
-my_theme_classic &lt;- theme_classic() +
-  theme(plot.title = element_text(size = 22, face = &quot;bold&quot;)) +
-  theme(axis.text = element_text(size = 16),
-        axis.title = element_text(size = 18)) +
-  theme(legend.title = element_blank(),
-        legend.text = element_text(size = 16)) +
-  theme(strip.text = element_text(size = 18, face = &quot;bold&quot;))
-
-# --------------------------------------
-#        PLOTS FOR SIMULATED DATA
-# --------------------------------------
-
-# === Q() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of Q values over time (ggplot)
-Q &lt;- function(sim_dat) {
-  # data to long format
-  sim_dat &lt;- sim_dat %&gt;%
-    pivot_longer(c(Q_F, Q_U), names_prefix = &quot;Q_&quot;, names_to = &quot;option&quot;, values_to = &quot;Q&quot;) %&gt;%
-    mutate(option = factor(option),
-           choice = factor(choice))
-
-  p &lt;- ggplot(sim_dat, aes(x = trial,
-                           y = Q,
-                           color = option)) +
-    geom_smooth(aes(fill = option)) +
-    ylim(c(1, 10)) +
-    labs(x = &quot;Trial&quot;) +
-    scale_color_manual(values = my_param_colors,
-                       labels = c(&quot;Friendly&quot;, &quot;Unfriendly&quot;)) +  
-    scale_fill_manual(values = my_param_colors,
-                      labels = c(&quot;Friendly&quot;, &quot;Unfriendly&quot;)) +
-    my_theme +
-    theme(legend.position = &quot;inside&quot;,
-          legend.position.inside = c(0.83, 0.91))
-
-  return(p)
-}
-
-# === choice() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of choices over time (ggplot)
-choice &lt;- function(sim_dat) {
-  # data to long format
-  sim_dat &lt;- sim_dat %&gt;%
-    mutate(choice_is_F = as.numeric(choice == 1),
-           choice_is_U = 1 - choice_is_F)
-    
-  p &lt;- ggplot(sim_dat, aes(x = trial)) +
-    geom_smooth(aes(y = choice_is_F),
-                color = my_param_colors[[&quot;F&quot;]],
-                fill = my_param_colors[[&quot;F&quot;]]) +
-    geom_smooth(aes(y = choice_is_U),
-                color = my_param_colors[[&quot;U&quot;]],
-                fill = my_param_colors[[&quot;U&quot;]]) +
-    ylim(c(0, 1)) +
-    labs(x = &quot;Trial&quot;,
-        y = &quot;Proportion chosen&quot;) +
-    my_theme
-  return(p)
-}
-
-# === param_annotation() ======================
-# arguments: 
-# - named list of parameter settings
-# 
-# returns: 
-# - textGrob of parameter settings list
-param_annotation &lt;- function(params) {
-  library(grid)
-  full_text &lt;- c()
-  for (p in names(params)) {
-    if (length(params[[p]]) == 1) {
-      add_text &lt;- paste0(p, &quot; = &quot;, params[[p]])
-      full_text &lt;- paste(full_text, add_text, sep = &quot;\n&quot;)
-    } else {
-      for (i in 1:length(params[[p]])) {
-        param_name &lt;- paste0(p, &quot;$&quot;, names(params[[p]][i]))
-        add_text &lt;- paste0(param_name, &quot; = &quot;, params[[p]][i])
-        full_text &lt;- paste(full_text, add_text, sep = &quot;\n&quot;)
-      }
-    }
-  }
-  g &lt;- textGrob(label = full_text, x = unit(1, &quot;npc&quot;), y = unit(0.98, &quot;npc&quot;), just = c(&quot;right&quot;, &quot;top&quot;))
-  return(g)
-}
-
-# === sim_plots() ======================
-# arguments: 
-# - sim_dat: simulated data; 
-# - params: list of parameter settings;
-# - plot_title: string providing the title of the plot, or NA for no title
-# 
-# returns: nothing
-sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
-  annotation &lt;- param_annotation(params)
-  if (is.na(plot_title)) {
-    title &lt;- NA
-  } else {
-    title &lt;- textGrob(plot_title, gp = gpar(fontsize = 20, font = 2))
-  }
-  
-  gridExtra::grid.arrange(Q(sim_dat), 
-                          choice(sim_dat), 
-                          annotation,
-                          ncol = 3,
-                          widths = unit.c(unit(1, &quot;null&quot;), # fill space evenly
-                                          unit(1, &quot;null&quot;),
-                                          grobWidth(annotation) + unit(2, &quot;mm&quot;)),
-                          top = title
-                         )
-}
-
-# --------------------------------
-#        PLOTS FOR MODELING
-# --------------------------------
-
-# === posterior_density() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings; if NULL, don&#39;t show simulated value
-# 
-# returns: 
-# - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
-posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
-  plot_data &lt;- data.frame()
-
-  for (p in to_plot) {
-    if (!is.null(param_settings)) {
-      sim_value &lt;- param_settings[[p]]
-    }
-    dat &lt;- data.frame(
-      parameter = as.factor(p),
-      estimate = draws[[p]]
-    )
-    if (!is.null(param_settings)) {
-      dat$sim_value &lt;- sim_value
-    }
-    plot_data &lt;- rbind(plot_data, dat)
-  }
-
-  plot &lt;- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
-    geom_density(alpha = 0.6) +
-    labs(title = &quot;Posterior distributions&quot;, x = &quot;Estimate&quot;, y = &quot;Density&quot;) +
-    facet_wrap(. ~ factor(parameter, to_plot), scales = &quot;free&quot;) +
-    scale_color_manual(values = my_param_colors) +
-    scale_fill_manual(values = my_param_colors) +
-    guides(linetype = &quot;legend&quot;, color = &quot;none&quot;, fill = &quot;none&quot;) +
-    my_theme
-
-  if (!is.null(param_settings)) {
-    plot &lt;- plot + 
-    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = &quot;sim_value&quot;)) +
-    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
-  }
-
-  return(plot)
-}
-
-# === pp_level_param_fit() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings
-# 
-# returns: 
-# - nothing
-pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
-  n_part &lt;- param_settings$n_part
-  plots &lt;- list()
-  for (p in to_plot) {
-    median_draws &lt;- c()
-    sim_values &lt;- c()
-    for (j in 1:n_part) {
-      sim_values &lt;- c(sim_values, param_settings[[p]][j])
-      param_name &lt;- paste0(p, &quot;[&quot;, j, &quot;]&quot;)
-      median_draws &lt;- c(median_draws, median(draws[[param_name]]))
-    }
-    dat &lt;- data.frame(sim_value = sim_values, 
-                      fit_value = median_draws)
-    
-    bounds &lt;- range(sim_values)
-
-    plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
-      geom_point(color = my_param_colors[[p]], size = 2) +
-      lims(y = bounds) +
-      geom_abline(intercept = 0, slope = 1, linetype = 2) +
-      labs(title = p, x = NULL, y = NULL) +
-      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
-    plots[[p]] &lt;- plot
-  }
-
-  library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob(&quot;Participant-level parameter estimations\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
-                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
-                         )
-}
-
-# === many_runs_param_fit() =============================
-# description: TODO
-# 
-many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
-  plots &lt;- list()
-  for (p in to_plot) {
-    bounds &lt;- sim_utils$param_bounds[[p]]
-
-    plot &lt;- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
-      geom_point(color = my_param_colors[[p]], size = 2) +
-      geom_abline(intercept = 0, slope = 1, linetype = 2) +
-      lims(x = bounds, y = bounds) +
-      labs(title = p, x = NULL, y = NULL) +
-      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
-    plots[[p]] &lt;- plot
-  }
-
-  title &lt;- paste0(&quot;Parameter recovery for &quot;, max(sim_params$k), &quot; simulations&quot;)
-
-  library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob(title, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
-                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
-                         )
-}</code></pre>
+<div id="fit-to-null" class="section level3">
+<h3>0.0 Fit to <code>null</code></h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit_model_name <span class="ot">&lt;-</span> <span class="st">&quot;0_null&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>model_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(models_dir, fit_model_name, <span class="st">&quot;.stan&quot;</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>fit_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(recov_dir, <span class="st">&quot;dat/&quot;</span>, sim_model_name, <span class="st">&quot;/&quot;</span>, fit_model_name, <span class="st">&quot;/&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(fit_dir)) <span class="fu">dir.create</span>(fit_dir)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># DOES NOT WORK YET</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co"># fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)</span></span></code></pre></div>
 </div>
-<div id="fit_utils.r" class="section level1">
-<h1><code>fit_utils.R</code></h1>
-<pre><code>library(cmdstanr)
-options(mc.cores = parallel::detectCores())
-
-# -----------------------------
-#        SET DIRECTORIES
-# -----------------------------
-main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
-sim_utils &lt;- new.env()
-source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
-mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
-
-# ---------------------------
-#        MODEL FITTING
-# ---------------------------
-# === sim_fit_many() =======================
-# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters
-# - model_file: name of Stan file
-# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
-# - n_runs: number of times to run the simulation and model
-# 
-# returns: nothing
-sim_fit_many &lt;- function(param_settings, free_params, model_file, save_draws_to, n_runs = 1) {
-  dat_dir &lt;- paste0(save_draws_to, n_runs, &quot;_runs/&quot;)
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  model &lt;- cmdstan_model(model_file)
-  for (k in 1:n_runs) {
-    # simulate
-    params &lt;- sim_utils$randomize_free_params(param_settings, free_params)
-    sim_dat &lt;- sim_utils$run_std(params)
-    dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
-    sim$save_sim_dat(params, sim_dat, dat_file)
-
-    # fit
-    draws_file &lt;- paste0(dat_dir, &quot;draws_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.rds&quot;)
-    draws &lt;- fit(model, dat_file, return = &quot;draws&quot;, k, n_runs)
-    saveRDS(draws, file = draws_file)
-  }
-}
-
-# === fit() =======================
-# fits the model once, prints progress (Completed run k of n_runs), returns data frame of fit draws
-# arguments: 
-# - model: the CmdStanModel object
-# - dat_file: name of data file to feed to Stan
-# - return: whether to return the fit object, or a draws dataframe
-# - k: run number (for progress print)
-# - n_runs: total number of runs (for progress print)
-# - show_iteration_progress: whether to show the progress of the individual iteration (i.e., chain updates)
-# 
-# returns: data frame of fit draws
-fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
-  it &lt;- 1000
-  fit &lt;- model$sample(
-    data = dat_file,
-    iter_sampling = it,
-    chains = 1,
-    thin = 1,
-    iter_warmup = it / 2,
-    refresh = it / 5,
-    seed = 1234,
-    show_messages = show_iteration_progress
-  )
-  message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
-  if (return == &quot;draws&quot;) {
-    draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
-    return(draws)
-  } else {
-    return(fit)
-  }
-}
-
-# === fit_many() =======================
-# runs model [n_runs] times and saves fit objects as rds files
-# arguments: 
-# - TODO
-# 
-# returns: nothing
-fit_many &lt;- function(sim_dat_dir, model_path, fit_dir, n_runs, free_params = NULL) {
-  model &lt;- cmdstan_model(model_path)
-  for (k in 1:n_runs) {
-    k_code &lt;- sprintf(&quot;%03d&quot;, k)
-    sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
-    fit_path &lt;- paste0(fit_dir, &quot;fit_&quot;, k_code, &quot;.rds&quot;)
-    fit &lt;- fit(model, sim_dat_path, return = &quot;fit&quot;, k, n_runs)
-    saveRDS(fit, file = fit_path)
-  }
-}</code></pre>
+<div id="fit-to-std" class="section level3">
+<h3>0.1 Fit to <code>std</code></h3>
 </div>
-<div id="utils.r" class="section level1">
-<h1><code>utils.R</code></h1>
-<pre><code># === cred_int() ========================
-# arguments: 
-# - posterior_dist: array of posterior distribution
-# 
-# returns: 
-# - bounds of 95% credibility interval in array
-cred_int &lt;- function(posterior_dist) {
-  return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
-}
-
-# === print_posterior_table() ========================
-# arguments: 
-# - draws: data frame of posterior draws from model
-# - param_settings: named list of parameter settings
-# - to_show: string array of parameters to show in table
-# 
-# returns: 
-# - nothing
-print_posterior_table &lt;- function(draws, param_settings, to_show) {
-  table_data &lt;- data.frame()
-
-  for (p in to_show) {
-    if (grepl(&quot;\\$&quot;, p)) { # parameter is part of a list
-      split_name &lt;- strsplit(p, &quot;\\$&quot;)[[1]]
-      sim_value &lt;- purrr::pluck(param_settings, split_name[1], split_name[2])
-      param_name &lt;- paste0(split_name[1], &quot;\\$&quot;, split_name[2]) # escape dollar sign for kable
-    } else {
-      sim_value &lt;- param_settings[[p]]
-      param_name &lt;- p
-    }
-    dat &lt;- data.frame(
-      parameter = param_name,
-      sim_value = sim_value,
-      median_CI = sprintf(&quot;%.2f [%.2f, %.2f]&quot;,
-                          median(draws[[p]]),
-                          cred_int(draws[[p]])[1],
-                          cred_int(draws[[p]])[2])
-    )
-    table_data &lt;- rbind(table_data, dat)
-  }
-  colnames &lt;- c(&quot;Parameter&quot;, &quot;Simulated value&quot;,
-                &quot;Median [95% credibility interval]&quot;)
-  knitr::kable(table_data,
-               col.names = colnames,
-               align = &quot;lll&quot;,
-               caption = &quot;Posteriors for free parameters&quot;) %&gt;%
-  kableExtra::kable_styling(full_width = FALSE, position = &quot;left&quot;)
-}</code></pre>
+<div id="fit-to-lrn_discr_approx_stat" class="section level3">
+<h3>0.2 Fit to <code>LRN_discr_approx_stat</code></h3>
+</div>
+<div id="fit-to-lrn_discr_approx_dyn" class="section level3">
+<h3>0.3 Fit to <code>LRN_discr_approx_dyn</code></h3>
+</div>
+<div id="fit-to-lrn_discr_geq_stat" class="section level3">
+<h3>0.4 Fit to <code>LRN_discr_geq_stat</code></h3>
+</div>
+<div id="fit-to-lrn_discr_geq_dyn" class="section level3">
+<h3>0.5 Fit to <code>LRN_discr_geq_dyn</code></h3>
+<hr />
+</div>
+</div>
+<div id="std-no-confirmation-bias" class="section level2 tabset">
+<h2 class="tabset">1. <code>std</code> (no confirmation bias)</h2>
+<div id="simulate-data-1" class="section level3">
+<h3>Simulate data</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>sim_model_name <span class="ot">&lt;-</span> <span class="st">&quot;1_std&quot;</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>sim_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(models_dir, sim_model_name, <span class="st">&quot;.R&quot;</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">source</span>(sim_path, <span class="at">local =</span> sim)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>sim_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(recov_dir, <span class="st">&quot;dat/&quot;</span>, sim_model_name, <span class="st">&quot;/sim/&quot;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(sim_dir)) <span class="fu">dir.create</span>(sim_dir)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>sim<span class="sc">$</span><span class="fu">run_many</span>(settings, sim_dir, n_runs)</span></code></pre></div>
+</div>
+<div id="fit-to-null-1" class="section level3">
+<h3>1.0 Fit to <code>null</code></h3>
+</div>
+<div id="fit-to-std-1" class="section level3">
+<h3>1.1 Fit to <code>std</code></h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_model_name <span class="ot">&lt;-</span> <span class="st">&quot;1_std&quot;</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>model_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(models_dir, fit_model_name, <span class="st">&quot;.stan&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>fit_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(recov_dir, <span class="st">&quot;dat/&quot;</span>, sim_model_name, <span class="st">&quot;/&quot;</span>, fit_model_name, <span class="st">&quot;/&quot;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(fit_dir)) <span class="fu">dir.create</span>(fit_dir)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># WOULD TAKE AROUND AN HOUR TO RUN</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co"># fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)</span></span></code></pre></div>
+</div>
+</div>
+<div id="lrn_discr_approx_stat" class="section level2">
+<h2>2. <code>LRN_discr_approx_stat</code></h2>
+</div>
+<div id="lrn_discr_approx_dyn" class="section level2">
+<h2>3. <code>LRN_discr_approx_dyn</code></h2>
+</div>
+<div id="lrn_discr_geq_stat" class="section level2">
+<h2>4. <code>LRN_discr_geq_stat</code></h2>
+</div>
+<div id="lrn_discr_geq_dyn" class="section level2">
+<h2>5. <code>LRN_discr_geq_dyn</code></h2>
+<hr />
+</div>
+</div>
+<div id="part-b-comparing-fits" class="section level1">
+<h1>Part B: Comparing fits</h1>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">library</span>(bridgesampling)</span></code></pre></div>
 </div>
 
 
@@ -2118,6 +1811,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
 
 <script>
 $(document).ready(function ()  {
@@ -2132,7 +1830,7 @@ $(document).ready(function ()  {
 
     // establish options
     var options = {
-      selectors: "h1,h2,h3",
+      selectors: "h1,h2",
       theme: "bootstrap3",
       context: '.toc-content',
       hashGenerator: function (text) {
@@ -2141,7 +1839,7 @@ $(document).ready(function ()  {
       ignoreSelector: ".toc-ignore",
       scrollTo: 0
     };
-    options.showAndHide = true;
+    options.showAndHide = false;
     options.smoothScroll = true;
 
     // tocify
