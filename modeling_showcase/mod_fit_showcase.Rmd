@@ -175,10 +175,10 @@ fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting) # access functions using fitting$fun()
 if (dat_changed | model_changed) {
   model <- cmdstan_model(model_path)
-  draws <- fitting$get_draws(model, dat_file, show_iteration_progress = TRUE)
-  saveRDS(draws, paste0(dat_dir, "fit_001.rds"))
+  draws <- fitting$fit(model, dat_file, return = "draws", show_iteration_progress = TRUE)
+  saveRDS(draws, paste0(dat_dir, "draws_001.rds"))
 } else {
-  draws <- readRDS(file = paste0(dat_dir, "fit_001.rds"))
+  draws <- readRDS(file = paste0(dat_dir, "draws_001.rds"))
 }
 ```
 
@@ -199,7 +199,7 @@ participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
 ```
 
-Strange: for inv_temp it seems okay, but for the other parameters the participant-level estimations are very similar to the group-level estimations.
+TODO: for inv_temp it seems okay, but for the other parameters the participant-level estimations are very similar to the group-level estimations. Seems like a mistake?
 
 ## Many runs: random parameters
 To check parameter recovery across a range of parameter values, I run the model a bunch of times with different parameter settings. More specifically, each parameter value is chosen randomly from its whole theoretical range.
@@ -222,7 +222,7 @@ for (k in 1:n_runs) {
   sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")
   sim_dat <- rjson::fromJSON(file = sim_file)
 
-  fit_file <- paste0(dat_dir, "fit_", sprintf("%03d", k), ".rds")
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
   fit_dat <- readRDS(fit_file)
 
   # calculate medians

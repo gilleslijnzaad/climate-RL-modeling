@@ -23,8 +23,8 @@ mod_dir <- paste0(main_dir, "stan_models/dat/")
 # - n_runs: number of times to run the simulation and model
 # 
 # returns: nothing
-sim_fit_many <- function(param_settings, free_params, model_file, save_fit_to, n_runs = 1) {
-  dat_dir <- paste0(save_fit_to, n_runs, "_runs/")
+sim_fit_many <- function(param_settings, free_params, model_file, save_draws_to, n_runs = 1) {
+  dat_dir <- paste0(save_draws_to, n_runs, "_runs/")
   if (!dir.exists(dat_dir)) dir.create(dat_dir)
   model <- cmdstan_model(model_file)
   for (k in 1:n_runs) {
@@ -35,23 +35,24 @@ sim_fit_many <- function(param_settings, free_params, model_file, save_fit_to, n
     sim$save_sim_dat(params, sim_dat, dat_file)
 
     # fit
-    fit_file <- paste0(dat_dir, "fit_", sprintf("%03d", k), ".rds")
-    fit <- get_draws(model, dat_file, k, n_runs)
-    saveRDS(fit, file = fit_file)
+    draws_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
+    draws <- fit(model, dat_file, return = "draws", k, n_runs)
+    saveRDS(draws, file = draws_file)
   }
 }
 
-# === get_draws() =======================
+# === fit() =======================
 # fits the model once, prints progress (Completed run k of n_runs), returns data frame of fit draws
 # arguments: 
 # - model: the CmdStanModel object
 # - dat_file: name of data file to feed to Stan
+# - return: whether to return the fit object, or a draws dataframe
 # - k: run number (for progress print)
 # - n_runs: total number of runs (for progress print)
 # - show_iteration_progress: whether to show the progress of the individual iteration (i.e., chain updates)
 # 
 # returns: data frame of fit draws
-get_draws <- function(model, dat_file, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
+fit <- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
   it <- 1000
   fit <- model$sample(
     data = dat_file,
@@ -63,13 +64,17 @@ get_draws <- function(model, dat_file, k = 1, n_runs = 1, show_iteration_progres
     seed = 1234,
     show_messages = show_iteration_progress
   )
-  draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
   message("Completed run ", k, " of ", n_runs, " in ", round(fit$time()$total, 1), " seconds.")
-  return(draws)
+  if (return == "draws") {
+    draws <- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
+    return(draws)
+  } else {
+    return(fit)
+  }
 }
 
 # === fit_many() =======================
-# runs model [n_runs] times and saves results as rds files
+# runs model [n_runs] times and saves fit objects as rds files
 # arguments: 
 # - TODO
 # 
@@ -80,14 +85,7 @@ fit_many <- function(sim_dat_dir, model_path, fit_dir, n_runs, free_params = NUL
     k_code <- sprintf("%03d", k)
     sim_dat_path <- paste0(sim_dat_dir, "dat_", k_code, ".json")
     fit_path <- paste0(fit_dir, "fit_", k_code, ".rds")
-    fit <- get_draws(model, sim_dat_path, k, n_runs)
-
-    # rename the parameter columns 
-    for (p in free_params) {
-      old_name <- paste0("means[", which(free_params == p), "]")
-      new_name <- p
-      names(fit)[names(fit) == old_name] <- new_name
-    }
+    fit <- fit(model, sim_dat_path, return = "fit", k, n_runs)
     saveRDS(fit, file = fit_path)
   }
 }

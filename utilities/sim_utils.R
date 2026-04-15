@@ -41,7 +41,7 @@ param_bounds <- list(
 # returns: list of parameter settings with free_params randomized
 randomize_free_params <- function(param_settings, free_params) {
   for (p in free_params) {
-    bounds <- sim$param_bounds[[p]]
+    bounds <- param_bounds[[p]]
     param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
   }
   return(param_settings)
@@ -79,7 +79,7 @@ save_sim_dat <- function(params, sim_dat, dat_file_name) {
   params$inv_temp <- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
   params$initQF <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
   params$initQU <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  param_file_name <- stringr::str_replace(dat_file_name, "sim_dat", "sim_param_settings")
+  param_file_name <- stringr::str_replace(dat_file_name, "dat_", "param_settings_")
   cmdstanr::write_stan_json(params, file = param_file_name)
 
   # data
