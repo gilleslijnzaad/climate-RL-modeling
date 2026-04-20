@@ -53,9 +53,11 @@ plot$sim_plots(dat, params)
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
-  LRs_group = list(conf = 0.8, disconf = 0.2),
+  LR_conf_group = 0.8,
+  LR_disconf_group = 0.2,
   inv_temp_group = 0.5,
-  initQ_group = list(F = 8, U = 2),
+  initQF_group = 8,
+  initQU_group = 2,
   mu_R_group = list(F = 5, U = 5),
   sigma_R_group = 2,
   margin_group = 2

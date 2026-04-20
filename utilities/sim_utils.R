@@ -4,7 +4,8 @@ set.seed(1234)
 # list of standard deviations for group-level means of parameters
 param_stddevs <- list(
   LR_group = 0.2,
-  LRs_group = 0.2,
+  LR_conf_group = 0.2,
+  LR_disconf_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
   initQF_group = 2,
@@ -18,7 +19,8 @@ param_stddevs <- list(
 # list of theoretical bounds for parameters; same as in Stan
 param_bounds <- list(
   LR_group = c(0, 1),
-  LRs_group = c(0, 1),
+  LR_conf_group = c(0, 1),
+  LR_disconf_group = c(0, 1),
   LR = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
