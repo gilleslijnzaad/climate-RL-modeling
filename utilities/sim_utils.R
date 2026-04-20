@@ -1,4 +1,5 @@
 set.seed(1234)
+library(dplyr)
 
 # === param_stddevs =============================
 # list of standard deviations for group-level means of parameters
@@ -73,13 +74,18 @@ draw_from_group_mean <- function(param_settings, p) {
 # - dat_file_name: file to save data to
 # 
 # returns: nothing
-save_sim_dat <- function(params, sim_dat, dat_file_name) {
+save_sim_dat <- function(params, sim_dat, dat_file_name, 
+                         free_params = c("LR", "inv_temp", "initQF", "initQU")) {
 
   # parameter settings -> group means are already in params, now we add participant-level settings 
-  params$LR <- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
-  params$inv_temp <- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
-  params$initQF <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
-  params$initQU <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
+  for (p in free_params) {
+    sim_name <- case_when(
+      (p == "initQF") ~ "Q_F",
+      (p == "initQU") ~ "Q_U",
+      TRUE ~ p
+    )
+    params[[p]] <- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
+  }
   param_file_name <- stringr::str_replace(dat_file_name, "dat_", "param_settings_")
   cmdstanr::write_stan_json(params, file = param_file_name)
 

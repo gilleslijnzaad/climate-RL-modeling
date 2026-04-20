@@ -11,15 +11,19 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 # ---------------------
 library(tidyverse)
 my_teal <- "#008080"
-my_pink <- "#ff00dd"
-my_blue <- "#00aadd"
+my_pink <- "#dd66dd"
+my_blue <- "#0055bb"
+my_light_blue <- "#00aadd"
 my_dark_blue <- "#001199"
+my_red <- "#ff4455"
 my_param_colors <- c(
-  F = my_teal,            U = my_pink,
-  initQF = my_teal,       initQU = my_pink,
-  initQF_group = my_teal, initQU_group = my_pink,
-  LR = my_blue,           inv_temp = my_dark_blue,
-  LR_group = my_blue,     inv_temp_group = my_dark_blue
+  F = my_teal,                  U = my_pink,
+  initQF = my_teal,             initQU = my_pink,
+  initQF_group = my_teal,       initQU_group = my_pink,
+  LR = my_blue,                 inv_temp = my_red,
+  LR_group = my_blue,           inv_temp_group = my_red,
+  LR_conf = my_dark_blue,       LR_disconf = my_light_blue,
+  LR_conf_group = my_dark_blue, LR_disconf_group = my_light_blue
 )
 
 my_theme <- theme_bw() +
@@ -181,7 +185,7 @@ posterior_density <- function(draws, to_plot, param_settings = NULL) {
   plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
     labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
-    facet_wrap(. ~ factor(parameter, to_plot), scales = "free") +
+    facet_wrap(. ~ factor(parameter, to_plot), scales = "free", ncol = 2) +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = "legend", color = "none", fill = "none") +

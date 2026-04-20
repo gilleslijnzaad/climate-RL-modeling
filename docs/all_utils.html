@@ -1456,6 +1456,7 @@ border-radius: 0px;
 <div id="sim_utils.r" class="section level1">
 <h1><code>sim_utils.R</code></h1>
 <pre><code>set.seed(1234)
+library(dplyr)
 
 # === param_stddevs =============================
 # list of standard deviations for group-level means of parameters
@@ -1530,13 +1531,18 @@ draw_from_group_mean &lt;- function(param_settings, p) {
 # - dat_file_name: file to save data to
 # 
 # returns: nothing
-save_sim_dat &lt;- function(params, sim_dat, dat_file_name) {
+save_sim_dat &lt;- function(params, sim_dat, dat_file_name, 
+                         free_params = c(&quot;LR&quot;, &quot;inv_temp&quot;, &quot;initQF&quot;, &quot;initQU&quot;)) {
 
   # parameter settings -&gt; group means are already in params, now we add participant-level settings 
-  params$LR &lt;- round(sim_dat$LR[which(sim_dat$trial == 1)], 4)
-  params$inv_temp &lt;- round(sim_dat$inv_temp[which(sim_dat$trial == 1)], 4)
-  params$initQF &lt;- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
-  params$initQU &lt;- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
+  for (p in free_params) {
+    sim_name &lt;- case_when(
+      (p == &quot;initQF&quot;) ~ &quot;Q_F&quot;,
+      (p == &quot;initQU&quot;) ~ &quot;Q_U&quot;,
+      TRUE ~ p
+    )
+    params[[p]] &lt;- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
+  }
   param_file_name &lt;- stringr::str_replace(dat_file_name, &quot;dat_&quot;, &quot;param_settings_&quot;)
   cmdstanr::write_stan_json(params, file = param_file_name)
 
@@ -1682,15 +1688,19 @@ source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 # ---------------------
 library(tidyverse)
 my_teal &lt;- &quot;#008080&quot;
-my_pink &lt;- &quot;#ff00dd&quot;
-my_blue &lt;- &quot;#00aadd&quot;
+my_pink &lt;- &quot;#dd66dd&quot;
+my_blue &lt;- &quot;#0055bb&quot;
+my_light_blue &lt;- &quot;#00aadd&quot;
 my_dark_blue &lt;- &quot;#001199&quot;
+my_red &lt;- &quot;#ff4455&quot;
 my_param_colors &lt;- c(
-  F = my_teal,            U = my_pink,
-  initQF = my_teal,       initQU = my_pink,
-  initQF_group = my_teal, initQU_group = my_pink,
-  LR = my_blue,           inv_temp = my_dark_blue,
-  LR_group = my_blue,     inv_temp_group = my_dark_blue
+  F = my_teal,                  U = my_pink,
+  initQF = my_teal,             initQU = my_pink,
+  initQF_group = my_teal,       initQU_group = my_pink,
+  LR = my_blue,                 inv_temp = my_red,
+  LR_group = my_blue,           inv_temp_group = my_red,
+  LR_conf = my_dark_blue,       LR_disconf = my_light_blue,
+  LR_conf_group = my_dark_blue, LR_disconf_group = my_light_blue
 )
 
 my_theme &lt;- theme_bw() +
@@ -1852,7 +1862,7 @@ posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
   plot &lt;- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
     labs(title = &quot;Posterior distributions&quot;, x = &quot;Estimate&quot;, y = &quot;Density&quot;) +
-    facet_wrap(. ~ factor(parameter, to_plot), scales = &quot;free&quot;) +
+    facet_wrap(. ~ factor(parameter, to_plot), scales = &quot;free&quot;, ncol = 2) +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
     guides(linetype = &quot;legend&quot;, color = &quot;none&quot;, fill = &quot;none&quot;) +

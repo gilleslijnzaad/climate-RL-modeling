@@ -93,13 +93,20 @@ fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting) # access functions using fitting$fun()
 if (dat_changed | model_changed) {
   model <- cmdstan_model(model_path)
-  draws <- fitting$get_draws(model, dat_file, show_iteration_progress = TRUE)
-  saveRDS(draws, paste0(dat_dir, "fit_001.rds"))
+  draws <- fitting$fit(model, dat_file, return = "draws", show_iteration_progress = TRUE)
+  saveRDS(draws, paste0(dat_dir, "draws_001.rds"))
 } else {
-  draws <- readRDS(file = paste0(dat_dir, "fit_001.rds"))
+  draws <- readRDS(file = paste0(dat_dir, "draws_001.rds"))
 }
 
 ## ----posterior-plots----------------------------------------------------------
+draws <- draws %>%
+  rename(
+    LR_group = `means[1]`,
+    inv_temp_group = `means[2]`,
+    initQF_group = `means[3]`,
+    initQU_group = `means[4]`,
+  )
 to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 plot$posterior_density(draws, to_inspect, params)
 
@@ -110,6 +117,7 @@ util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit---------------------------------------------------------------
 participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_001.json"))
+free_params <- c("LR", "inv_temp", "initQF", "initQU")
 plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
 
 ## ----many-runs----------------------------------------------------------------
@@ -130,7 +138,7 @@ for (k in 1:n_runs) {
   sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")
   sim_dat <- rjson::fromJSON(file = sim_file)
 
-  fit_file <- paste0(dat_dir, "fit_", sprintf("%03d", k), ".rds")
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
   fit_dat <- readRDS(fit_file)
 
   # calculate medians
