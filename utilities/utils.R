@@ -1,21 +1,22 @@
-# === cred_int() ========================
-# arguments: 
-# - posterior_dist: array of posterior distribution
-# 
-# returns: 
-# - bounds of 95% credibility interval in array
+#' Calculates 95% credibility interval for a posterior distribution
+#' 
+#' @param posterior_dist array of posterior distribution draws
+#' 
+#' @return vector of bounds of the 95% credibility interval
 cred_int <- function(posterior_dist) {
   return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
 }
 
-# === print_posterior_table() ========================
-# arguments: 
-# - draws: data frame of posterior draws from model
-# - param_settings: named list of parameter settings
-# - to_show: string array of parameters to show in table
-# 
-# returns: 
-# - nothing
+#' Prints a kable (knitr table) with the simulated value of a
+#' parameter and the median of the posterior draws (95% CI)
+#' 
+#' @param draws: data frame of posterior draws from model
+#' 
+#' @param param_settings: named list of parameter settings
+#' 
+#' @param to_show: string array of parameters to show in table
+#' 
+#' @return nothing
 print_posterior_table <- function(draws, param_settings, to_show) {
   table_data <- data.frame()
 

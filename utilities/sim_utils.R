@@ -1,8 +1,7 @@
 set.seed(1234)
 library(dplyr)
 
-# === param_stddevs =============================
-# list of standard deviations for group-level means of parameters
+#' A list of standard deviations for group-level means of parameters
 param_stddevs <- list(
   LR_group = 0.2,
   LR_conf_group = 0.2,
@@ -16,8 +15,7 @@ param_stddevs <- list(
   margin_group = 2
 )
 
-# === param_bounds =============================
-# list of theoretical bounds for parameters; same as in Stan
+#' A list of theoretical bounds for parameters; same as in Stan
 param_bounds <- list(
   LR_group = c(0, 1),
   LR_conf_group = c(0, 1),
@@ -35,13 +33,14 @@ param_bounds <- list(
   margin_group = c(0, 10)
 )
 
-# === randomize_free_params() =======================
-# randomizes given free parameters: uniform distribution over their bounds
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters to randomize
-# 
-# returns: list of parameter settings with free_params randomized
+#' Randomizes given free parameters according to a uniform
+#' distribution
+#' 
+#' @param param_settings list of parameter settings
+#' 
+#' @param free_params vector of names of free parameters to randomize
+#'
+#' @return A list of parameter settings with `free_params` randomized
 randomize_free_params <- function(param_settings, free_params) {
   for (p in free_params) {
     bounds <- param_bounds[[p]]
@@ -50,13 +49,18 @@ randomize_free_params <- function(param_settings, free_params) {
   return(param_settings)
 }
 
-# === draw_from_group_mean() =======================
-# arguments: 
-# - param_settings: the list of parameter settings (i.e., group means)
-# - p: the parameter for which we want to draw from the group mean
-# 
-# returns:
-# - draw from the group mean of parameter p, keeping in mind the theoretical bounds of the parameter, the group mean and the standard deviation
+#' Randomly draws a value based on given group mean
+#' 
+#' @details uses standard deviation as defined in `param_stddevs`, and
+#' bounds to the distribution as defined in `param_bounds`
+#' 
+#' @param param_settings: the list of parameter settings (i.e., group
+#' means)
+#' 
+#' @param p: the parameter for which we want to draw from the group
+#' mean
+#' 
+#' @return A value from the distribution of parameter `p`
 draw_from_group_mean <- function(param_settings, p) {
   draw <- truncnorm::rtruncnorm(n = 1, 
                      a = param_bounds[[p]][1],
@@ -66,18 +70,21 @@ draw_from_group_mean <- function(param_settings, p) {
   return(draw)
 }
 
-# === save_sim_dat() =======================
-# saves parameter settings to file "sim_param_settings.json" and saves simulated data to file "sim_dat.json"
-# arguments: 
-# - params: vector of parameter settings
-# - sim_dat: data frame of simulated data
-# - dat_file_name: file to save data to
-# 
-# returns: nothing
+#' Saves parameter settings to file `sim_param_settings.json` and
+#' saves simulated data to file `sim_dat.json`
+#' 
+#' @param params: vector of parameter settings
+#' 
+#' @param sim_dat: data frame of simulated data
+#' 
+#' @param dat_file_name: file to save data to
+#' 
+#' @return nothing
 save_sim_dat <- function(params, sim_dat, dat_file_name, 
                          free_params = c("LR", "inv_temp", "initQF", "initQU")) {
 
-  # parameter settings -> group means are already in params, now we add participant-level settings 
+  # parameter settings -> group means are already in params, now we
+  # add participant-level settings 
   for (p in free_params) {
     sim_name <- case_when(
       (p == "initQF") ~ "Q_F",
@@ -105,13 +112,15 @@ save_sim_dat <- function(params, sim_dat, dat_file_name,
   cmdstanr::write_stan_json(list_dat, file = dat_file_name)
 }
 
-# === did_sim_dat_change() =================
-# arguments: 
-# - data_file: file path for the JSON file
-# - sim_dat: data frame to compare to file
-# 
-# returns: 
-#  - TRUE if sim_dat changed compared to saved JSON file, else FALSE
+#' Checks if given simulated data changed compared to the data in the
+#' given JSON file
+#' 
+#' @param data_file: file path for the JSON file
+#' 
+#' @param sim_dat: data frame to compare to file
+#' 
+#' @return TRUE if `sim_dat` changed compared to saved JSON file, else
+#' FALSE
 did_sim_dat_change <- function(data_file, sim_dat) {
   json_data <- rjson::fromJSON(file = data_file)
   json_choice <- unlist(json_data$choice)
@@ -125,6 +134,8 @@ did_sim_dat_change <- function(data_file, sim_dat) {
     return(TRUE)
   }
 }
+
+# BELOW: WILL BE DEPRECATED! IS ONLY THERE FOR SIM_SHOWCASE NOW
 
 # === run_LRN_cont() =================
 # arguments: vector of parameter settings; whether belief is stat or dyn

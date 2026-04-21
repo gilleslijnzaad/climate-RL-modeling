@@ -1458,8 +1458,7 @@ border-radius: 0px;
 <pre><code>set.seed(1234)
 library(dplyr)
 
-# === param_stddevs =============================
-# list of standard deviations for group-level means of parameters
+#&#39; A list of standard deviations for group-level means of parameters
 param_stddevs &lt;- list(
   LR_group = 0.2,
   LR_conf_group = 0.2,
@@ -1473,8 +1472,7 @@ param_stddevs &lt;- list(
   margin_group = 2
 )
 
-# === param_bounds =============================
-# list of theoretical bounds for parameters; same as in Stan
+#&#39; A list of theoretical bounds for parameters; same as in Stan
 param_bounds &lt;- list(
   LR_group = c(0, 1),
   LR_conf_group = c(0, 1),
@@ -1492,13 +1490,14 @@ param_bounds &lt;- list(
   margin_group = c(0, 10)
 )
 
-# === randomize_free_params() =======================
-# randomizes given free parameters: uniform distribution over their bounds
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters to randomize
-# 
-# returns: list of parameter settings with free_params randomized
+#&#39; Randomizes given free parameters according to a uniform
+#&#39; distribution
+#&#39; 
+#&#39; @param param_settings list of parameter settings
+#&#39; 
+#&#39; @param free_params vector of names of free parameters to randomize
+#&#39;
+#&#39; @return A list of parameter settings with `free_params` randomized
 randomize_free_params &lt;- function(param_settings, free_params) {
   for (p in free_params) {
     bounds &lt;- param_bounds[[p]]
@@ -1507,13 +1506,18 @@ randomize_free_params &lt;- function(param_settings, free_params) {
   return(param_settings)
 }
 
-# === draw_from_group_mean() =======================
-# arguments: 
-# - param_settings: the list of parameter settings (i.e., group means)
-# - p: the parameter for which we want to draw from the group mean
-# 
-# returns:
-# - draw from the group mean of parameter p, keeping in mind the theoretical bounds of the parameter, the group mean and the standard deviation
+#&#39; Randomly draws a value based on given group mean
+#&#39; 
+#&#39; @details uses standard deviation as defined in `param_stddevs`, and
+#&#39; bounds to the distribution as defined in `param_bounds`
+#&#39; 
+#&#39; @param param_settings: the list of parameter settings (i.e., group
+#&#39; means)
+#&#39; 
+#&#39; @param p: the parameter for which we want to draw from the group
+#&#39; mean
+#&#39; 
+#&#39; @return A value from the distribution of parameter `p`
 draw_from_group_mean &lt;- function(param_settings, p) {
   draw &lt;- truncnorm::rtruncnorm(n = 1, 
                      a = param_bounds[[p]][1],
@@ -1523,18 +1527,21 @@ draw_from_group_mean &lt;- function(param_settings, p) {
   return(draw)
 }
 
-# === save_sim_dat() =======================
-# saves parameter settings to file &quot;sim_param_settings.json&quot; and saves simulated data to file &quot;sim_dat.json&quot;
-# arguments: 
-# - params: vector of parameter settings
-# - sim_dat: data frame of simulated data
-# - dat_file_name: file to save data to
-# 
-# returns: nothing
+#&#39; Saves parameter settings to file `sim_param_settings.json` and
+#&#39; saves simulated data to file `sim_dat.json`
+#&#39; 
+#&#39; @param params: vector of parameter settings
+#&#39; 
+#&#39; @param sim_dat: data frame of simulated data
+#&#39; 
+#&#39; @param dat_file_name: file to save data to
+#&#39; 
+#&#39; @return nothing
 save_sim_dat &lt;- function(params, sim_dat, dat_file_name, 
                          free_params = c(&quot;LR&quot;, &quot;inv_temp&quot;, &quot;initQF&quot;, &quot;initQU&quot;)) {
 
-  # parameter settings -&gt; group means are already in params, now we add participant-level settings 
+  # parameter settings -&gt; group means are already in params, now we
+  # add participant-level settings 
   for (p in free_params) {
     sim_name &lt;- case_when(
       (p == &quot;initQF&quot;) ~ &quot;Q_F&quot;,
@@ -1562,13 +1569,15 @@ save_sim_dat &lt;- function(params, sim_dat, dat_file_name,
   cmdstanr::write_stan_json(list_dat, file = dat_file_name)
 }
 
-# === did_sim_dat_change() =================
-# arguments: 
-# - data_file: file path for the JSON file
-# - sim_dat: data frame to compare to file
-# 
-# returns: 
-#  - TRUE if sim_dat changed compared to saved JSON file, else FALSE
+#&#39; Checks if given simulated data changed compared to the data in the
+#&#39; given JSON file
+#&#39; 
+#&#39; @param data_file: file path for the JSON file
+#&#39; 
+#&#39; @param sim_dat: data frame to compare to file
+#&#39; 
+#&#39; @return TRUE if `sim_dat` changed compared to saved JSON file, else
+#&#39; FALSE
 did_sim_dat_change &lt;- function(data_file, sim_dat) {
   json_data &lt;- rjson::fromJSON(file = data_file)
   json_choice &lt;- unlist(json_data$choice)
@@ -1582,6 +1591,8 @@ did_sim_dat_change &lt;- function(data_file, sim_dat) {
     return(TRUE)
   }
 }
+
+# BELOW: WILL BE DEPRECATED! IS ONLY THERE FOR SIM_SHOWCASE NOW
 
 # === run_LRN_cont() =================
 # arguments: vector of parameter settings; whether belief is stat or dyn
@@ -1723,12 +1734,11 @@ my_theme_classic &lt;- theme_classic() +
 #        PLOTS FOR SIMULATED DATA
 # --------------------------------------
 
-# === Q() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of Q values over time (ggplot)
+#&#39; Creates a plot of Q-values over time (smooth)
+#&#39; 
+#&#39; @param   sim_dat: data frame of simulated data
+#&#39; 
+#&#39; @return  ggplot2 object
 Q &lt;- function(sim_dat) {
   # data to long format
   sim_dat &lt;- sim_dat %&gt;%
@@ -1753,12 +1763,11 @@ Q &lt;- function(sim_dat) {
   return(p)
 }
 
-# === choice() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of choices over time (ggplot)
+#&#39; Creates a plot of choices over time (smooth)
+#&#39; 
+#&#39; @param   sim_dat: data frame of simulated data
+#&#39; 
+#&#39; @return  ggplot2 object
 choice &lt;- function(sim_dat) {
   # data to long format
   sim_dat &lt;- sim_dat %&gt;%
@@ -1779,12 +1788,11 @@ choice &lt;- function(sim_dat) {
   return(p)
 }
 
-# === param_annotation() ======================
-# arguments: 
-# - named list of parameter settings
-# 
-# returns: 
-# - textGrob of parameter settings list
+#&#39; Creates an annotation listing the parameter settings
+#&#39; 
+#&#39; @param   params named list of parameter settings
+#&#39; 
+#&#39; @return `textGrob` detailing the parameter settings
 param_annotation &lt;- function(params) {
   library(grid)
   full_text &lt;- c()
@@ -1804,13 +1812,16 @@ param_annotation &lt;- function(params) {
   return(g)
 }
 
-# === sim_plots() ======================
-# arguments: 
-# - sim_dat: simulated data; 
-# - params: list of parameter settings;
-# - plot_title: string providing the title of the plot, or NA for no title
-# 
-# returns: nothing
+#&#39; Combines `Q()` and `choice()` plots with the annotation
+#&#39; 
+#&#39; @param sim_dat     data frame of simulated data
+#&#39; 
+#&#39; @param params      named list of parameter settings
+#&#39; 
+#&#39; @param plot_title  string for plot title; if `NA`, plot will not
+#&#39; have a title
+#&#39; 
+#&#39; @return nothing
 sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
   annotation &lt;- param_annotation(params)
   if (is.na(plot_title)) {
@@ -1834,14 +1845,17 @@ sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
 #        PLOTS FOR MODELING
 # --------------------------------
 
-# === posterior_density() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings; if NULL, don&#39;t show simulated value
-# 
-# returns: 
-# - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
+#&#39; Plots posterior density distributions for all given free
+#&#39; parameters; plots are organized using `facet_wrap()`
+#&#39; 
+#&#39; @param draws: data frame of posterior draws from model
+#&#39; 
+#&#39; @param to_plot: string array of parameters to plot
+#&#39; 
+#&#39; @param param_settings: named list of parameter settings; if NULL,
+#&#39; don&#39;t show simulated value
+#&#39; 
+#&#39; @return ggplot object
 posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
   plot_data &lt;- data.frame()
 
@@ -1877,14 +1891,16 @@ posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
   return(plot)
 }
 
-# === pp_level_param_fit() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings
-# 
-# returns: 
-# - nothing
+#&#39; Plots participant-level simulated parameters against their
+#&#39; estimated value, with a dashed line indicating perfect agreement
+#&#39;
+#&#39; @param draws data frame of posterior draws from model
+#&#39; 
+#&#39; @param to_plot string array of parameters to plot
+#&#39; 
+#&#39; @param param_settings named list of parameter settings
+#&#39; 
+#&#39; @return nothing
 pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
   n_part &lt;- param_settings$n_part
   plots &lt;- list()
@@ -1919,15 +1935,26 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
                          )
 }
 
-# === many_runs_param_fit() =============================
-# description: TODO
-# 
+#&#39; Plots simulated values against estimated values for all given free
+#&#39; parameters, with a dashed line indicating perfect agreement
+#&#39; 
+#&#39; @param sim_params data frame containing the simulated value used
+#&#39; for each run for each free parameter
+#&#39; 
+#&#39; @param fit_params data frame containing the estimated value (median
+#&#39; of the posterior draws) used for each run for each free parameter
+#&#39; 
+#&#39; @param to_plot string array of parameters to plot
+#&#39; 
+#&#39; @return nothing
 many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
   plots &lt;- list()
   for (p in to_plot) {
     bounds &lt;- sim_utils$param_bounds[[p]]
 
-    plot &lt;- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
+    plot_dat &lt;- data.frame(x = sim_params[[p]], y = fit_params[[p]])
+
+    plot &lt;- ggplot(plot_dat, aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = bounds, y = bounds) +
@@ -1964,6 +1991,71 @@ mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
 # ---------------------------
 #        MODEL FITTING
 # ---------------------------
+
+#&#39; Fits the model once, prints progress (Completed run k of n_runs),
+#&#39; returns data frame of fit draws
+#&#39; 
+#&#39; @param model: the CmdStanModel object
+#&#39; 
+#&#39; @param dat_file: name of data file to feed to Stan
+#&#39; 
+#&#39; @param return: whether to return the fit object, or a draws
+#&#39; dataframe
+#&#39; 
+#&#39; @param k: run number (for progress print)
+#&#39; 
+#&#39; @param n_runs: total number of runs (for progress print)
+#&#39; 
+#&#39; @param show_iteration_progress: whether to show the progress of the
+#&#39; individual iteration (i.e., chain updates)
+#&#39; 
+#&#39; @return data frame of fit draws
+fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
+  it &lt;- 1000
+  fit &lt;- model$sample(
+    data = dat_file,
+    iter_sampling = it,
+    chains = 1,
+    thin = 1,
+    iter_warmup = it / 2,
+    refresh = it / 5,
+    seed = 1234,
+    show_messages = show_iteration_progress
+  )
+  message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
+  if (return == &quot;draws&quot;) {
+    draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
+    return(draws)
+  } else {
+    return(fit)
+  }
+}
+
+#&#39; Runs model [n_runs] times and saves fit objects as rds files in the
+#&#39; given directory
+#&#39; 
+#&#39; @param sim_dat_dir directory where simulated data are saved
+#&#39; 
+#&#39; @param model_path path to the Stan model
+#&#39; 
+#&#39; @param fit_dir directory where fit data should be saved
+#&#39; 
+#&#39; @param n_runs how often to fit the model
+#&#39; 
+#&#39; @return nothing
+fit_many &lt;- function(sim_dat_dir, model_path, fit_dir, n_runs) {
+  model &lt;- cmdstan_model(model_path)
+  for (k in 1:n_runs) {
+    k_code &lt;- sprintf(&quot;%03d&quot;, k)
+    sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
+    fit_path &lt;- paste0(fit_dir, &quot;fit_&quot;, k_code, &quot;.rds&quot;)
+    fit &lt;- fit(model, sim_dat_path, return = &quot;fit&quot;, k, n_runs)
+    saveRDS(fit, file = fit_path)
+  }
+}
+
+# BELOW: WILL BE DEPRECATED SOON
+
 # === sim_fit_many() =======================
 # runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
 # arguments: 
@@ -1990,77 +2082,29 @@ sim_fit_many &lt;- function(param_settings, free_params, model_file, save_draws_
     draws &lt;- fit(model, dat_file, return = &quot;draws&quot;, k, n_runs)
     saveRDS(draws, file = draws_file)
   }
-}
-
-# === fit() =======================
-# fits the model once, prints progress (Completed run k of n_runs), returns data frame of fit draws
-# arguments: 
-# - model: the CmdStanModel object
-# - dat_file: name of data file to feed to Stan
-# - return: whether to return the fit object, or a draws dataframe
-# - k: run number (for progress print)
-# - n_runs: total number of runs (for progress print)
-# - show_iteration_progress: whether to show the progress of the individual iteration (i.e., chain updates)
-# 
-# returns: data frame of fit draws
-fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
-  it &lt;- 1000
-  fit &lt;- model$sample(
-    data = dat_file,
-    iter_sampling = it,
-    chains = 1,
-    thin = 1,
-    iter_warmup = it / 2,
-    refresh = it / 5,
-    seed = 1234,
-    show_messages = show_iteration_progress
-  )
-  message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
-  if (return == &quot;draws&quot;) {
-    draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
-    return(draws)
-  } else {
-    return(fit)
-  }
-}
-
-# === fit_many() =======================
-# runs model [n_runs] times and saves fit objects as rds files
-# arguments: 
-# - TODO
-# 
-# returns: nothing
-fit_many &lt;- function(sim_dat_dir, model_path, fit_dir, n_runs, free_params = NULL) {
-  model &lt;- cmdstan_model(model_path)
-  for (k in 1:n_runs) {
-    k_code &lt;- sprintf(&quot;%03d&quot;, k)
-    sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
-    fit_path &lt;- paste0(fit_dir, &quot;fit_&quot;, k_code, &quot;.rds&quot;)
-    fit &lt;- fit(model, sim_dat_path, return = &quot;fit&quot;, k, n_runs)
-    saveRDS(fit, file = fit_path)
-  }
 }</code></pre>
 </div>
 <div id="utils.r" class="section level1">
 <h1><code>utils.R</code></h1>
-<pre><code># === cred_int() ========================
-# arguments: 
-# - posterior_dist: array of posterior distribution
-# 
-# returns: 
-# - bounds of 95% credibility interval in array
+<pre><code>#&#39; Calculates 95% credibility interval for a posterior distribution
+#&#39; 
+#&#39; @param posterior_dist array of posterior distribution draws
+#&#39; 
+#&#39; @return vector of bounds of the 95% credibility interval
 cred_int &lt;- function(posterior_dist) {
   return(as.numeric(quantile(posterior_dist, c(0.025, 0.975))))
 }
 
-# === print_posterior_table() ========================
-# arguments: 
-# - draws: data frame of posterior draws from model
-# - param_settings: named list of parameter settings
-# - to_show: string array of parameters to show in table
-# 
-# returns: 
-# - nothing
+#&#39; Prints a kable (knitr table) with the simulated value of a
+#&#39; parameter and the median of the posterior draws (95% CI)
+#&#39; 
+#&#39; @param draws: data frame of posterior draws from model
+#&#39; 
+#&#39; @param param_settings: named list of parameter settings
+#&#39; 
+#&#39; @param to_show: string array of parameters to show in table
+#&#39; 
+#&#39; @return nothing
 print_posterior_table &lt;- function(draws, param_settings, to_show) {
   table_data &lt;- data.frame()
 

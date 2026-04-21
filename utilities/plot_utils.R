@@ -46,12 +46,11 @@ my_theme_classic <- theme_classic() +
 #        PLOTS FOR SIMULATED DATA
 # --------------------------------------
 
-# === Q() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of Q values over time (ggplot)
+#' Creates a plot of Q-values over time (smooth)
+#' 
+#' @param   sim_dat: data frame of simulated data
+#' 
+#' @return  ggplot2 object
 Q <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
@@ -76,12 +75,11 @@ Q <- function(sim_dat) {
   return(p)
 }
 
-# === choice() ========================
-# arguments: 
-# - sim_dat: data frame of simulated data
-# 
-# returns: 
-# - smooth plot of choices over time (ggplot)
+#' Creates a plot of choices over time (smooth)
+#' 
+#' @param   sim_dat: data frame of simulated data
+#' 
+#' @return  ggplot2 object
 choice <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
@@ -102,12 +100,11 @@ choice <- function(sim_dat) {
   return(p)
 }
 
-# === param_annotation() ======================
-# arguments: 
-# - named list of parameter settings
-# 
-# returns: 
-# - textGrob of parameter settings list
+#' Creates an annotation listing the parameter settings
+#' 
+#' @param   params named list of parameter settings
+#' 
+#' @return `textGrob` detailing the parameter settings
 param_annotation <- function(params) {
   library(grid)
   full_text <- c()
@@ -127,13 +124,16 @@ param_annotation <- function(params) {
   return(g)
 }
 
-# === sim_plots() ======================
-# arguments: 
-# - sim_dat: simulated data; 
-# - params: list of parameter settings;
-# - plot_title: string providing the title of the plot, or NA for no title
-# 
-# returns: nothing
+#' Combines `Q()` and `choice()` plots with the annotation
+#' 
+#' @param sim_dat     data frame of simulated data
+#' 
+#' @param params      named list of parameter settings
+#' 
+#' @param plot_title  string for plot title; if `NA`, plot will not
+#' have a title
+#' 
+#' @return nothing
 sim_plots <- function(sim_dat, params, plot_title = NA) {
   annotation <- param_annotation(params)
   if (is.na(plot_title)) {
@@ -157,14 +157,17 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 #        PLOTS FOR MODELING
 # --------------------------------
 
-# === posterior_density() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings; if NULL, don't show simulated value
-# 
-# returns: 
-# - density plot(s) of posterior distribution(s) with simulated value as dashed line. plots are organized using facet_grid and are color-coded
+#' Plots posterior density distributions for all given free
+#' parameters; plots are organized using `facet_wrap()`
+#' 
+#' @param draws: data frame of posterior draws from model
+#' 
+#' @param to_plot: string array of parameters to plot
+#' 
+#' @param param_settings: named list of parameter settings; if NULL,
+#' don't show simulated value
+#' 
+#' @return ggplot object
 posterior_density <- function(draws, to_plot, param_settings = NULL) {
   plot_data <- data.frame()
 
@@ -200,14 +203,16 @@ posterior_density <- function(draws, to_plot, param_settings = NULL) {
   return(plot)
 }
 
-# === pp_level_param_fit() =============================
-# arguments:
-# - draws: data frame of posterior draws from model
-# - to_plot: string array of parameters to plot
-# - param_settings: named list of parameter settings
-# 
-# returns: 
-# - nothing
+#' Plots participant-level simulated parameters against their
+#' estimated value, with a dashed line indicating perfect agreement
+#'
+#' @param draws data frame of posterior draws from model
+#' 
+#' @param to_plot string array of parameters to plot
+#' 
+#' @param param_settings named list of parameter settings
+#' 
+#' @return nothing
 pp_level_param_fit <- function(draws, to_plot, param_settings) {
   n_part <- param_settings$n_part
   plots <- list()
@@ -242,15 +247,26 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
                          )
 }
 
-# === many_runs_param_fit() =============================
-# description: TODO
-# 
+#' Plots simulated values against estimated values for all given free
+#' parameters, with a dashed line indicating perfect agreement
+#' 
+#' @param sim_params data frame containing the simulated value used
+#' for each run for each free parameter
+#' 
+#' @param fit_params data frame containing the estimated value (median
+#' of the posterior draws) used for each run for each free parameter
+#' 
+#' @param to_plot string array of parameters to plot
+#' 
+#' @return nothing
 many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
   plots <- list()
   for (p in to_plot) {
     bounds <- sim_utils$param_bounds[[p]]
 
-    plot <- ggplot(data.frame(x = sim_params[[p]], y = fit_params[[p]]), aes(x = x, y = y)) +
+    plot_dat <- data.frame(x = sim_params[[p]], y = fit_params[[p]])
+
+    plot <- ggplot(plot_dat, aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = bounds, y = bounds) +
