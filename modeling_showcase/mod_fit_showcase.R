@@ -141,7 +141,6 @@ for (k in 1:n_runs) {
   fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
   fit_dat <- readRDS(fit_file)
 
-  # calculate medians
   for (p in free_params) {
     sim_params[[p]][k] <- sim_dat[[p]]
     fit_params[[p]][k] <- median(fit_dat[[p]])
