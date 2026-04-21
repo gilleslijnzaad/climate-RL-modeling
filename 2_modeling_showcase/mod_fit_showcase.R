@@ -107,12 +107,13 @@ draws <- draws %>%
     initQF_group = `means[3]`,
     initQU_group = `means[4]`,
   )
-to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
-plot$posterior_density(draws, to_inspect, params)
+to_plot <- c("LR_group", "inv_temp_group", "initQ_group")
+plot$posterior_densities(draws, to_plot, params)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
 source(paste0(util_dir, "utils.R"), local = util) # access functions using util$fun()
+to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit---------------------------------------------------------------

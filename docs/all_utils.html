@@ -1730,6 +1730,15 @@ my_theme_classic &lt;- theme_classic() +
         legend.text = element_text(size = 16)) +
   theme(strip.text = element_text(size = 18, face = &quot;bold&quot;))
 
+# function from: https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+get_legend &lt;- function(myggplot){
+  library(gridExtra)
+  tmp &lt;- ggplot_gtable(ggplot_build(myggplot))
+  leg &lt;- which(sapply(tmp$grobs, function(x) x$name) == &quot;guide-box&quot;)
+  legend &lt;- tmp$grobs[[leg]]
+  return(legend)
+}
+
 # --------------------------------------
 #        PLOTS FOR SIMULATED DATA
 # --------------------------------------
@@ -1830,23 +1839,95 @@ sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
     title &lt;- textGrob(plot_title, gp = gpar(fontsize = 20, font = 2))
   }
   
-  gridExtra::grid.arrange(Q(sim_dat), 
-                          choice(sim_dat), 
-                          annotation,
-                          ncol = 3,
-                          widths = unit.c(unit(1, &quot;null&quot;), # fill space evenly
-                                          unit(1, &quot;null&quot;),
-                                          grobWidth(annotation) + unit(2, &quot;mm&quot;)),
-                          top = title
-                         )
+  gridExtra::grid.arrange(
+    Q(sim_dat), 
+    choice(sim_dat), 
+    annotation,
+    ncol = 3,
+    widths = unit.c(unit(1, &quot;null&quot;), # fill space evenly
+                    unit(1, &quot;null&quot;),
+                    grobWidth(annotation) + unit(2, &quot;mm&quot;)),
+    top = title
+  )
 }
 
 # --------------------------------
 #        PLOTS FOR MODELING
 # --------------------------------
 
+#&#39; Plots the posterior density for one free parameter; supposed to be
+#&#39; a part of a grid. Used by `posterior_densities()`
+#&#39; 
+#&#39; @param p name of the free parameter we&#39;re plotting
+#&#39; 
+#&#39; @param param_draws vector of posterior draws for the parameter
+#&#39; 
+#&#39; @param sim_value simulated value for the free parameter; if `NULL`,
+#&#39; it will not be included in the plot
+#&#39; 
+#&#39; @return ggplot object
+posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
+  dat &lt;- data.frame(
+    estimate = param_draws,
+    sim_value = sim_value
+  )
+
+  plot &lt;- ggplot(dat, aes(x = estimate)) +
+    geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
+    labs(title = p, x = NULL, y = NULL) +
+    my_theme + 
+    theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+
+  if (!is.null(sim_value)) {
+    plot &lt;- plot + 
+      geom_vline(aes(xintercept = sim_value, linetype = &quot;sim_value&quot;)) +
+      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+  }
+  return(plot)
+}
+
+#&#39; Plots the posterior density for two free parameters in the same
+#&#39; plot; supposed to be a part of a grid. Used by
+#&#39; `posterior_densities()`.
+#&#39; 
+#&#39; @param draws: data frame of posterior draws from model
+#&#39; 
+#&#39; @param param_settings: named list of parameter settings; if NULL,
+#&#39; it will not be included in the plot
+#&#39; 
+#&#39; @return ggplot object
+posterior_density_double &lt;- function(p, draws, param_settings = NULL) {
+  names &lt;- c(&quot;initQF_group&quot;, &quot;initQU_group&quot;)
+  if (!is.null(param_settings)) {
+    sim_values &lt;- c(param_settings[[names[1]]], param_settings[[names[2]]])
+  } else {
+    sim_values &lt;- NULL
+  }
+
+  dat &lt;- data.frame(
+    parameter = as.factor(rep(names, each = nrow(draws))),
+    estimate = c(draws[[names[1]]], draws[[names[2]]]),
+    sim_value = rep(sim_values, each = nrow(draws))
+  )
+
+  plot &lt;- ggplot(dat, aes(x = estimate, color = parameter, fill = parameter)) +
+    geom_density(alpha = 0.6) +
+    labs(title = p, x = NULL, y = NULL) +
+    scale_color_manual(labels = c(&quot;F&quot;, &quot;U&quot;), values = my_param_colors) +
+    scale_fill_manual(labels = c(&quot;F&quot;, &quot;U&quot;), values = my_param_colors) +
+    my_theme + 
+    theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+
+  if (!is.null(param_settings)) {
+    plot &lt;- plot + 
+      geom_vline(aes(xintercept = sim_value, linetype = &quot;sim_value&quot;, color = parameter)) +
+      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+  }
+  return(plot)
+}
+
 #&#39; Plots posterior density distributions for all given free
-#&#39; parameters; plots are organized using `facet_wrap()`
+#&#39; parameters
 #&#39; 
 #&#39; @param draws: data frame of posterior draws from model
 #&#39; 
@@ -1855,37 +1936,46 @@ sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
 #&#39; @param param_settings: named list of parameter settings; if NULL,
 #&#39; don&#39;t show simulated value
 #&#39; 
-#&#39; @return ggplot object
-posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
-  plot_data &lt;- data.frame()
+#&#39; @return nothing
+posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
+  plots &lt;- list()
 
   for (p in to_plot) {
-    dat &lt;- data.frame(
-      parameter = as.factor(p),
-      estimate = draws[[p]]
-    )
-    if (!is.null(param_settings)) {
-      dat$sim_value &lt;- param_settings[[p]]
+    if (p == &quot;initQ_group&quot;) {
+      plot &lt;- posterior_density_double(p, draws, param_settings)
+    } else {
+      plot &lt;- posterior_density_single(p, draws[[p]], param_settings[[p]])
     }
-    plot_data &lt;- rbind(plot_data, dat)
+    legend &lt;- get_legend(plot)
+    plots[[p]] &lt;- plot + theme(legend.position = &quot;none&quot;)
   }
 
-  plot &lt;- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
-    geom_density(alpha = 0.6) +
-    labs(title = &quot;Posterior distributions&quot;, x = &quot;Estimate&quot;, y = &quot;Density&quot;) +
-    facet_wrap(. ~ factor(parameter, to_plot), scales = &quot;free&quot;, ncol = 2) +
-    scale_color_manual(values = my_param_colors) +
-    scale_fill_manual(values = my_param_colors) +
-    guides(linetype = &quot;legend&quot;, color = &quot;none&quot;, fill = &quot;none&quot;) +
-    my_theme
-
-  if (!is.null(param_settings)) {
-    plot &lt;- plot + 
-    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = &quot;sim_value&quot;)) +
-    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+  # if uneven number of plots, put legend in place of the absent last plot
+  if (length(to_plot) %% 2 == 1) {
+    plots[[&quot;legend&quot;]] &lt;- legend
   }
 
-  return(plot)
+  library(grid)
+  plot_grid &lt;- gridExtra::arrangeGrob(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob(&quot;Posterior distributions\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob(&quot;Estimate&quot;, gp = gpar(fontsize = 18)),
+    left = textGrob(&quot;Density&quot;, rot = 90, gp = gpar(fontsize = 18))
+  )
+
+  # if even number of plots, put legend next to all plots
+  if (length(to_plot) %% 2 == 0) {
+    gridExtra::grid.arrange(
+      grobs = list(plot_grid, legend),
+      ncol = 2,
+      widths = unit.c(unit(1, &quot;null&quot;), # fill space evenly
+                      grobWidth(legend) + unit(2, &quot;mm&quot;))
+    )
+  } else {
+    grid.newpage()
+    grid.draw(plot_grid)
+  }
 }
 
 #&#39; Plots participant-level simulated parameters against their
@@ -1919,17 +2009,19 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
       lims(y = bounds) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
-      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+      my_theme + 
+      theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
     plots[[p]] &lt;- plot
   }
 
   library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob(&quot;Participant-level parameter estimations\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
-                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
-                         )
+  gridExtra::grid.arrange(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob(&quot;Participant-level parameter estimations\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
+    left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
+  )
 }
 
 #&#39; Plots simulated values against estimated values for all given free
@@ -1960,15 +2052,16 @@ many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
     plots[[p]] &lt;- plot
   }
 
-  title &lt;- paste0(&quot;Parameter recovery for &quot;, max(sim_params$k), &quot; simulations&quot;)
+  title &lt;- paste0(&quot;Parameter recovery for &quot;, max(sim_params$k), &quot; simulations\n&quot;)
 
   library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob(title, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
-                          left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
-                         )
+  gridExtra::grid.arrange(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob(title, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob(&quot;Simulated value&quot;, gp = gpar(fontsize = 18)),
+    left = textGrob(&quot;Fitted value&quot;, rot = 90, gp = gpar(fontsize = 18))
+  )
 }</code></pre>
 </div>
 <div id="fit_utils.r" class="section level1">

@@ -151,20 +151,92 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
     title <- textGrob(plot_title, gp = gpar(fontsize = 20, font = 2))
   }
   
-  gridExtra::grid.arrange(Q(sim_dat), 
-                          choice(sim_dat), 
-                          annotation,
-                          ncol = 3,
-                          widths = unit.c(unit(1, "null"), # fill space evenly
-                                          unit(1, "null"),
-                                          grobWidth(annotation) + unit(2, "mm")),
-                          top = title
-                         )
+  gridExtra::grid.arrange(
+    Q(sim_dat), 
+    choice(sim_dat), 
+    annotation,
+    ncol = 3,
+    widths = unit.c(unit(1, "null"), # fill space evenly
+                    unit(1, "null"),
+                    grobWidth(annotation) + unit(2, "mm")),
+    top = title
+  )
 }
 
 # --------------------------------
 #        PLOTS FOR MODELING
 # --------------------------------
+
+#' Plots the posterior density for one free parameter; supposed to be
+#' a part of a grid. Used by `posterior_densities()`
+#' 
+#' @param p name of the free parameter we're plotting
+#' 
+#' @param param_draws vector of posterior draws for the parameter
+#' 
+#' @param sim_value simulated value for the free parameter; if `NULL`,
+#' it will not be included in the plot
+#' 
+#' @return ggplot object
+posterior_density_single <- function(p, param_draws, sim_value = NULL) {
+  dat <- data.frame(
+    estimate = param_draws,
+    sim_value = sim_value
+  )
+
+  plot <- ggplot(dat, aes(x = estimate)) +
+    geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
+    labs(title = p, x = NULL, y = NULL) +
+    my_theme + 
+    theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+
+  if (!is.null(sim_value)) {
+    plot <- plot + 
+      geom_vline(aes(xintercept = sim_value, linetype = "sim_value")) +
+      scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+  }
+  return(plot)
+}
+
+#' Plots the posterior density for two free parameters in the same
+#' plot; supposed to be a part of a grid. Used by
+#' `posterior_densities()`.
+#' 
+#' @param draws: data frame of posterior draws from model
+#' 
+#' @param param_settings: named list of parameter settings; if NULL,
+#' it will not be included in the plot
+#' 
+#' @return ggplot object
+posterior_density_double <- function(p, draws, param_settings = NULL) {
+  names <- c("initQF_group", "initQU_group")
+  if (!is.null(param_settings)) {
+    sim_values <- c(param_settings[[names[1]]], param_settings[[names[2]]])
+  } else {
+    sim_values <- NULL
+  }
+
+  dat <- data.frame(
+    parameter = as.factor(rep(names, each = nrow(draws))),
+    estimate = c(draws[[names[1]]], draws[[names[2]]]),
+    sim_value = rep(sim_values, each = nrow(draws))
+  )
+
+  plot <- ggplot(dat, aes(x = estimate, color = parameter, fill = parameter)) +
+    geom_density(alpha = 0.6) +
+    labs(title = p, x = NULL, y = NULL) +
+    scale_color_manual(labels = c("F", "U"), values = my_param_colors) +
+    scale_fill_manual(labels = c("F", "U"), values = my_param_colors) +
+    my_theme + 
+    theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+
+  if (!is.null(param_settings)) {
+    plot <- plot + 
+      geom_vline(aes(xintercept = sim_value, linetype = "sim_value", color = parameter)) +
+      scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+  }
+  return(plot)
+}
 
 #' Plots posterior density distributions for all given free
 #' parameters
@@ -177,46 +249,45 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 #' don't show simulated value
 #' 
 #' @return nothing
-posterior_density <- function(draws, to_plot, param_settings = NULL) {
+posterior_densities <- function(draws, to_plot, param_settings = NULL) {
   plots <- list()
-  legend <- NULL
 
   for (p in to_plot) {
-    dat <- data.frame(
-      estimate = draws[[p]]
-    )
-    if (!is.null(param_settings)) {
-      dat$sim_value <- param_settings[[p]]
+    if (p == "initQ_group") {
+      plot <- posterior_density_double(p, draws, param_settings)
+    } else {
+      plot <- posterior_density_single(p, draws[[p]], param_settings[[p]])
     }
-
-    plot <- ggplot(dat, aes(x = estimate)) +
-      geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
-      labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
-      labs(title = p, x = NULL, y = NULL) +
-      my_theme + 
-      theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
-
-    if (!is.null(param_settings)) {
-      plot <- plot + 
-        geom_vline(aes(xintercept = sim_value, linetype = "sim_value")) +
-        scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
-      legend <- get_legend(plot)
-    }
+    legend <- get_legend(plot)
     plots[[p]] <- plot + theme(legend.position = "none")
   }
 
-  library(grid)
-  plot_grid <- gridExtra::arrangeGrob(grobs = plots,
-                                      ncol = 2,
-                                      top = textGrob("Posterior distributions\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
-                                      bottom = textGrob("Estimate", gp = gpar(fontsize = 18)),
-                                      left = textGrob("Density", rot = 90, gp = gpar(fontsize = 18))
-                                     )
+  # if uneven number of plots, put legend in place of the absent last plot
+  if (length(to_plot) %% 2 == 1) {
+    plots[["legend"]] <- legend
+  }
 
-  gridExtra::grid.arrange(grobs = list(plot_grid, legend),
-                          ncol = 2,
-                          widths = unit.c(unit(1, "null"), # fill space evenly
-                                          grobWidth(legend) + unit(2, "mm")))
+  library(grid)
+  plot_grid <- gridExtra::arrangeGrob(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob("Posterior distributions\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob("Estimate", gp = gpar(fontsize = 18)),
+    left = textGrob("Density", rot = 90, gp = gpar(fontsize = 18))
+  )
+
+  # if even number of plots, put legend next to all plots
+  if (length(to_plot) %% 2 == 0) {
+    gridExtra::grid.arrange(
+      grobs = list(plot_grid, legend),
+      ncol = 2,
+      widths = unit.c(unit(1, "null"), # fill space evenly
+                      grobWidth(legend) + unit(2, "mm"))
+    )
+  } else {
+    grid.newpage()
+    grid.draw(plot_grid)
+  }
 }
 
 #' Plots participant-level simulated parameters against their
@@ -256,12 +327,13 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
   }
 
   library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob("Participant-level parameter estimations\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
-                          left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
-                         )
+  gridExtra::grid.arrange(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob("Participant-level parameter estimations\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
+    left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
+  )
 }
 
 #' Plots simulated values against estimated values for all given free
@@ -295,10 +367,11 @@ many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
   title <- paste0("Parameter recovery for ", max(sim_params$k), " simulations\n")
 
   library(grid)
-  gridExtra::grid.arrange(grobs = plots,
-                          ncol = 2,
-                          top = textGrob(title, x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
-                          bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
-                          left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
-                         )
+  gridExtra::grid.arrange(
+    grobs = plots,
+    ncol = 2,
+    top = textGrob(title, x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+    bottom = textGrob("Simulated value", gp = gpar(fontsize = 18)),
+    left = textGrob("Fitted value", rot = 90, gp = gpar(fontsize = 18))
+  )
 }
