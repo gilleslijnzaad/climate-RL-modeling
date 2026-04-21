@@ -24,7 +24,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ```{r setup}
 rm(list = ls())
-# setwd("~/research/climate-RL-mod/model_recovery")
+setwd("~/research/climate-RL-mod/model_recovery")
 main_dir <- "~/research/climate-RL-mod/"
 recov_dir <- paste0(main_dir, "model_recovery/")
 util_dir <- paste0(main_dir, "utilities/")
@@ -36,7 +36,8 @@ settings <- list(
   n_part = 50,
   n_trials = 30,
   mu_R_group = list(F = 5, U = 5),
-  sigma_R_group = 2
+  sigma_R_group = 2,
+  margin_group = 2
 )
 
 fitting <- new.env()
@@ -92,9 +93,9 @@ if (!dir.exists(sim_dir)) dir.create(sim_dir)
 sim$run_many(settings, sim_dir, n_runs)
 ```
 
-### 1.0 Fit to `null`
+### 1.0 Fit to `0_null`
 
-### 1.1 Fit to `std`
+### 1.1 Fit to `1_std`
 ```{r fit-1.1}
 fit_model_name <- "1_std"
 
@@ -106,7 +107,33 @@ if (!dir.exists(fit_dir)) dir.create(fit_dir)
 # fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)
 ```
 
+### 1.2 Fit to `2_LRN_discr_approx_stat`
+```{r fit-1.2}
+fit_model_name <- "2_LRN_discr_approx_stat"
+
+model_path <- paste0(models_dir, fit_model_name, ".stan")
+fit_dir <- paste0(recov_dir, "dat/", sim_model_name, "/", fit_model_name, "/")
+if (!dir.exists(fit_dir)) dir.create(fit_dir)
+
+n_runs <- 2
+fitting$fit_many(sim_dir, model_path, fit_dir, n_runs)
+```
+
 ## 2. `LRN_discr_approx_stat`
+### Simulate data
+```{r sim-2}
+sim_model_name <- "2_LRN_discr_approx_stat"
+sim_path <- paste0(models_dir, sim_model_name, ".R")
+sim <- new.env()
+source(sim_path, local = sim)
+
+sim_dir <- paste0(recov_dir, "dat/", sim_model_name, "/sim/")
+if (!dir.exists(sim_dir)) dir.create(sim_dir)
+
+settings[["margin_group"]] <- 2
+sim$run_many(settings, sim_dir, n_runs)
+```
+
 ## 3. `LRN_discr_approx_dyn`
 ## 4. `LRN_discr_geq_stat`
 ## 5. `LRN_discr_geq_dyn`
@@ -116,4 +143,13 @@ if (!dir.exists(fit_dir)) dir.create(fit_dir)
 # Part B: Comparing fits
 ```{r}
 library(bridgesampling)
+
+fit_1_1_a <- readRDS(paste0(recov_dir, "dat/1_std/1_std/fit_001.rds"))
+fit_1_1_b <- readRDS(paste0(recov_dir, "dat/1_std/1_std/fit_002.rds"))
+fit_1_2_a <- readRDS(paste0(recov_dir, "dat/1_std/2_LRN_discr_approx_stat/fit_001.rds"))
+fit_1_2_b <- readRDS(paste0(recov_dir, "dat/1_std/2_LRN_discr_approx_stat/fit_002.rds"))
+
+mod_1 <- cmdstan_model(paste0(models_dir, "1_std.stan"), force_recompile = TRUE)
+bridge_fit_1_1_a <- bridge_sampler(fit_1_1_a, mod_1)
+# Error: Model methods cannot be used with a pre-compiled Stan executable, the model must be compiled again
 ```
