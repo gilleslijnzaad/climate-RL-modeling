@@ -33,7 +33,7 @@ run <- function(params) {
     Q_U[j, 1] <- sim_utils$draw_from_group_mean(params, "initQU_group")
     mu_R <- sim_utils$draw_from_group_mean(params, "mu_R_group")
     sigma_R <- sim_utils$draw_from_group_mean(params, "sigma_R_group")
-    margin <- sim_utils$draw_from_group_mean(params, "margin_group")
+    margin <- params[["margin_group"]]
 
     LRs <- c(LR_conf[j], LR_disconf[j])
     # --------- run trials ------------
@@ -97,5 +97,28 @@ LR_approx <- function(LRs, R, belief, margin) {
     return(LRs[1]) # confirmatory
   } else {
     return(LRs[2])
+  }
+}
+
+# === run_many() =============================
+# runs this simulation model many times
+# arguments: 
+# - settings: vector of experiment settings
+# - save_dir: directory to save the simulated data to
+# - n_runs: how many times to run the simulation
+# 
+# returns: 
+# - nothing
+run_many <- function(settings, save_dir, n_runs) {
+  free_params_group <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group", "initQF_group", "initQU_group")
+  free_params <- unlist(strsplit(free_params_group, "_group"))
+
+  for (k in 1:n_runs) {
+    save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
+    params <- sim_utils$randomize_free_params(settings, free_params_group)
+
+    dat <- run(params)
+
+    sim_utils$save_sim_dat(params, dat, save_path, free_params)
   }
 }
