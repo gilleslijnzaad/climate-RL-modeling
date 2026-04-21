@@ -46,6 +46,15 @@ randomize_free_params <- function(param_settings, free_params) {
     bounds <- param_bounds[[p]]
     param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
   }
+
+  # if we have two learning rates, check if LR_conf > LR_disconf;
+  # else, rerun the randomization (recursive function)
+  if ("LR_conf_group" %in% free_params) {
+    if (param_settings[["LR_conf_group"]] <= param_settings[["LR_disconf_group"]]) {
+      return(randomize_free_params(param_settings, free_params))
+    }
+  }
+
   return(param_settings)
 }
 

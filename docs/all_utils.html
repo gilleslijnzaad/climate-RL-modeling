@@ -1503,6 +1503,15 @@ randomize_free_params &lt;- function(param_settings, free_params) {
     bounds &lt;- param_bounds[[p]]
     param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
   }
+
+  # if we have two learning rates, check if LR_conf &gt; LR_disconf;
+  # else, rerun the randomization (recursive function)
+  if (&quot;LR_conf_group&quot; %in% free_params) {
+    if (param_settings[[&quot;LR_conf_group&quot;]] &lt;= param_settings[[&quot;LR_disconf_group&quot;]]) {
+      return(randomize_free_params(param_settings, free_params))
+    }
+  }
+
   return(param_settings)
 }
 
