@@ -42,6 +42,15 @@ my_theme_classic <- theme_classic() +
         legend.text = element_text(size = 16)) +
   theme(strip.text = element_text(size = 18, face = "bold"))
 
+# function from: https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+get_legend <- function(myggplot){
+  library(gridExtra)
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
 # --------------------------------------
 #        PLOTS FOR SIMULATED DATA
 # --------------------------------------
@@ -158,7 +167,7 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 # --------------------------------
 
 #' Plots posterior density distributions for all given free
-#' parameters; plots are organized using `facet_wrap()`
+#' parameters
 #' 
 #' @param draws: data frame of posterior draws from model
 #' 
@@ -167,37 +176,47 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 #' @param param_settings: named list of parameter settings; if NULL,
 #' don't show simulated value
 #' 
-#' @return ggplot object
+#' @return nothing
 posterior_density <- function(draws, to_plot, param_settings = NULL) {
-  plot_data <- data.frame()
+  plots <- list()
+  legend <- NULL
 
   for (p in to_plot) {
     dat <- data.frame(
-      parameter = as.factor(p),
       estimate = draws[[p]]
     )
     if (!is.null(param_settings)) {
       dat$sim_value <- param_settings[[p]]
     }
-    plot_data <- rbind(plot_data, dat)
+
+    plot <- ggplot(dat, aes(x = estimate)) +
+      geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
+      labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
+      labs(title = p, x = NULL, y = NULL) +
+      my_theme + 
+      theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+
+    if (!is.null(param_settings)) {
+      plot <- plot + 
+        geom_vline(aes(xintercept = sim_value, linetype = "sim_value")) +
+        scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+      legend <- get_legend(plot)
+    }
+    plots[[p]] <- plot + theme(legend.position = "none")
   }
 
-  plot <- ggplot(plot_data, aes(x = estimate, color = parameter, fill = parameter)) +
-    geom_density(alpha = 0.6) +
-    labs(title = "Posterior distributions", x = "Estimate", y = "Density") +
-    facet_wrap(. ~ factor(parameter, to_plot), scales = "free", ncol = 2) +
-    scale_color_manual(values = my_param_colors) +
-    scale_fill_manual(values = my_param_colors) +
-    guides(linetype = "legend", color = "none", fill = "none") +
-    my_theme
+  library(grid)
+  plot_grid <- gridExtra::arrangeGrob(grobs = plots,
+                                      ncol = 2,
+                                      top = textGrob("Posterior distributions\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+                                      bottom = textGrob("Estimate", gp = gpar(fontsize = 18)),
+                                      left = textGrob("Density", rot = 90, gp = gpar(fontsize = 18))
+                                     )
 
-  if (!is.null(param_settings)) {
-    plot <- plot + 
-    geom_vline(aes(xintercept = sim_value, color = parameter, linetype = "sim_value")) +
-    scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
-  }
-
-  return(plot)
+  gridExtra::grid.arrange(grobs = list(plot_grid, legend),
+                          ncol = 2,
+                          widths = unit.c(unit(1, "null"), # fill space evenly
+                                          grobWidth(legend) + unit(2, "mm")))
 }
 
 #' Plots participant-level simulated parameters against their
@@ -231,7 +250,8 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
       lims(y = bounds) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
-      my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+      my_theme + 
+      theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
     plots[[p]] <- plot
   }
 
@@ -272,7 +292,7 @@ many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
     plots[[p]] <- plot
   }
 
-  title <- paste0("Parameter recovery for ", max(sim_params$k), " simulations")
+  title <- paste0("Parameter recovery for ", max(sim_params$k), " simulations\n")
 
   library(grid)
   gridExtra::grid.arrange(grobs = plots,
