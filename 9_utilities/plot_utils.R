@@ -2,7 +2,7 @@
 #        SET DIRECTORIES
 # -----------------------------
 main_dir <- "~/research/climate-RL-mod/"
-util_dir <- paste0(main_dir, "utilities/")
+util_dir <- paste0(main_dir, "9_utilities/")
 sim_utils <- new.env()
 source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 
@@ -172,15 +172,12 @@ posterior_density <- function(draws, to_plot, param_settings = NULL) {
   plot_data <- data.frame()
 
   for (p in to_plot) {
-    if (!is.null(param_settings)) {
-      sim_value <- param_settings[[p]]
-    }
     dat <- data.frame(
       parameter = as.factor(p),
       estimate = draws[[p]]
     )
     if (!is.null(param_settings)) {
-      dat$sim_value <- sim_value
+      dat$sim_value <- param_settings[[p]]
     }
     plot_data <- rbind(plot_data, dat)
   }

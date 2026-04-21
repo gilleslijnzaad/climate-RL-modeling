@@ -1690,7 +1690,7 @@ LR_cont &lt;- function(R, belief, w_LR) {
 #        SET DIRECTORIES
 # -----------------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
+util_dir &lt;- paste0(main_dir, &quot;9_utilities/&quot;)
 sim_utils &lt;- new.env()
 source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 
@@ -1860,15 +1860,12 @@ posterior_density &lt;- function(draws, to_plot, param_settings = NULL) {
   plot_data &lt;- data.frame()
 
   for (p in to_plot) {
-    if (!is.null(param_settings)) {
-      sim_value &lt;- param_settings[[p]]
-    }
     dat &lt;- data.frame(
       parameter = as.factor(p),
       estimate = draws[[p]]
     )
     if (!is.null(param_settings)) {
-      dat$sim_value &lt;- sim_value
+      dat$sim_value &lt;- param_settings[[p]]
     }
     plot_data &lt;- rbind(plot_data, dat)
   }
@@ -1983,10 +1980,9 @@ options(mc.cores = parallel::detectCores())
 #        SET DIRECTORIES
 # -----------------------------
 main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
-util_dir &lt;- paste0(main_dir, &quot;utilities/&quot;)
+util_dir &lt;- paste0(main_dir, &quot;9_utilities/&quot;)
 sim_utils &lt;- new.env()
 source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
-mod_dir &lt;- paste0(main_dir, &quot;stan_models/dat/&quot;)
 
 # ---------------------------
 #        MODEL FITTING

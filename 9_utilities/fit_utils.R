@@ -5,10 +5,9 @@ options(mc.cores = parallel::detectCores())
 #        SET DIRECTORIES
 # -----------------------------
 main_dir <- "~/research/climate-RL-mod/"
-util_dir <- paste0(main_dir, "utilities/")
+util_dir <- paste0(main_dir, "9_utilities/")
 sim_utils <- new.env()
 source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
-mod_dir <- paste0(main_dir, "stan_models/dat/")
 
 # ---------------------------
 #        MODEL FITTING

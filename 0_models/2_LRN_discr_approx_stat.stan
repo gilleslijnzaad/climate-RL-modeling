@@ -74,6 +74,8 @@ model {
 
       // update value (learn)
       if (t < n_trials) {    // no updating in the very last trial
+
+        // choice is F
         if (choice[j, t] == 1) {
           if (abs(R[j, t] - initQF[j]) <= margin) {
             LR = LR_conf[j];
@@ -82,7 +84,10 @@ model {
           }
           Q[t+1, 1] = Q[t, 1] + LR * pred_err;
           Q[t+1, 2] = Q[t, 2];
-        } else {
+        } 
+        
+        // choice is U
+        else {
           if (abs(R[j, t] - initQU[j]) <= margin) {
             LR = LR_conf[j];
           } else {

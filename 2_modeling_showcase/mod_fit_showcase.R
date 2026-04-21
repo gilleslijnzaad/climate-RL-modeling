@@ -6,10 +6,10 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
-# setwd("~/research/climate-RL-mod/modeling_showcase")
+# setwd("~/research/climate-RL-mod/2_modeling_showcase")
 main_dir <- "~/research/climate-RL-mod/"
-util_dir <- paste0(main_dir, "utilities/")
-mod_dir <- paste0(main_dir, "models/")
+util_dir <- paste0(main_dir, "9_utilities/")
+mod_dir <- paste0(main_dir, "0_models/")
 model_path <- paste0(mod_dir, "1_std.stan")
 
 sim <- new.env()
@@ -79,7 +79,7 @@ end <- length(mod_code)
 cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
-dat_dir <- paste0(main_dir, "modeling_showcase/dat/1_run/")
+dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/1_run/")
 dat_file <- paste0(dat_dir, "sim_dat_001.json")
 
 sim_utils <- new.env()
@@ -123,7 +123,7 @@ plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), particip
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 100
 free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
-dat_dir <- paste0(main_dir, "modeling_showcase/dat/")
+dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/")
 
 # running this bit below takes at least an hour
 # fitting$sim_fit_many(params, free_params, model_path, dat_dir, n_runs)
@@ -132,7 +132,7 @@ dat_dir <- paste0(main_dir, "modeling_showcase/dat/")
 sim_params <- data.frame(k = 1:n_runs)
 fit_params <- data.frame(k = 1:n_runs)
 
-dat_dir <- paste0(main_dir, "modeling_showcase/dat/100_runs/")
+dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/100_runs/")
 
 for (k in 1:n_runs) {
   sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")

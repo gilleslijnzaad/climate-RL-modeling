@@ -24,11 +24,11 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ```{r setup}
 rm(list = ls())
-setwd("~/research/climate-RL-mod/model_recovery")
 main_dir <- "~/research/climate-RL-mod/"
-recov_dir <- paste0(main_dir, "model_recovery/")
-util_dir <- paste0(main_dir, "utilities/")
-models_dir <- paste0(main_dir, "models/")
+recov_dir <- paste0(main_dir, "3_model_recovery/")
+# setwd(recov_dir)
+util_dir <- paste0(main_dir, "9_utilities/")
+models_dir <- paste0(main_dir, "0_models/")
 
 n_runs <- 100
 

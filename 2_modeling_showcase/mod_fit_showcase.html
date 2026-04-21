@@ -1903,10 +1903,10 @@ and <a href="https://gilleslijnzaad.github.io/climate-RL-modeling/all_utils.html
 <h2><span class="header-section-number">1.1</span> Running the
 simulation</h2>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># setwd(&quot;~/research/climate-RL-mod/modeling_showcase&quot;)</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="co"># setwd(&quot;~/research/climate-RL-mod/2_modeling_showcase&quot;)</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>main_dir <span class="ot">&lt;-</span> <span class="st">&quot;~/research/climate-RL-mod/&quot;</span></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>util_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;utilities/&quot;</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>mod_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;models/&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>util_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;9_utilities/&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>mod_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;0_models/&quot;</span>)</span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>model_path <span class="ot">&lt;-</span> <span class="fu">paste0</span>(mod_dir, <span class="st">&quot;1_std.stan&quot;</span>)</span>
 <span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
 <span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
@@ -2135,7 +2135,7 @@ settings). To this end, I compare the previously saved
 <code>sim_data.json</code> to the current <code>sim_dat</code>. After
 this comparison, I can save the new <code>sim_data</code> and refit the
 model if necessary.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;modeling_showcase/dat/1_run/&quot;</span>)</span>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;2_modeling_showcase/dat/1_run/&quot;</span>)</span>
 <span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>dat_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;sim_dat_001.json&quot;</span>)</span>
 <span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a></span>
 <span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>sim_utils <span class="ot">&lt;-</span> <span class="fu">new.env</span>()</span>
@@ -2257,14 +2257,14 @@ specifically, each parameter value is chosen randomly from its whole
 theoretical range.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>n_runs <span class="ot">&lt;-</span> <span class="dv">100</span></span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>free_params <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;LR_group&quot;</span>, <span class="st">&quot;inv_temp_group&quot;</span>, <span class="st">&quot;initQF_group&quot;</span>, <span class="st">&quot;initQU_group&quot;</span>)</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;modeling_showcase/dat/&quot;</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;2_modeling_showcase/dat/&quot;</span>)</span>
 <span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
 <span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># running this bit below takes at least an hour</span></span>
 <span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co"># fitting$sim_fit_many(params, free_params, model_path, dat_dir, n_runs)</span></span></code></pre></div>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>sim_params <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k =</span> <span class="dv">1</span><span class="sc">:</span>n_runs)</span>
 <span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>fit_params <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">k =</span> <span class="dv">1</span><span class="sc">:</span>n_runs)</span>
 <span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;modeling_showcase/dat/100_runs/&quot;</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>dat_dir <span class="ot">&lt;-</span> <span class="fu">paste0</span>(main_dir, <span class="st">&quot;2_modeling_showcase/dat/100_runs/&quot;</span>)</span>
 <span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a></span>
 <span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_runs) {</span>
 <span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>  sim_file <span class="ot">&lt;-</span> <span class="fu">paste0</span>(dat_dir, <span class="st">&quot;sim_param_settings_&quot;</span>, <span class="fu">sprintf</span>(<span class="st">&quot;%03d&quot;</span>, k), <span class="st">&quot;.json&quot;</span>)</span>

@@ -6,10 +6,10 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----run-std------------------------------------------------------------------
 rm(list = ls())
-# setwd("~/research/climate-RL-mod/simulation_showcase")
+# setwd("~/research/climate-RL-mod/1_simulation_showcase")
 main_dir <- "~/research/climate-RL-mod/"
-model_dir <- paste0(main_dir, "models/")
-util_dir <- paste0(main_dir, "utilities/")
+model_dir <- paste0(main_dir, "0_models/")
+util_dir <- paste0(main_dir, "9_utilities/")
 
 plot <- new.env()
 source(paste0(util_dir,"plot_utils.R"), local = plot)  # access functions using plot$fun()
