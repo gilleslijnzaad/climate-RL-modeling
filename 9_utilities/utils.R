@@ -47,3 +47,23 @@ print_posterior_table <- function(draws, param_settings, to_show) {
                caption = "Posteriors for free parameters") %>%
   kableExtra::kable_styling(full_width = FALSE, position = "left")
 }
+
+#' Creates one name for two parameters
+#' 
+#' @param name1 string
+#' 
+#' @param name2 string
+#' 
+#' @return a common name (string)
+common_param_name <- function(name1, name2) {
+  name1_chars <- str_split_1(name1, "")
+  name2_chars <- str_split_1(name2, "")
+  common_name <- paste(name1_chars[name1_chars %in% name2_chars], collapse = "")
+  
+  split_common_name <- str_split_1(common_name, "_")
+  if (length(split_common_name) == 3) {
+    common_name <- paste(split_common_name[1], split_common_name[3], sep = "_")
+  }
+
+  return(common_name)
+}

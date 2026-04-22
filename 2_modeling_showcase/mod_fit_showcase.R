@@ -107,7 +107,7 @@ draws <- draws %>%
     initQF_group = `means[3]`,
     initQU_group = `means[4]`,
   )
-to_plot <- c("LR_group", "inv_temp_group", "initQ_group")
+to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
 plot$posterior_densities(draws, to_plot, params)
 
 ## ----posterior-table----------------------------------------------------------
@@ -118,8 +118,8 @@ util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit---------------------------------------------------------------
 participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_001.json"))
-free_params <- c("LR", "inv_temp", "initQF", "initQU")
-plot$pp_level_param_fit(draws, c("LR", "inv_temp", "initQF", "initQU"), participant_params)
+free_params_pp <- c("LR", "inv_temp", "initQF", "initQU")
+plot$pp_level_param_fit(draws, free_params_pp, participant_params)
 
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 100

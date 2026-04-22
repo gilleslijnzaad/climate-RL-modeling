@@ -5,6 +5,8 @@ main_dir <- "~/research/climate-RL-mod/"
 util_dir <- paste0(main_dir, "9_utilities/")
 sim_utils <- new.env()
 source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
+utils <- new.env()
+source(paste0(util_dir, "utils.R"), local = utils)
 
 # ---------------------
 #        GENERAL
@@ -42,10 +44,13 @@ my_theme_classic <- theme_classic() +
         legend.text = element_text(size = 16)) +
   theme(strip.text = element_text(size = 18, face = "bold"))
 
-# function from: https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+#' Function from:
+#' https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+#' Added suppressWarnings because I use this on a dummy plot that I
+#' don't need warnings for
 get_legend <- function(myggplot){
   library(gridExtra)
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  tmp <- suppressWarnings(ggplot_gtable(ggplot_build(myggplot)))
   leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
   legend <- tmp$grobs[[leg]]
   return(legend)
@@ -192,8 +197,7 @@ posterior_density_single <- function(p, param_draws, sim_value = NULL) {
 
   if (!is.null(sim_value)) {
     plot <- plot + 
-      geom_vline(aes(xintercept = sim_value, linetype = "sim_value")) +
-      scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+      geom_vline(aes(xintercept = sim_value), linetype = 2)
   }
   return(plot)
 }
@@ -202,40 +206,59 @@ posterior_density_single <- function(p, param_draws, sim_value = NULL) {
 #' plot; supposed to be a part of a grid. Used by
 #' `posterior_densities()`.
 #' 
+#' @param p
+#' 
 #' @param draws: data frame of posterior draws from model
 #' 
 #' @param param_settings: named list of parameter settings; if NULL,
 #' it will not be included in the plot
 #' 
 #' @return ggplot object
-posterior_density_double <- function(p, draws, param_settings = NULL) {
-  names <- c("initQF_group", "initQU_group")
+posterior_density_double <- function(param_names, draws, param_settings = NULL) {
+
   if (!is.null(param_settings)) {
-    sim_values <- c(param_settings[[names[1]]], param_settings[[names[2]]])
+    sim_values <- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
   } else {
     sim_values <- NULL
   }
 
   dat <- data.frame(
-    parameter = as.factor(rep(names, each = nrow(draws))),
-    estimate = c(draws[[names[1]]], draws[[names[2]]]),
+    parameter = as.factor(rep(param_names, each = nrow(draws))),
+    estimate = c(draws[[param_names[1]]], draws[[param_names[2]]]),
     sim_value = rep(sim_values, each = nrow(draws))
   )
 
+  common_name <- utils$common_param_name(param_names[1], param_names[2])
   plot <- ggplot(dat, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
-    labs(title = p, x = NULL, y = NULL) +
-    scale_color_manual(labels = c("F", "U"), values = my_param_colors) +
-    scale_fill_manual(labels = c("F", "U"), values = my_param_colors) +
+    labs(title = common_name, x = NULL, y = NULL) +
+    scale_color_manual(values = my_param_colors) +
+    scale_fill_manual(values = my_param_colors) +
     my_theme + 
     theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
 
   if (!is.null(param_settings)) {
     plot <- plot + 
-      geom_vline(aes(xintercept = sim_value, linetype = "sim_value", color = parameter)) +
-      scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+      geom_vline(aes(xintercept = sim_value, color = parameter), linetype = 2)
   }
   return(plot)
+}
+
+posterior_density_legend <- function(params) {
+  dummy_dat <- data.frame(
+    parameter = params,
+    dat = rep(0, length(params))
+  )
+
+  dummy_plot <- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
+    geom_density(alpha = 0.6) +
+    scale_color_manual(values = my_param_colors) +
+    scale_fill_manual(values = my_param_colors) +
+    geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
+    scale_linetype_manual(values = c("sim_value" = 2), name = NULL) +
+    my_theme
+
+  return(get_legend(dummy_plot))
 }
 
 #' Plots posterior density distributions for all given free
@@ -251,20 +274,27 @@ posterior_density_double <- function(p, draws, param_settings = NULL) {
 #' @return nothing
 posterior_densities <- function(draws, to_plot, param_settings = NULL) {
   plots <- list()
+  params_for_legend <- c()
 
+  i <- 1
   for (p in to_plot) {
-    if (p == "initQ_group") {
-      plot <- posterior_density_double(p, draws, param_settings)
-    } else {
+    if (length(p) == 1) {
       plot <- posterior_density_single(p, draws[[p]], param_settings[[p]])
+    } else if (length(p) == 2) {
+      plot <- posterior_density_double(p, draws, param_settings)
+      params_for_legend <- c(params_for_legend, p)
+    } else {
+      stop("error: wrong format of to_plot")
     }
-    legend <- get_legend(plot)
-    plots[[p]] <- plot + theme(legend.position = "none")
+    plots[[i]] <- plot + theme(legend.position = "none")
+    i <- i + 1
   }
+
+  legend <- posterior_density_legend(params_for_legend)
 
   # if uneven number of plots, put legend in place of the absent last plot
   if (length(to_plot) %% 2 == 1) {
-    plots[["legend"]] <- legend
+    plots[[i]] <- legend
   }
 
   library(grid)

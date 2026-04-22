@@ -1702,6 +1702,8 @@ main_dir &lt;- &quot;~/research/climate-RL-mod/&quot;
 util_dir &lt;- paste0(main_dir, &quot;9_utilities/&quot;)
 sim_utils &lt;- new.env()
 source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
+utils &lt;- new.env()
+source(paste0(util_dir, &quot;utils.R&quot;), local = utils)
 
 # ---------------------
 #        GENERAL
@@ -1739,10 +1741,13 @@ my_theme_classic &lt;- theme_classic() +
         legend.text = element_text(size = 16)) +
   theme(strip.text = element_text(size = 18, face = &quot;bold&quot;))
 
-# function from: https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+#&#39; Function from:
+#&#39; https://stackoverflow.com/questions/12539348/ggplot-separate-legend-and-plot
+#&#39; Added suppressWarnings because I use this on a dummy plot that I
+#&#39; don&#39;t need warnings for
 get_legend &lt;- function(myggplot){
   library(gridExtra)
-  tmp &lt;- ggplot_gtable(ggplot_build(myggplot))
+  tmp &lt;- suppressWarnings(ggplot_gtable(ggplot_build(myggplot)))
   leg &lt;- which(sapply(tmp$grobs, function(x) x$name) == &quot;guide-box&quot;)
   legend &lt;- tmp$grobs[[leg]]
   return(legend)
@@ -1889,8 +1894,7 @@ posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
 
   if (!is.null(sim_value)) {
     plot &lt;- plot + 
-      geom_vline(aes(xintercept = sim_value, linetype = &quot;sim_value&quot;)) +
-      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+      geom_vline(aes(xintercept = sim_value), linetype = 2)
   }
   return(plot)
 }
@@ -1899,40 +1903,59 @@ posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
 #&#39; plot; supposed to be a part of a grid. Used by
 #&#39; `posterior_densities()`.
 #&#39; 
+#&#39; @param p
+#&#39; 
 #&#39; @param draws: data frame of posterior draws from model
 #&#39; 
 #&#39; @param param_settings: named list of parameter settings; if NULL,
 #&#39; it will not be included in the plot
 #&#39; 
 #&#39; @return ggplot object
-posterior_density_double &lt;- function(p, draws, param_settings = NULL) {
-  names &lt;- c(&quot;initQF_group&quot;, &quot;initQU_group&quot;)
+posterior_density_double &lt;- function(param_names, draws, param_settings = NULL) {
+
   if (!is.null(param_settings)) {
-    sim_values &lt;- c(param_settings[[names[1]]], param_settings[[names[2]]])
+    sim_values &lt;- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
   } else {
     sim_values &lt;- NULL
   }
 
   dat &lt;- data.frame(
-    parameter = as.factor(rep(names, each = nrow(draws))),
-    estimate = c(draws[[names[1]]], draws[[names[2]]]),
+    parameter = as.factor(rep(param_names, each = nrow(draws))),
+    estimate = c(draws[[param_names[1]]], draws[[param_names[2]]]),
     sim_value = rep(sim_values, each = nrow(draws))
   )
 
+  common_name &lt;- utils$common_param_name(param_names[1], param_names[2])
   plot &lt;- ggplot(dat, aes(x = estimate, color = parameter, fill = parameter)) +
     geom_density(alpha = 0.6) +
-    labs(title = p, x = NULL, y = NULL) +
-    scale_color_manual(labels = c(&quot;F&quot;, &quot;U&quot;), values = my_param_colors) +
-    scale_fill_manual(labels = c(&quot;F&quot;, &quot;U&quot;), values = my_param_colors) +
+    labs(title = common_name, x = NULL, y = NULL) +
+    scale_color_manual(values = my_param_colors) +
+    scale_fill_manual(values = my_param_colors) +
     my_theme + 
     theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
 
   if (!is.null(param_settings)) {
     plot &lt;- plot + 
-      geom_vline(aes(xintercept = sim_value, linetype = &quot;sim_value&quot;, color = parameter)) +
-      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+      geom_vline(aes(xintercept = sim_value, color = parameter), linetype = 2)
   }
   return(plot)
+}
+
+posterior_density_legend &lt;- function(params) {
+  dummy_dat &lt;- data.frame(
+    parameter = params,
+    dat = rep(0, length(params))
+  )
+
+  dummy_plot &lt;- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
+    geom_density(alpha = 0.6) +
+    scale_color_manual(values = my_param_colors) +
+    scale_fill_manual(values = my_param_colors) +
+    geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
+    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL) +
+    my_theme
+
+  return(get_legend(dummy_plot))
 }
 
 #&#39; Plots posterior density distributions for all given free
@@ -1948,20 +1971,27 @@ posterior_density_double &lt;- function(p, draws, param_settings = NULL) {
 #&#39; @return nothing
 posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
   plots &lt;- list()
+  params_for_legend &lt;- c()
 
+  i &lt;- 1
   for (p in to_plot) {
-    if (p == &quot;initQ_group&quot;) {
-      plot &lt;- posterior_density_double(p, draws, param_settings)
-    } else {
+    if (length(p) == 1) {
       plot &lt;- posterior_density_single(p, draws[[p]], param_settings[[p]])
+    } else if (length(p) == 2) {
+      plot &lt;- posterior_density_double(p, draws, param_settings)
+      params_for_legend &lt;- c(params_for_legend, p)
+    } else {
+      stop(&quot;error: wrong format of to_plot&quot;)
     }
-    legend &lt;- get_legend(plot)
-    plots[[p]] &lt;- plot + theme(legend.position = &quot;none&quot;)
+    plots[[i]] &lt;- plot + theme(legend.position = &quot;none&quot;)
+    i &lt;- i + 1
   }
+
+  legend &lt;- posterior_density_legend(params_for_legend)
 
   # if uneven number of plots, put legend in place of the absent last plot
   if (length(to_plot) %% 2 == 1) {
-    plots[[&quot;legend&quot;]] &lt;- legend
+    plots[[i]] &lt;- legend
   }
 
   library(grid)
@@ -2232,6 +2262,26 @@ print_posterior_table &lt;- function(draws, param_settings, to_show) {
                align = &quot;lll&quot;,
                caption = &quot;Posteriors for free parameters&quot;) %&gt;%
   kableExtra::kable_styling(full_width = FALSE, position = &quot;left&quot;)
+}
+
+#&#39; Creates one name for two parameters
+#&#39; 
+#&#39; @param name1 string
+#&#39; 
+#&#39; @param name2 string
+#&#39; 
+#&#39; @return a common name (string)
+common_param_name &lt;- function(name1, name2) {
+  name1_chars &lt;- str_split_1(name1, &quot;&quot;)
+  name2_chars &lt;- str_split_1(name2, &quot;&quot;)
+  common_name &lt;- paste(name1_chars[name1_chars %in% name2_chars], collapse = &quot;&quot;)
+  
+  split_common_name &lt;- str_split_1(common_name, &quot;_&quot;)
+  if (length(split_common_name) == 3) {
+    common_name &lt;- paste(split_common_name[1], split_common_name[3], sep = &quot;_&quot;)
+  }
+
+  return(common_name)
 }</code></pre>
 </div>
 
