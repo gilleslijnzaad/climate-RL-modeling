@@ -12,26 +12,25 @@ run <- function(params) {
   # ------ initialize ------
   n_part <- params$n_part
   n_trials <- params$n_trials
+
   Q_F <- matrix(ncol = n_trials, nrow = n_part)
   Q_U <- matrix(ncol = n_trials, nrow = n_part)
   choice <- matrix(ncol = n_trials, nrow = n_part)
   R <- matrix(ncol = n_trials, nrow = n_part)
-  pred_err <- matrix(ncol = n_trials, nrow = n_part)
-  LR <- c()
-  inv_temp <- c()
+
+  group_params <- params[str_detect(names(params), "_group")]
+  pp_params <- sim_utils$draw_pp_params(group_params, n_part)
+  
+  # the next line attaches pp_params to the environment of this
+  # function so we can use (e.g.) LR instead of pp_params$LR
+  list2env(pp_params, envir = environment())
+
+  Q_F[, 1] <- initQF
+  Q_U[, 1] <- initQU
 
   for (j in 1:n_part) {
     P_F <- c()
     pred_err <- c()
-
-    # ----- initialize parameters -----
-    # TODO: possibly replace this with a loop over params (more elegant)
-    LR[j] <- sim_utils$draw_from_group_mean(params, "LR_group")
-    inv_temp[j] <- sim_utils$draw_from_group_mean(params, "inv_temp_group")
-    Q_F[j, 1] <- sim_utils$draw_from_group_mean(params, "initQF_group")
-    Q_U[j, 1] <- sim_utils$draw_from_group_mean(params, "initQU_group")
-    mu_R <- sim_utils$draw_from_group_mean(params, "mu_R_group")
-    sigma_R <- sim_utils$draw_from_group_mean(params, "sigma_R_group")
 
     # --------- run trials ------------
     for (t in 1:n_trials) {
@@ -44,8 +43,8 @@ run <- function(params) {
 
       # rate
       R[j, t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
-                                  mean = mu_R[[choice[j, t]]], 
-                                  sd = sigma_R),
+                                  mean = mu_R[choice[j, t], j], 
+                                  sd = sigma_R[j]),
                        0)
 
       # learn
@@ -73,6 +72,7 @@ run <- function(params) {
     LR =            rep(LR, each = n_trials),
     inv_temp =      rep(inv_temp, each = n_trials)
   )
+  
   return(dat)
 }
 
@@ -96,4 +96,5 @@ run_many <- function(settings, save_dir, n_runs) {
   
     sim_utils$save_sim_dat(params, dat, save_path)
   }
+  message(paste0("Finished simulating ", n_runs, " runs."))
 }

@@ -11,29 +11,26 @@ run <- function(params) {
   # ------ initialize ------
   n_part <- params$n_part
   n_trials <- params$n_trials
+
   Q_F <- matrix(ncol = n_trials, nrow = n_part)
   Q_U <- matrix(ncol = n_trials, nrow = n_part)
   choice <- matrix(ncol = n_trials, nrow = n_part)
   R <- matrix(ncol = n_trials, nrow = n_part)
-  pred_err <- matrix(ncol = n_trials, nrow = n_part)
-  LR_conf <- c()
-  LR_disconf <- c()
-  inv_temp <- c()
+
+  group_params <- params[str_detect(names(params), "_group")]
+  pp_params <- sim_utils$draw_pp_params(group_params, n_part)
+
+  # the next line attaches pp_params to the environment of this
+  # function so we can use (e.g.) LR instead of pp_params$LR
+  list2env(pp_params, envir = environment())
+  margin <- params[["margin_group"]]
+
+  Q_F[, 1] <- initQF
+  Q_U[, 1] <- initQU
 
   for (j in 1:n_part) {
     P_F <- c()
     pred_err <- c()
-
-    # ----- initialize parameters -----
-    # TODO: possibly replace this with a loop over params (more elegant)
-    LR_conf[j] <- sim_utils$draw_from_group_mean(params, "LR_conf_group")
-    LR_disconf[j] <- sim_utils$draw_from_group_mean(params, "LR_disconf_group")
-    inv_temp[j] <- sim_utils$draw_from_group_mean(params, "inv_temp_group")
-    Q_F[j, 1] <- sim_utils$draw_from_group_mean(params, "initQF_group")
-    Q_U[j, 1] <- sim_utils$draw_from_group_mean(params, "initQU_group")
-    mu_R <- sim_utils$draw_from_group_mean(params, "mu_R_group")
-    sigma_R <- sim_utils$draw_from_group_mean(params, "sigma_R_group")
-    margin <- sim_utils$draw_from_group_mean(params, "margin_group")
 
     LRs <- c(LR_conf[j], LR_disconf[j])
     # --------- run trials ------------
@@ -46,8 +43,8 @@ run <- function(params) {
 
       # rate
       R[j, t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
-                                  mean = mu_R[[choice[j, t]]], 
-                                  sd = sigma_R),
+                                  mean = mu_R[choice[j, t], j], 
+                                  sd = sigma_R[j]),
                        0)
 
       # learn

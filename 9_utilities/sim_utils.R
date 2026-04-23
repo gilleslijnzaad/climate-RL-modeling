@@ -1,5 +1,6 @@
 set.seed(1234)
 library(dplyr)
+library(stringr)
 
 #' A list of standard deviations for group-level means of parameters
 param_stddevs <- list(
@@ -58,23 +59,44 @@ randomize_free_params <- function(param_settings, free_params) {
   return(param_settings)
 }
 
+#' Draws participant-level parameters from the group means for each
+#' participant and returns them in one list
+#' 
+#' @param group_param_settings named list of settings for group parameters
+#' 
+#' @param n_part number of participants to draw parameters for
+#' 
+#' @return list of arrays
+draw_pp_params <- function(group_param_settings, n_part) {
+  pp_params <- list()
+
+  for (p in names(group_param_settings)) {
+    group_mean <- group_param_settings[[p]]
+    pp_level_name <- str_remove(p, "_group")
+    pp_params[[pp_level_name]] <- replicate(n = n_part,
+                                            draw_from_group_mean(group_mean, p))
+  }
+
+  # TODO: make sure LR_conf > LR_disconf for all participants
+
+  return(pp_params)
+}
+
 #' Randomly draws a value based on given group mean
 #' 
 #' @details uses standard deviation as defined in `param_stddevs`, and
 #' bounds to the distribution as defined in `param_bounds`
 #' 
-#' @param param_settings: the list of parameter settings (i.e., group
-#' means)
+#' @param group_mean the group mean for this parameter
 #' 
-#' @param p: the parameter for which we want to draw from the group
-#' mean
+#' @param p the parameter
 #' 
 #' @return A value from the distribution of parameter `p`
-draw_from_group_mean <- function(param_settings, p) {
+draw_from_group_mean <- function(group_mean, p) {
   draw <- truncnorm::rtruncnorm(n = 1, 
                      a = param_bounds[[p]][1],
                      b = param_bounds[[p]][2],
-                     mean = param_settings[[p]],
+                     mean = group_mean,
                      sd = param_stddevs[[p]])
   return(draw)
 }
