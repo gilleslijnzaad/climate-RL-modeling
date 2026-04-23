@@ -1457,6 +1457,7 @@ border-radius: 0px;
 <h1><code>sim_utils.R</code></h1>
 <pre><code>set.seed(1234)
 library(dplyr)
+library(stringr)
 
 #&#39; A list of standard deviations for group-level means of parameters
 param_stddevs &lt;- list(
@@ -1515,23 +1516,44 @@ randomize_free_params &lt;- function(param_settings, free_params) {
   return(param_settings)
 }
 
+#&#39; Draws participant-level parameters from the group means for each
+#&#39; participant and returns them in one list
+#&#39; 
+#&#39; @param group_param_settings named list of settings for group parameters
+#&#39; 
+#&#39; @param n_part number of participants to draw parameters for
+#&#39; 
+#&#39; @return list of arrays
+draw_pp_params &lt;- function(group_param_settings, n_part) {
+  pp_params &lt;- list()
+
+  for (p in names(group_param_settings)) {
+    group_mean &lt;- group_param_settings[[p]]
+    pp_level_name &lt;- str_remove(p, &quot;_group&quot;)
+    pp_params[[pp_level_name]] &lt;- replicate(n = n_part,
+                                            draw_from_group_mean(group_mean, p))
+  }
+
+  # TODO: make sure LR_conf &gt; LR_disconf for all participants
+
+  return(pp_params)
+}
+
 #&#39; Randomly draws a value based on given group mean
 #&#39; 
 #&#39; @details uses standard deviation as defined in `param_stddevs`, and
 #&#39; bounds to the distribution as defined in `param_bounds`
 #&#39; 
-#&#39; @param param_settings: the list of parameter settings (i.e., group
-#&#39; means)
+#&#39; @param group_mean the group mean for this parameter
 #&#39; 
-#&#39; @param p: the parameter for which we want to draw from the group
-#&#39; mean
+#&#39; @param p the parameter
 #&#39; 
 #&#39; @return A value from the distribution of parameter `p`
-draw_from_group_mean &lt;- function(param_settings, p) {
+draw_from_group_mean &lt;- function(group_mean, p) {
   draw &lt;- truncnorm::rtruncnorm(n = 1, 
                      a = param_bounds[[p]][1],
                      b = param_bounds[[p]][2],
-                     mean = param_settings[[p]],
+                     mean = group_mean,
                      sd = param_stddevs[[p]])
   return(draw)
 }
@@ -1941,6 +1963,12 @@ posterior_density_double &lt;- function(param_names, draws, param_settings = NUL
   return(plot)
 }
 
+#&#39; Creates a legend for the posterior density plot for the given
+#&#39; parameters by creating a dummy plot and returning its legend
+#&#39; 
+#&#39; @param params the parameters to include in the legend
+#&#39; 
+#&#39; @return ggplot legend
 posterior_density_legend &lt;- function(params) {
   dummy_dat &lt;- data.frame(
     parameter = params,
@@ -2166,49 +2194,22 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
 #&#39; 
 #&#39; @param model_path path to the Stan model
 #&#39; 
+#&#39; @param fit_data_type either &quot;fit&quot; for the fit object or or &quot;draws&quot;
+#&#39; for a draws dataframe
+#&#39; 
 #&#39; @param fit_dir directory where fit data should be saved
 #&#39; 
 #&#39; @param n_runs how often to fit the model
 #&#39; 
 #&#39; @return nothing
-fit_many &lt;- function(sim_dat_dir, model_path, fit_dir, n_runs) {
+fit_many &lt;- function(sim_dat_dir, model_path, fit_data_type, fit_dir, n_runs) {
   model &lt;- cmdstan_model(model_path)
   for (k in 1:n_runs) {
     k_code &lt;- sprintf(&quot;%03d&quot;, k)
     sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
-    fit_path &lt;- paste0(fit_dir, &quot;fit_&quot;, k_code, &quot;.rds&quot;)
-    fit &lt;- fit(model, sim_dat_path, return = &quot;fit&quot;, k, n_runs)
+    fit_path &lt;- paste0(fit_dir, fit_data_type, &quot;_&quot;, k_code, &quot;.rds&quot;)
+    fit &lt;- fit(model, sim_dat_path, return = fit_data_type, k, n_runs)
     saveRDS(fit, file = fit_path)
-  }
-}
-
-# BELOW: WILL BE DEPRECATED SOON
-
-# === sim_fit_many() =======================
-# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters
-# - model_file: name of Stan file
-# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
-# - n_runs: number of times to run the simulation and model
-# 
-# returns: nothing
-sim_fit_many &lt;- function(param_settings, free_params, model_file, save_draws_to, n_runs = 1) {
-  dat_dir &lt;- paste0(save_draws_to, n_runs, &quot;_runs/&quot;)
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  model &lt;- cmdstan_model(model_file)
-  for (k in 1:n_runs) {
-    # simulate
-    params &lt;- sim_utils$randomize_free_params(param_settings, free_params)
-    sim_dat &lt;- sim_utils$run_std(params)
-    dat_file &lt;- paste0(dat_dir, &quot;sim_dat_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.json&quot;)
-    sim$save_sim_dat(params, sim_dat, dat_file)
-
-    # fit
-    draws_file &lt;- paste0(dat_dir, &quot;draws_&quot;, sprintf(&quot;%03d&quot;, k), &quot;.rds&quot;)
-    draws &lt;- fit(model, dat_file, return = &quot;draws&quot;, k, n_runs)
-    saveRDS(draws, file = draws_file)
   }
 }</code></pre>
 </div>
