@@ -59,48 +59,21 @@ fit <- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progr
 #' 
 #' @param model_path path to the Stan model
 #' 
+#' @param fit_data_type either "fit" for the fit object or or "draws"
+#' for a draws dataframe
+#' 
 #' @param fit_dir directory where fit data should be saved
 #' 
 #' @param n_runs how often to fit the model
 #' 
 #' @return nothing
-fit_many <- function(sim_dat_dir, model_path, fit_dir, n_runs) {
+fit_many <- function(sim_dat_dir, model_path, fit_data_type, fit_dir, n_runs) {
   model <- cmdstan_model(model_path)
   for (k in 1:n_runs) {
     k_code <- sprintf("%03d", k)
     sim_dat_path <- paste0(sim_dat_dir, "dat_", k_code, ".json")
-    fit_path <- paste0(fit_dir, "fit_", k_code, ".rds")
-    fit <- fit(model, sim_dat_path, return = "fit", k, n_runs)
+    fit_path <- paste0(fit_dir, fit_data_type, "_", k_code, ".rds")
+    fit <- fit(model, sim_dat_path, return = fit_data_type, k, n_runs)
     saveRDS(fit, file = fit_path)
-  }
-}
-
-# BELOW: WILL BE DEPRECATED SOON
-
-# === sim_fit_many() =======================
-# runs simulation and model and saves results to json and rds files, respectively, in a directory called [n_runs]_runs
-# arguments: 
-# - param_settings: list of parameter settings
-# - free_params: list of names of free parameters
-# - model_file: name of Stan file
-# - save_dat_to: directory to save data to; will create a new folder [n_runs]_runs/
-# - n_runs: number of times to run the simulation and model
-# 
-# returns: nothing
-sim_fit_many <- function(param_settings, free_params, model_file, save_draws_to, n_runs = 1) {
-  dat_dir <- paste0(save_draws_to, n_runs, "_runs/")
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  model <- cmdstan_model(model_file)
-  for (k in 1:n_runs) {
-    # simulate
-    params <- sim_utils$randomize_free_params(param_settings, free_params)
-    sim_dat <- sim_utils$run_std(params)
-    dat_file <- paste0(dat_dir, "sim_dat_", sprintf("%03d", k), ".json")
-    sim$save_sim_dat(params, sim_dat, dat_file)
-
-    # fit
-    draws_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
-    draws <- fit(model, dat_file, return = "draws", k, n_runs)
-    saveRDS(draws, file = draws_file)
   }
 }

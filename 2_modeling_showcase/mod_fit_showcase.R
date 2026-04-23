@@ -6,7 +6,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
 
 ## ----create-data, comment = NA------------------------------------------------
 rm(list = ls())
-# setwd("~/research/climate-RL-mod/2_modeling_showcase")
+setwd("~/research/climate-RL-mod/2_modeling_showcase")
 main_dir <- "~/research/climate-RL-mod/"
 util_dir <- paste0(main_dir, "9_utilities/")
 mod_dir <- paste0(main_dir, "0_models/")
@@ -124,23 +124,28 @@ plot$pp_level_param_fit(draws, free_params_pp, participant_params)
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 100
 free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
-dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/")
+dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/100_runs/")
 
+sim$run_many(params, dat_dir, n_runs)
 # running this bit below takes at least an hour
-# fitting$sim_fit_many(params, free_params, model_path, dat_dir, n_runs)
+fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
 
 ## ----inspect-many-runs--------------------------------------------------------
 sim_params <- data.frame(k = 1:n_runs)
 fit_params <- data.frame(k = 1:n_runs)
 
-dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/100_runs/")
-
 for (k in 1:n_runs) {
-  sim_file <- paste0(dat_dir, "sim_param_settings_", sprintf("%03d", k), ".json")
+  sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
   sim_dat <- rjson::fromJSON(file = sim_file)
 
   fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
-  fit_dat <- readRDS(fit_file)
+  fit_dat <- readRDS(fit_file) %>%
+    rename(
+      LR_group = `means[1]`,
+      inv_temp_group = `means[2]`,
+      initQF_group = `means[3]`,
+      initQU_group = `means[4]`,
+    )
 
   for (p in free_params) {
     sim_params[[p]][k] <- sim_dat[[p]]
