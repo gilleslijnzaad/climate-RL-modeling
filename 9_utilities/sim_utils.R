@@ -7,6 +7,7 @@ param_stddevs <- list(
   LR_group = 0.2,
   LR_conf_group = 0.2,
   LR_disconf_group = 0.2,
+  LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
   initQF_group = 2,
@@ -19,9 +20,11 @@ param_stddevs <- list(
 #' A list of theoretical bounds for parameters; same as in Stan
 param_bounds <- list(
   LR_group = c(0, 1),
+  LRs_group = c(0, 1),
   LR_conf_group = c(0, 1),
   LR_disconf_group = c(0, 1),
   LR = c(0, 1),
+  LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
@@ -48,7 +51,7 @@ randomize_free_params <- function(param_settings, free_params) {
     param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
   }
 
-  # if we have two learning rates, check if LR_conf > LR_disconf;
+  # if we have two learning rates: check if LR_conf > LR_disconf;
   # else, rerun the randomization (recursive function)
   if ("LR_conf_group" %in% free_params) {
     if (param_settings[["LR_conf_group"]] <= param_settings[["LR_disconf_group"]]) {
@@ -77,8 +80,6 @@ draw_pp_params <- function(group_param_settings, n_part) {
                                             draw_from_group_mean(group_mean, p))
   }
 
-  # TODO: make sure LR_conf > LR_disconf for all participants
-
   return(pp_params)
 }
 
@@ -98,6 +99,14 @@ draw_from_group_mean <- function(group_mean, p) {
                      b = param_bounds[[p]][2],
                      mean = group_mean,
                      sd = param_stddevs[[p]])
+
+  # if we have two learning rates: if LR_disconf > LR_conf, rerun the
+  # draw (recursive function)
+  if (p == "LRs_group") {
+    if (draw[2] > draw[1]) {
+      return(draw_from_group_mean(group_mean, p))
+    }
+  }
   return(draw)
 }
 
