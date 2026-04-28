@@ -1,0 +1,177 @@
+---
+title: "Parameter recovery for all models"
+author: "Gilles Lijnzaad"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: TRUE
+    toc_depth: 2
+    toc_float:
+      collapsed: FALSE
+    number_sections: FALSE
+    highlight: tango
+    code_folding: hide
+---
+
+```{r doc-setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(fig.width = 10, fig.height = 8)
+```
+
+```{r r-setup}
+rm(list = ls())
+main_dir <- "~/research/climate-RL-mod/"
+util_dir <- paste0(main_dir, "9_utilities/")
+mod_dir <- paste0(main_dir, "0_models/")
+recov_dir <- paste0(main_dir, "3_param_recovery/")
+
+sim_utils <- new.env()
+source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
+plot <- new.env()
+source(paste0(util_dir, "plot_utils.R"), local = plot)
+fitting <- new.env()
+source(paste0(util_dir, "fit_utils.R"), local = fitting)
+util <- new.env()
+source(paste0(util_dir, "utils.R"), local = util)
+```
+
+# `1_std`
+## Single run (chosen parameters)
+```{r 1-single}
+mod_name <- "1_std"
+dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
+
+param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
+fit_path <- paste0(dat_dir, "draws.rds")
+
+draws <- readRDS(fit_path) %>%
+  rename(
+    LR_group = `means[1]`,
+    inv_temp_group = `means[2]`,
+    initQF_group = `means[3]`,
+    initQU_group = `means[4]`
+  )
+to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
+plot$posterior_densities(draws, to_plot, param_settings)
+
+to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
+util$print_posterior_table(draws, param_settings, to_inspect)
+```
+
+## Many runs (random parameters)
+```{r 1-many}
+n_runs <- 100
+
+dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")
+
+sim_params <- data.frame(k = 1:n_runs)
+fit_params <- data.frame(k = 1:n_runs)
+
+free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
+
+for (k in 1:n_runs) {
+  sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
+  sim_dat <- rjson::fromJSON(file = sim_file)
+
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
+  fit_dat <- readRDS(fit_file) %>%
+    rename(
+      LR_group = `means[1]`,
+      inv_temp_group = `means[2]`,
+      initQF_group = `means[3]`,
+      initQU_group = `means[4]`,
+    )
+
+  for (p in free_params) {
+    sim_params[[p]][k] <- sim_dat[[p]]
+    fit_params[[p]][k] <- median(fit_dat[[p]])
+  }
+}
+
+plot$many_runs_param_fit(sim_params, fit_params, free_params)
+```
+
+# `2_LRN_discr_approx_stat_simple`
+Here I fixed the initial Q values.
+
+## Single run (chosen parameters)
+```{r 2-simple-single, fig.height = 4}
+mod_name <- "2_LRN_discr_approx_stat/simple"
+dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
+param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
+
+fit_path <- paste0(dat_dir, "draws.rds")
+
+draws <- readRDS(fit_path) %>%
+  rename(
+    LR_conf_group = `means[1]`,
+    LR_disconf_group = `means[2]`,
+    inv_temp_group = `means[3]`
+  )
+
+to_plot <- list(c("LR_conf_group", "LR_disconf_group"), "inv_temp_group")
+plot$posterior_densities(draws, to_plot, param_settings)
+
+to_inspect <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group")
+util$print_posterior_table(draws, param_settings, to_inspect)
+```
+
+## Many runs (random parameters)
+```{r 2-simple-many}
+n_runs <- 100
+
+dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")
+
+sim_params <- data.frame(k = 1:n_runs)
+fit_params <- data.frame(k = 1:n_runs)
+
+free_params <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group")
+
+for (k in 1:n_runs) {
+  sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
+  sim_dat <- rjson::fromJSON(file = sim_file)
+
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
+  fit_dat <- readRDS(fit_file) %>%
+    rename(
+      LR_conf_group = `means[1]`,
+      LR_disconf_group = `means[2]`,
+      inv_temp_group = `means[3]`
+    )
+
+  for (p in free_params) {
+    sim_params[[p]][k] <- sim_dat[[p]]
+    fit_params[[p]][k] <- median(fit_dat[[p]])
+  }
+}
+
+plot$many_runs_param_fit(sim_params, fit_params, free_params)
+```
+
+# `2_LRN_discr_approx_stat`
+The regular one.
+
+## Single run (chosen parameters)
+```{r 2-simple-regular}
+mod_name <- "2_LRN_discr_approx_stat/regular"
+dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
+param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
+
+fit_path <- paste0(dat_dir, "draws.rds")
+
+draws <- readRDS(fit_path) %>%
+  rename(
+    LR_conf_group = `means[1]`,
+    LR_disconf_group = `means[2]`,
+    inv_temp_group = `means[3]`,
+    initQF_group = `means[4]`,
+    initQU_group = `means[5]`
+  )
+
+to_plot <- list(c("LR_conf_group", "LR_disconf_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+plot$posterior_densities(draws, to_plot, param_settings)
+
+to_inspect <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group", "initQF_group", "initQU_group")
+util$print_posterior_table(draws, param_settings, to_inspect)
+```

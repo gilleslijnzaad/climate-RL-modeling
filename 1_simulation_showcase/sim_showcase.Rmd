@@ -117,6 +117,8 @@ dat <- sim$run(params_LRN_discr)
 plot$sim_plots(dat, params_LRN_discr)
 ```
 
+With these settings, the confirmatory learning rate is used around 40% of trials (across all participants). 
+
 ##### *dyn* {.unnumbered}
 Beliefs are the dynamic "within-experiment values".
 

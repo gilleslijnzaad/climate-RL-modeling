@@ -2059,12 +2059,12 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
   n_part &lt;- param_settings$n_part
   plots &lt;- list()
   for (p in to_plot) {
-    median_draws &lt;- c()
-    sim_values &lt;- c()
+    median_draws &lt;- array(dim = n_part)
+    sim_values &lt;- array(dim = n_part)
     for (j in 1:n_part) {
-      sim_values &lt;- c(sim_values, param_settings[[p]][j])
+      sim_values[j] &lt;- param_settings[[p]][j]
       param_name &lt;- paste0(p, &quot;[&quot;, j, &quot;]&quot;)
-      median_draws &lt;- c(median_draws, median(draws[[param_name]]))
+      median_draws[j] &lt;- median(draws[[param_name]])
     }
     dat &lt;- data.frame(sim_value = sim_values, 
                       fit_value = median_draws)

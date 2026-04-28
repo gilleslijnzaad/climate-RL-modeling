@@ -244,6 +244,12 @@ posterior_density_double <- function(param_names, draws, param_settings = NULL) 
   return(plot)
 }
 
+#' Creates a legend for the posterior density plot for the given
+#' parameters by creating a dummy plot and returning its legend
+#' 
+#' @param params the parameters to include in the legend
+#' 
+#' @return ggplot legend
 posterior_density_legend <- function(params) {
   dummy_dat <- data.frame(
     parameter = params,
@@ -334,12 +340,12 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
   n_part <- param_settings$n_part
   plots <- list()
   for (p in to_plot) {
-    median_draws <- c()
-    sim_values <- c()
+    median_draws <- array(dim = n_part)
+    sim_values <- array(dim = n_part)
     for (j in 1:n_part) {
-      sim_values <- c(sim_values, param_settings[[p]][j])
+      sim_values[j] <- param_settings[[p]][j]
       param_name <- paste0(p, "[", j, "]")
-      median_draws <- c(median_draws, median(draws[[param_name]]))
+      median_draws[j] <- median(draws[[param_name]])
     }
     dat <- data.frame(sim_value = sim_values, 
                       fit_value = median_draws)
