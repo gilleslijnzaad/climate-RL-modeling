@@ -32,7 +32,6 @@ run <- function(params) {
     P_F <- c()
     pred_err <- c()
 
-    LRs <- c(LR_conf[j], LR_disconf[j])
     # --------- run trials ------------
     for (t in 1:n_trials) {
       # choose
@@ -52,13 +51,13 @@ run <- function(params) {
         if (choice[j, t] == 1) {
           pred_err[t] <- R[j, t] - Q_F[j, t]
           belief <- Q_F[j, max(t-1, 1)]
-          LR <- LR_approx(LRs, R[j, t], belief, margin)
+          LR <- LR_approx(LRs[, j], R[j, t], belief, margin)
           Q_F[j, t+1] <- Q_F[j, t] + LR * pred_err[t]
           Q_U[j, t+1] <- Q_U[j, t]
         } else {
           pred_err[t] <- R[j, t] - Q_U[j, t]
           belief <- Q_U[j, max(t-1, 1)]
-          LR <- LR_approx(LRs, R[j, t], belief, margin)
+          LR <- LR_approx(LRs[, j], R[j, t], belief, margin)
           Q_U[j, t+1] <- Q_U[j, t] + LR * pred_err[t]
           Q_F[j, t+1] <- Q_F[j, t]
         }
@@ -73,8 +72,8 @@ run <- function(params) {
     Q_U =           array(t(Q_U)),
     choice =        array(t(choice)),
     R =             array(t(R)),
-    LR_conf =       rep(LR_conf, each = n_trials),
-    LR_disconf =    rep(LR_disconf, each = n_trials),
+    LR_conf =       rep(LRs[1, ], each = n_trials),
+    LR_disconf =    rep(LRs[2, ], each = n_trials),
     inv_temp =      rep(inv_temp, each = n_trials)
   )  
   return(dat)
