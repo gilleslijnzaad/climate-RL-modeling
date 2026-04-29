@@ -185,8 +185,7 @@ sim_plots <- function(sim_dat, params, plot_title = NA) {
 #' @return ggplot object
 posterior_density_single <- function(p, param_draws, sim_value = NULL) {
   dat <- data.frame(
-    estimate = param_draws,
-    sim_value = sim_value
+    estimate = param_draws
   )
 
   plot <- ggplot(dat, aes(x = estimate)) +
@@ -196,6 +195,7 @@ posterior_density_single <- function(p, param_draws, sim_value = NULL) {
     theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
 
   if (!is.null(sim_value)) {
+    dat[["sim_value"]] <- sim_value
     plot <- plot + 
       geom_vline(aes(xintercept = sim_value), linetype = 2)
   }
@@ -219,7 +219,7 @@ posterior_density_double <- function(param_names, draws, param_settings = NULL) 
   if (!is.null(param_settings)) {
     sim_values <- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
   } else {
-    sim_values <- NULL
+    sim_values <- NA
   }
 
   dat <- data.frame(
@@ -250,7 +250,7 @@ posterior_density_double <- function(param_names, draws, param_settings = NULL) 
 #' @param params the parameters to include in the legend
 #' 
 #' @return ggplot legend
-posterior_density_legend <- function(params) {
+posterior_density_legend <- function(params, show_sim_value) {
   dummy_dat <- data.frame(
     parameter = params,
     dat = rep(0, length(params))
@@ -260,9 +260,13 @@ posterior_density_legend <- function(params) {
     geom_density(alpha = 0.6) +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
-    geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
-    scale_linetype_manual(values = c("sim_value" = 2), name = NULL) +
     my_theme
+
+  if (show_sim_value) {
+    dummy_plot <- dummy_plot +
+    geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
+    scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+  }
 
   return(get_legend(dummy_plot))
 }
@@ -296,7 +300,7 @@ posterior_densities <- function(draws, to_plot, param_settings = NULL) {
     i <- i + 1
   }
 
-  legend <- posterior_density_legend(params_for_legend)
+  legend <- posterior_density_legend(params_for_legend, (!is.null(param_settings)))
 
   # if uneven number of plots, put legend in place of the absent last plot
   if (length(to_plot) %% 2 == 1) {
