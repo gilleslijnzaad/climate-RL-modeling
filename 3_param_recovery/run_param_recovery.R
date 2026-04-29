@@ -1,20 +1,22 @@
 # SETUP
-rm(list = ls())
-main_dir <- "~/research/climate-RL-mod/"
-util_dir <- paste0(main_dir, "9_utilities/")
-mod_dir <- paste0(main_dir, "0_models/")
-recov_dir <- paste0(main_dir, "3_param_recovery/")
-mod_name <- "2_LRN_discr_approx_stat"
-sim <- new.env()
-source(paste0(mod_dir, mod_name, ".R"), local = sim) # access functions using sim$fun()
-sim_utils <- new.env()
-source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
-plot <- new.env()
-source(paste0(util_dir, "plot_utils.R"), local = plot)
-fitting <- new.env()
-source(paste0(util_dir, "fit_utils.R"), local = fitting)
-util <- new.env()
-source(paste0(util_dir, "utils.R"), local = util)
+if (TRUE) {
+  rm(list = ls())
+  main_dir <- "~/research/climate-RL-mod/"
+  util_dir <- paste0(main_dir, "9_utilities/")
+  mod_dir <- paste0(main_dir, "0_models/")
+  recov_dir <- paste0(main_dir, "3_param_recovery/")
+  mod_name <- "0_nolearning"
+  sim <- new.env()
+  source(paste0(mod_dir, mod_name, ".R"), local = sim) # access functions using sim$fun()
+  sim_utils <- new.env()
+  source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
+  plot <- new.env()
+  source(paste0(util_dir, "plot_utils.R"), local = plot)
+  fitting <- new.env()
+  source(paste0(util_dir, "fit_utils.R"), local = fitting)
+  util <- new.env()
+  source(paste0(util_dir, "utils.R"), local = util)
+}
 
 # ------------------------------------------------------------
 # SIM + FIT SINGLE -------------------------------------------
@@ -23,7 +25,6 @@ if (TRUE) {
   params <- list(
     n_part = 50,
     n_trials = 30,
-    LRs_group = list(disconf = 0.2, diff = 0.6),
     inv_temp_group = 0.5,
     initQF_group = 8,
     initQU_group = 2,
@@ -35,27 +36,33 @@ if (TRUE) {
   # SIM
   sim_dat <- sim$run(params)
 
-  current_dir <- paste0(recov_dir, mod_name, "/regular/")
+  current_dir <- paste0(recov_dir, mod_name, "/")
   dat_dir <- paste0(current_dir, "1_run/")
   dat_path <- paste0(dat_dir, "sim_dat_1.json")
-  free_params_pp <- c("LR_disconf", "LR_diff", "inv_temp", "initQF", "initQU")
+  free_params_pp <- c("inv_temp", "initQF", "initQU")
   sim_utils$save_sim_dat(params, sim_dat, dat_path, free_params_pp)
 
-  plot$sim_plots(sim_dat, params)
+  pl <- plot$sim_plots(sim_dat, params)
+  ggsave("sim_plots.png", 
+         plot = pl,
+         path = dat_dir,
+         width = 10,
+         height = 4,
+         units = "in")
 
   # FIT
   model_path <- paste0(mod_dir, mod_name, ".stan")
   model <- cmdstan_model(model_path)
-  draws <- fitting$fit(model, dat_path, return = "draws", show_iteration_progress = TRUE)
-  saveRDS(draws, paste0(dat_dir, "draws.rds"))
+  # draws <- fitting$fit(model, dat_path, return = "draws", show_iteration_progress = TRUE)
+  # saveRDS(draws, paste0(dat_dir, "draws.rds"))
   draws <- readRDS(paste0(dat_dir, "draws.rds"))
-  free_params <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
+  free_params <- c("inv_temp_group", "initQF_group", "initQU_group")
   draws <- draws %>% 
     rename(setNames(paste0("means[", seq_along(free_params), "]"),
                     free_params))
 }
 # INSPECT
-to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+to_plot <- list("inv_temp_group", c("initQF_group", "initQU_group"))
 plot$posterior_densities(draws, to_plot, params)
 
 # ------------------------------------------------------------
