@@ -106,9 +106,8 @@ LR_approx <- function(LRs, R, belief, margin) {
 # returns: 
 # - nothing
 run_many <- function(settings, save_dir, n_runs) {
-  # free_params_group <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group", "initQF_group", "initQU_group")
   free_params_group <- c("LRs_group", "inv_temp_group")
-  free_params <- unlist(strsplit(free_params_group, "_group"))
+  free_params <- c("LR_disconf", "LR_diff", "inv_temp")
 
   for (k in 1:n_runs) {
     save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")

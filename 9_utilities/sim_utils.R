@@ -5,8 +5,6 @@ library(stringr)
 #' A list of standard deviations for group-level means of parameters
 param_stddevs <- list(
   LR_group = 0.2,
-  LR_conf_group = 0.2,
-  LR_disconf_group = 0.2,
   LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
@@ -21,6 +19,8 @@ param_stddevs <- list(
 param_bounds <- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
+  LR_disconf_group = c(0, 1),
+  LR_diff_group = c(0, 1),
   LR = c(0, 1),
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
@@ -130,7 +130,7 @@ save_sim_dat <- function(params, sim_dat, dat_file_name,
     sim_name <- case_when(
       (p == "initQF") ~ "Q_F",
       (p == "initQU") ~ "Q_U",
-      TRUE ~ p
+      .default = p
     )
     params[[p]] <- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
   }

@@ -1462,8 +1462,6 @@ library(stringr)
 #&#39; A list of standard deviations for group-level means of parameters
 param_stddevs &lt;- list(
   LR_group = 0.2,
-  LR_conf_group = 0.2,
-  LR_disconf_group = 0.2,
   LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
@@ -1478,6 +1476,8 @@ param_stddevs &lt;- list(
 param_bounds &lt;- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
+  LR_disconf_group = c(0, 1),
+  LR_diff_group = c(0, 1),
   LR = c(0, 1),
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
@@ -1587,7 +1587,7 @@ save_sim_dat &lt;- function(params, sim_dat, dat_file_name,
     sim_name &lt;- case_when(
       (p == &quot;initQF&quot;) ~ &quot;Q_F&quot;,
       (p == &quot;initQU&quot;) ~ &quot;Q_U&quot;,
-      TRUE ~ p
+      .default = p
     )
     params[[p]] &lt;- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
   }
@@ -1748,13 +1748,13 @@ my_light_blue &lt;- &quot;#00aadd&quot;
 my_dark_blue &lt;- &quot;#001199&quot;
 my_red &lt;- &quot;#ff4455&quot;
 my_param_colors &lt;- c(
-  F = my_teal,                  U = my_pink,
-  initQF = my_teal,             initQU = my_pink,
-  initQF_group = my_teal,       initQU_group = my_pink,
-  LR = my_blue,                 inv_temp = my_red,
-  LR_group = my_blue,           inv_temp_group = my_red,
-  LR_conf = my_dark_blue,       LR_disconf = my_light_blue,
-  LR_conf_group = my_dark_blue, LR_disconf_group = my_light_blue
+  F = my_teal,                      U = my_pink,
+  initQF = my_teal,                 initQU = my_pink,
+  initQF_group = my_teal,           initQU_group = my_pink,
+  LR = my_blue,                     inv_temp = my_red,
+  LR_group = my_blue,               inv_temp_group = my_red,
+  LR_disconf = my_light_blue,       LR_diff = my_dark_blue,       
+  LR_disconf_group = my_light_blue, LR_diff_group = my_dark_blue
 )
 
 my_theme &lt;- theme_bw() +
@@ -1946,7 +1946,11 @@ posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
 posterior_density_double &lt;- function(param_names, draws, param_settings = NULL) {
 
   if (!is.null(param_settings)) {
-    sim_values &lt;- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
+    if (&quot;LR_disconf_group&quot; %in% param_names) {
+      sim_values &lt;- as.numeric(param_settings[[&quot;LRs_group&quot;]])
+    } else {
+      sim_values &lt;- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
+    }
   } else {
     sim_values &lt;- NA
   }
@@ -2249,26 +2253,22 @@ cred_int &lt;- function(posterior_dist) {
 #&#39; 
 #&#39; @return nothing
 print_posterior_table &lt;- function(draws, param_settings, to_show) {
-  table_data &lt;- data.frame()
+  table_data &lt;- data.frame(parameter = rep(NA, length(to_show)))
 
+  i &lt;- 1
   for (p in to_show) {
-    if (grepl(&quot;\\$&quot;, p)) { # parameter is part of a list
-      split_name &lt;- strsplit(p, &quot;\\$&quot;)[[1]]
-      sim_value &lt;- purrr::pluck(param_settings, split_name[1], split_name[2])
-      param_name &lt;- paste0(split_name[1], &quot;\\$&quot;, split_name[2]) # escape dollar sign for kable
+    table_data[[&quot;parameter&quot;]][i] &lt;- p
+    if (p %in% c(&quot;LR_disconf_group&quot;, &quot;LR_diff_group&quot;)) {
+      idx &lt;- if (p == &quot;LR_disconf_group&quot;) 1 else 2
+      table_data[[&quot;sim_value&quot;]][i] &lt;- param_settings[[&quot;LRs_group&quot;]][idx]
     } else {
-      sim_value &lt;- param_settings[[p]]
-      param_name &lt;- p
+      table_data[[&quot;sim_value&quot;]][i] &lt;- param_settings[[p]]
     }
-    dat &lt;- data.frame(
-      parameter = param_name,
-      sim_value = sim_value,
-      median_CI = sprintf(&quot;%.2f [%.2f, %.2f]&quot;,
-                          median(draws[[p]]),
-                          cred_int(draws[[p]])[1],
-                          cred_int(draws[[p]])[2])
-    )
-    table_data &lt;- rbind(table_data, dat)
+    table_data[[&quot;median_CI&quot;]][i] &lt;- sprintf(&quot;%.2f [%.2f, %.2f]&quot;,
+                                            median(draws[[p]]),
+                                            cred_int(draws[[p]])[1],
+                                            cred_int(draws[[p]])[2])
+    i &lt;- i + 1
   }
   colnames &lt;- c(&quot;Parameter&quot;, &quot;Simulated value&quot;,
                 &quot;Median [95% credibility interval]&quot;)

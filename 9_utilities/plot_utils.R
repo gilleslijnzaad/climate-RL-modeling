@@ -19,13 +19,13 @@ my_light_blue <- "#00aadd"
 my_dark_blue <- "#001199"
 my_red <- "#ff4455"
 my_param_colors <- c(
-  F = my_teal,                  U = my_pink,
-  initQF = my_teal,             initQU = my_pink,
-  initQF_group = my_teal,       initQU_group = my_pink,
-  LR = my_blue,                 inv_temp = my_red,
-  LR_group = my_blue,           inv_temp_group = my_red,
-  LR_conf = my_dark_blue,       LR_disconf = my_light_blue,
-  LR_conf_group = my_dark_blue, LR_disconf_group = my_light_blue
+  F = my_teal,                      U = my_pink,
+  initQF = my_teal,                 initQU = my_pink,
+  initQF_group = my_teal,           initQU_group = my_pink,
+  LR = my_blue,                     inv_temp = my_red,
+  LR_group = my_blue,               inv_temp_group = my_red,
+  LR_disconf = my_light_blue,       LR_diff = my_dark_blue,       
+  LR_disconf_group = my_light_blue, LR_diff_group = my_dark_blue
 )
 
 my_theme <- theme_bw() +
@@ -217,7 +217,11 @@ posterior_density_single <- function(p, param_draws, sim_value = NULL) {
 posterior_density_double <- function(param_names, draws, param_settings = NULL) {
 
   if (!is.null(param_settings)) {
-    sim_values <- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
+    if ("LR_disconf_group" %in% param_names) {
+      sim_values <- as.numeric(param_settings[["LRs_group"]])
+    } else {
+      sim_values <- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
+    }
   } else {
     sim_values <- NA
   }

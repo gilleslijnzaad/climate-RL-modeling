@@ -18,26 +18,22 @@ cred_int <- function(posterior_dist) {
 #' 
 #' @return nothing
 print_posterior_table <- function(draws, param_settings, to_show) {
-  table_data <- data.frame()
+  table_data <- data.frame(parameter = rep(NA, length(to_show)))
 
+  i <- 1
   for (p in to_show) {
-    if (grepl("\\$", p)) { # parameter is part of a list
-      split_name <- strsplit(p, "\\$")[[1]]
-      sim_value <- purrr::pluck(param_settings, split_name[1], split_name[2])
-      param_name <- paste0(split_name[1], "\\$", split_name[2]) # escape dollar sign for kable
+    table_data[["parameter"]][i] <- p
+    if (p %in% c("LR_disconf_group", "LR_diff_group")) {
+      idx <- if (p == "LR_disconf_group") 1 else 2
+      table_data[["sim_value"]][i] <- param_settings[["LRs_group"]][idx]
     } else {
-      sim_value <- param_settings[[p]]
-      param_name <- p
+      table_data[["sim_value"]][i] <- param_settings[[p]]
     }
-    dat <- data.frame(
-      parameter = param_name,
-      sim_value = sim_value,
-      median_CI = sprintf("%.2f [%.2f, %.2f]",
-                          median(draws[[p]]),
-                          cred_int(draws[[p]])[1],
-                          cred_int(draws[[p]])[2])
-    )
-    table_data <- rbind(table_data, dat)
+    table_data[["median_CI"]][i] <- sprintf("%.2f [%.2f, %.2f]",
+                                            median(draws[[p]]),
+                                            cred_int(draws[[p]])[1],
+                                            cred_int(draws[[p]])[2])
+    i <- i + 1
   }
   colnames <- c("Parameter", "Simulated value",
                 "Median [95% credibility interval]")

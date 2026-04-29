@@ -16,20 +16,20 @@ parameters {
   vector<lower=0>[3] sigmas;
 
   // participant-level parameters
-  vector[n_part] LR_conf_probit;
   vector[n_part] LR_disconf_probit;
+  vector[n_part] LR_diff_probit;
   vector[n_part] inv_temp_probit;
 }
 
 transformed parameters {
   // participant-level parameters
-  vector<lower=0, upper=1>[n_part] LR_conf; 
   vector<lower=0, upper=1>[n_part] LR_disconf; 
+  vector<lower=0, upper=1>[n_part] LR_diff; 
   vector<lower=0, upper=5>[n_part] inv_temp;
 
   for (j in 1:n_part) {
-    LR_conf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_conf_probit[j]);
-    LR_disconf[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_disconf_probit[j]);
+    LR_disconf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_disconf_probit[j]);
+    LR_diff[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_diff_probit[j]);
     inv_temp[j] = Phi_approx(means_probit[3] + sigmas[3] * inv_temp_probit[j]) * 5;
   }
 }
@@ -41,8 +41,8 @@ model {
   means_probit ~ normal(0, 1);
   sigmas ~ normal(0, 0.2);
   
-  LR_conf_probit ~ normal(0, 1);
   LR_disconf_probit ~ normal(0, 1);
+  LR_diff_probit ~ normal(0, 1);
   inv_temp_probit ~ normal(0, 1);
 
   // participant loop
@@ -72,7 +72,7 @@ model {
         // choice is F
         if (choice[j, t] == 1) {
           if (abs(R[j, t] - initQF[j]) <= margin) {
-            LR = LR_conf[j];
+            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
           } else {
             LR = LR_disconf[j];
           }
@@ -83,7 +83,7 @@ model {
         // choice is U
         else {
           if (abs(R[j, t] - initQU[j]) <= margin) {
-            LR = LR_conf[j];
+            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
           } else {
             LR = LR_disconf[j];
           }
@@ -97,7 +97,7 @@ model {
 
 generated quantities {
   vector[3] means;
-  means[1] = Phi_approx(means_probit[1]);
-  means[2] = Phi_approx(means_probit[2]);
-  means[3] = Phi_approx(means_probit[3]) * 5;
+  means[1] = Phi_approx(means_probit[1]); // LR_disconf_group
+  means[2] = Phi_approx(means_probit[2]); // LR_diff_group
+  means[3] = Phi_approx(means_probit[3]) * 5; // inv_temp_group
 }
