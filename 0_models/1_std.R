@@ -76,7 +76,7 @@ run <- function(params) {
 
 #' Runs this simulation model many times
 #' 
-#' @param settings named list of parameter settings
+#' @param settings named list of experiment settings
 #' 
 #' @param save_dir directory to save the simulated data to
 #' 
