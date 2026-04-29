@@ -96,7 +96,7 @@ If the difference between the rating and belief is lesser than or equal to the d
 params_LRN_discr <- list(
   n_part = 50,
   n_trials = 30,
-  LRs_group = list(conf = 0.8, disconf = 0.2),
+  LRs_group = list(disconf = 0.2, diff = 0.6),
   inv_temp_group = 0.5,
   initQF_group = 8,
   initQU_group = 2,

@@ -72,8 +72,8 @@ run <- function(params) {
     Q_U =           array(t(Q_U)),
     choice =        array(t(choice)),
     R =             array(t(R)),
-    LR_conf =       rep(LRs[1, ], each = n_trials),
-    LR_disconf =    rep(LRs[2, ], each = n_trials),
+    LR_disconf =    rep(LRs[1, ], each = n_trials),
+    LR_diff =       rep(LRs[2, ], each = n_trials),
     inv_temp =      rep(inv_temp, each = n_trials)
   )  
   return(dat)
@@ -90,8 +90,8 @@ run <- function(params) {
 # - either the confirmatory LR or disconfirmatory LR
 LR_geq <- function(LRs, R, belief, margin) {
   if (R + margin >= belief) {
-    return(LRs[1]) # confirmatory
+    return(LRs[1] + LRs[2]) # confirmatory
   } else {
-    return(LRs[2])
+    return(LRs[1])
   }
 }

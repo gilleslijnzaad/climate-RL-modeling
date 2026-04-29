@@ -72,8 +72,8 @@ run <- function(params) {
     Q_U =           array(t(Q_U)),
     choice =        array(t(choice)),
     R =             array(t(R)),
-    LR_conf =       rep(LRs[1, ], each = n_trials),
-    LR_disconf =    rep(LRs[2, ], each = n_trials),
+    LR_disconf =    rep(LRs[1, ], each = n_trials),
+    LR_diff =       rep(LRs[2, ], each = n_trials),
     inv_temp =      rep(inv_temp, each = n_trials)
   )  
   return(dat)
@@ -90,9 +90,9 @@ run <- function(params) {
 # - either the confirmatory LR or disconfirmatory LR
 LR_approx <- function(LRs, R, belief, margin) {
   if (abs(R - belief) <= margin) {
-    return(LRs[1]) # confirmatory
+    return(LRs[1] + LRs[2]) # confirmatory
   } else {
-    return(LRs[2])
+    return(LRs[1])
   }
 }
 
@@ -107,7 +107,7 @@ LR_approx <- function(LRs, R, belief, margin) {
 # - nothing
 run_many <- function(settings, save_dir, n_runs) {
   # free_params_group <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group", "initQF_group", "initQU_group")
-  free_params_group <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group")
+  free_params_group <- c("LRs_group", "inv_temp_group")
   free_params <- unlist(strsplit(free_params_group, "_group"))
 
   for (k in 1:n_runs) {

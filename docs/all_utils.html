@@ -1464,6 +1464,7 @@ param_stddevs &lt;- list(
   LR_group = 0.2,
   LR_conf_group = 0.2,
   LR_disconf_group = 0.2,
+  LRs_group = 0.2,
   inv_temp_group = 0.3,
   initQ_group = 2,
   initQF_group = 2,
@@ -1476,9 +1477,9 @@ param_stddevs &lt;- list(
 #&#39; A list of theoretical bounds for parameters; same as in Stan
 param_bounds &lt;- list(
   LR_group = c(0, 1),
-  LR_conf_group = c(0, 1),
-  LR_disconf_group = c(0, 1),
+  LRs_group = c(0, 1),
   LR = c(0, 1),
+  LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_group = c(1, 10),
@@ -1502,15 +1503,19 @@ param_bounds &lt;- list(
 randomize_free_params &lt;- function(param_settings, free_params) {
   for (p in free_params) {
     bounds &lt;- param_bounds[[p]]
-    param_settings[[p]] &lt;- runif(1, min = bounds[1], max = bounds[2])
-  }
-
-  # if we have two learning rates, check if LR_conf &gt; LR_disconf;
-  # else, rerun the randomization (recursive function)
-  if (&quot;LR_conf_group&quot; %in% free_params) {
-    if (param_settings[[&quot;LR_conf_group&quot;]] &lt;= param_settings[[&quot;LR_disconf_group&quot;]]) {
-      return(randomize_free_params(param_settings, free_params))
+    draw &lt;- runif(n = length(param_settings[[p]]), 
+                  min = bounds[1], 
+                  max = bounds[2])
+    # if we have two learning rates: rerun if LR_diff &lt; 0.2 or
+    # LR_disconf + LR_diff &gt; 1
+    if (p == &quot;LRs_group&quot;) {
+      while (draw[2] &lt; 0.2 | draw[1] + draw[2] &gt; 1) {
+        draw &lt;- runif(n = length(param_settings[[p]]), 
+                      min = bounds[1], 
+                      max = bounds[2])
+      }
     }
+    param_settings[[p]] &lt;- draw
   }
 
   return(param_settings)
@@ -1533,13 +1538,10 @@ draw_pp_params &lt;- function(group_param_settings, n_part) {
     pp_params[[pp_level_name]] &lt;- replicate(n = n_part,
                                             draw_from_group_mean(group_mean, p))
   }
-
-  # TODO: make sure LR_conf &gt; LR_disconf for all participants
-
   return(pp_params)
 }
 
-#&#39; Randomly draws a value based on given group mean
+#&#39; Draws a value from a normal distribution with given group mean
 #&#39; 
 #&#39; @details uses standard deviation as defined in `param_stddevs`, and
 #&#39; bounds to the distribution as defined in `param_bounds`
@@ -1555,6 +1557,14 @@ draw_from_group_mean &lt;- function(group_mean, p) {
                      b = param_bounds[[p]][2],
                      mean = group_mean,
                      sd = param_stddevs[[p]])
+
+  # if we have two learning rates: rerun if LR_diff &lt; 0.2 or
+  # LR_disconf + LR_diff &gt; 1
+  if (p == &quot;LRs_group&quot;) {
+    if (draw[2] &lt; 0.2 | draw[1] + draw[2] &gt; 1) {
+      return(draw_from_group_mean(group_mean, p))
+    }
+  }
   return(draw)
 }
 
@@ -1904,8 +1914,7 @@ sim_plots &lt;- function(sim_dat, params, plot_title = NA) {
 #&#39; @return ggplot object
 posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
   dat &lt;- data.frame(
-    estimate = param_draws,
-    sim_value = sim_value
+    estimate = param_draws
   )
 
   plot &lt;- ggplot(dat, aes(x = estimate)) +
@@ -1915,6 +1924,7 @@ posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
     theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
 
   if (!is.null(sim_value)) {
+    dat[[&quot;sim_value&quot;]] &lt;- sim_value
     plot &lt;- plot + 
       geom_vline(aes(xintercept = sim_value), linetype = 2)
   }
@@ -1938,7 +1948,7 @@ posterior_density_double &lt;- function(param_names, draws, param_settings = NUL
   if (!is.null(param_settings)) {
     sim_values &lt;- c(param_settings[[param_names[1]]], param_settings[[param_names[2]]])
   } else {
-    sim_values &lt;- NULL
+    sim_values &lt;- NA
   }
 
   dat &lt;- data.frame(
@@ -1969,7 +1979,7 @@ posterior_density_double &lt;- function(param_names, draws, param_settings = NUL
 #&#39; @param params the parameters to include in the legend
 #&#39; 
 #&#39; @return ggplot legend
-posterior_density_legend &lt;- function(params) {
+posterior_density_legend &lt;- function(params, show_sim_value) {
   dummy_dat &lt;- data.frame(
     parameter = params,
     dat = rep(0, length(params))
@@ -1979,9 +1989,13 @@ posterior_density_legend &lt;- function(params) {
     geom_density(alpha = 0.6) +
     scale_color_manual(values = my_param_colors) +
     scale_fill_manual(values = my_param_colors) +
-    geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
-    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL) +
     my_theme
+
+  if (show_sim_value) {
+    dummy_plot &lt;- dummy_plot +
+    geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
+    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+  }
 
   return(get_legend(dummy_plot))
 }
@@ -2015,7 +2029,7 @@ posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
     i &lt;- i + 1
   }
 
-  legend &lt;- posterior_density_legend(params_for_legend)
+  legend &lt;- posterior_density_legend(params_for_legend, (!is.null(param_settings)))
 
   # if uneven number of plots, put legend in place of the absent last plot
   if (length(to_plot) %% 2 == 1) {

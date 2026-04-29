@@ -21,8 +21,6 @@ param_stddevs <- list(
 param_bounds <- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
-  LR_conf_group = c(0, 1),
-  LR_disconf_group = c(0, 1),
   LR = c(0, 1),
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
@@ -48,15 +46,19 @@ param_bounds <- list(
 randomize_free_params <- function(param_settings, free_params) {
   for (p in free_params) {
     bounds <- param_bounds[[p]]
-    param_settings[[p]] <- runif(1, min = bounds[1], max = bounds[2])
-  }
-
-  # if we have two learning rates: check if LR_conf > LR_disconf;
-  # else, rerun the randomization (recursive function)
-  if ("LR_conf_group" %in% free_params) {
-    if (param_settings[["LR_conf_group"]] <= param_settings[["LR_disconf_group"]]) {
-      return(randomize_free_params(param_settings, free_params))
+    draw <- runif(n = length(param_settings[[p]]), 
+                  min = bounds[1], 
+                  max = bounds[2])
+    # if we have two learning rates: rerun if LR_diff < 0.2 or
+    # LR_disconf + LR_diff > 1
+    if (p == "LRs_group") {
+      while (draw[2] < 0.2 | draw[1] + draw[2] > 1) {
+        draw <- runif(n = length(param_settings[[p]]), 
+                      min = bounds[1], 
+                      max = bounds[2])
+      }
     }
+    param_settings[[p]] <- draw
   }
 
   return(param_settings)
@@ -79,11 +81,10 @@ draw_pp_params <- function(group_param_settings, n_part) {
     pp_params[[pp_level_name]] <- replicate(n = n_part,
                                             draw_from_group_mean(group_mean, p))
   }
-
   return(pp_params)
 }
 
-#' Randomly draws a value based on given group mean
+#' Draws a value from a normal distribution with given group mean
 #' 
 #' @details uses standard deviation as defined in `param_stddevs`, and
 #' bounds to the distribution as defined in `param_bounds`
@@ -100,10 +101,10 @@ draw_from_group_mean <- function(group_mean, p) {
                      mean = group_mean,
                      sd = param_stddevs[[p]])
 
-  # if we have two learning rates: if LR_disconf > LR_conf, rerun the
-  # draw (recursive function)
+  # if we have two learning rates: rerun if LR_diff < 0.2 or
+  # LR_disconf + LR_diff > 1
   if (p == "LRs_group") {
-    if (draw[2] > draw[1]) {
+    if (draw[2] < 0.2 | draw[1] + draw[2] > 1) {
       return(draw_from_group_mean(group_mean, p))
     }
   }
