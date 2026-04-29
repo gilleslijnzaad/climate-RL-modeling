@@ -85,7 +85,7 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `2_LRN_discr_approx_stat_simple`
-Here I fixed the initial Q values.
+Here the `initQ`s are fixed: they are not estimated, but fed to the model as data.
 
 ## Single run (chosen parameters)
 ```{r 2-simple-single, fig.height = 4}
@@ -139,23 +139,24 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `2_LRN_discr_approx_stat`
-The regular one.
+Here the `initQ`s *are* free parameters.
 
 ## Single run (chosen parameters)
-```{r 2-regular-single, eval=FALSE}
+```{r 2-regular-single}
 mod_name <- "2_LRN_discr_approx_stat/regular"
 dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
 param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
 
 fit_path <- paste0(dat_dir, "draws.rds")
 
+free_params <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
 draws <- readRDS(fit_path) %>%
   rename(setNames(paste0("means[", seq_along(free_params), "]"),
                   free_params))
 
-to_plot <- list(c("LR_conf_group", "LR_disconf_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
 plot$posterior_densities(draws, to_plot, param_settings)
 
-to_inspect <- c("LR_conf_group", "LR_disconf_group", "inv_temp_group", "initQF_group", "initQU_group")
+to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)
 ```
