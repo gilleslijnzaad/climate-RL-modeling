@@ -100,13 +100,10 @@ if (dat_changed | model_changed) {
 }
 
 ## ----posterior-plots----------------------------------------------------------
+free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 draws <- draws %>%
-  rename(
-    LR_group = `means[1]`,
-    inv_temp_group = `means[2]`,
-    initQF_group = `means[3]`,
-    initQU_group = `means[4]`,
-  )
+  rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                  free_params))
 to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
 plot$posterior_densities(draws, to_plot, params)
 
@@ -123,12 +120,11 @@ plot$pp_level_param_fit(draws, free_params_pp, participant_params)
 
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 100
-free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/100_runs/")
 
-sim$run_many(params, dat_dir, n_runs)
+# sim$run_many(params, dat_dir, n_runs)
 # running this bit below takes at least an hour
-fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
+# fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
 
 ## ----inspect-many-runs--------------------------------------------------------
 sim_params <- data.frame(k = 1:n_runs)
@@ -140,12 +136,8 @@ for (k in 1:n_runs) {
 
   fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
   fit_dat <- readRDS(fit_file) %>%
-    rename(
-      LR_group = `means[1]`,
-      inv_temp_group = `means[2]`,
-      initQF_group = `means[3]`,
-      initQU_group = `means[4]`,
-    )
+    rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                    free_params))
 
   for (p in free_params) {
     sim_params[[p]][k] <- sim_dat[[p]]
