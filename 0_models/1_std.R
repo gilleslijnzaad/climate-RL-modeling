@@ -1,13 +1,11 @@
 sim_utils <- new.env()
 source("~/research/climate-RL-mod/9_utilities/sim_utils.R", local = sim_utils)
 
-# === run() =============================
-# runs this simulation model once
-# arguments: 
-# - params: vector of parameter settings
-# 
-# returns: 
-# - data frame of simulated data
+#' Runs this simulation model once
+#' 
+#' @param params named list of parameter settings
+#' 
+#' @return data frame of simulated data
 run <- function(params) {
   # ------ initialize ------
   n_part <- params$n_part
@@ -76,15 +74,15 @@ run <- function(params) {
   return(dat)
 }
 
-# === run_many() =============================
-# runs this simulation model many times
-# arguments: 
-# - settings: vector of experiment settings
-# - save_dir: directory to save the simulated data to
-# - n_runs: how many times to run the simulation
-# 
-# returns: 
-# - nothing
+#' Runs this simulation model many times
+#' 
+#' @param settings named list of parameter settings
+#' 
+#' @param save_dir directory to save the simulated data to
+#' 
+#' @param n_runs how many times to run the simulation
+#' 
+#' @return nothing
 run_many <- function(settings, save_dir, n_runs) {
   free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 

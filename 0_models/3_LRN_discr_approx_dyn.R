@@ -1,12 +1,11 @@
 sim_utils <- new.env()
 source("~/research/climate-RL-mod/9_utilities/sim_utils.R", local = sim_utils)
 
-# === run() =================
-# arguments: 
-# - params: vector of parameter settings
-# 
-# returns: 
-# - data frame of simulated data
+#' Runs this simulation model once
+#' 
+#' @param params named list of parameter settings
+#' 
+#' @return data frame of simulated data
 run <- function(params) {
   # ------ initialize ------
   n_part <- params$n_part
@@ -79,15 +78,17 @@ run <- function(params) {
   return(dat)
 }
 
-# === LR_approx() =================
-# arguments: 
-# - LRs: vector of the two learning rates
-# - R: the rating of this trial
-# - belief: the belief to compare the rating to
-# - margin
-# 
-# returns: 
-# - either the confirmatory LR or disconfirmatory LR
+#' Calculates whether to use confirmatory or disconfirmatory LR
+#' 
+#' @param LRs vector containing `LR_disconf` and `LR_diff`, respectively
+#' 
+#' @param R the rating of the current trial
+#' 
+#' @param belief the belief to compare the rating to
+#' 
+#' @param margin
+#' 
+#' @return either the confirmatory LR or the disconfirmatory LR
 LR_approx <- function(LRs, R, belief, margin) {
   if (abs(R - belief) <= margin) {
     return(LRs[1] + LRs[2]) # confirmatory
