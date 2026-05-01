@@ -1,0 +1,95 @@
+sim_utils <- new.env()
+source("~/research/climate-RL-mod/9_utilities/sim_utils.R", local = sim_utils)
+
+#' Runs this simulation model once
+#' 
+#' @param params named list of parameter settings
+#' 
+#' @param seed for random generation. will be `k` when used in many
+#' runs
+#' 
+#' @return data frame of simulated data
+run <- function(params, seed = 1) {
+  set.seed(seed)
+  # ------ initialize ------
+  n_part <- params$n_part
+  n_trials <- params$n_trials
+
+  Q_F <- matrix(ncol = n_trials, nrow = n_part)
+  Q_U <- matrix(ncol = n_trials, nrow = n_part)
+  choice <- matrix(ncol = n_trials, nrow = n_part)
+  R <- matrix(ncol = n_trials, nrow = n_part)
+
+  group_params <- params[str_detect(names(params), "_group")]
+  pp_params <- sim_utils$draw_pp_params(group_params, n_part)
+  
+  # the next line attaches pp_params to the environment of this
+  # function so we can use (e.g.) LR instead of pp_params$LR
+  list2env(pp_params, envir = environment())
+
+  Q_F[, 1] <- initQF
+  Q_U[, 1] <- initQU
+
+  for (j in 1:n_part) {
+    P_F <- c()
+
+    # --------- run trials ------------
+    for (t in 1:n_trials) {
+
+      # choose
+      P_F[t] <- 1 / (1 + exp(-inv_temp[j] * (Q_F[j, t] - Q_U[j, t])))
+      choice[j, t] <- sample(c(1, 2), 
+                             size = 1,
+                             prob = c(P_F[t], 1 - P_F[t]))
+
+      # rate
+      R[j, t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
+                                  mean = mu_R[choice[j, t], j], 
+                                  sd = sigma_R[j]),
+                       0)
+
+      # no learning
+      if (t < n_trials) {   # no updating Qs in the very last trial
+        Q_F[j, t+1] <- Q_F[j, t]
+        Q_U[j, t+1] <- Q_U[j, t]
+      }
+    }
+  }
+
+  dat <- data.frame(
+    participant =   rep(seq_len(n_part), each = n_trials),
+    trial =         rep(seq_len(n_trials), n_part),
+    Q_F =           array(t(Q_F)),
+    Q_U =           array(t(Q_U)),
+    choice =        array(t(choice)),
+    R =             array(t(R)),
+    inv_temp =      rep(inv_temp, each = n_trials)
+  )
+  
+  return(dat)
+}
+
+#' Runs this simulation model many times
+#' 
+#' @param settings named list of experiment settings
+#' 
+#' @param save_dir directory to save the simulated data to
+#' 
+#' @param n_runs how many times to run the simulation
+#' 
+#' @return nothing
+run_many <- function(settings, save_dir, n_runs) {
+  free_params_group <- c("inv_temp_group", "initQF_group", "initQU_group")
+  free_params_pp <- gsub("_group", "", free_params_group)
+
+  free_params_pp <- gsub("_group", "", free_params_group)
+  for (k in 1:n_runs) {
+    save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
+    params <- sim_utils$randomize_free_params(settings, free_params_group, seed = k)
+
+    dat <- run(params, seed = k)
+  
+    sim_utils$save_sim_dat(params, dat, save_path, free_params_pp)
+  }
+  message(paste0("Finished simulating ", n_runs, " runs."))
+}
