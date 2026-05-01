@@ -36,6 +36,28 @@ util <- new.env()
 source(paste0(util_dir, "utils.R"), local = util)
 ```
 
+# `0_nolearning`
+## Single run (chosen parameters)
+```{r 0-single, fig.height = 4}
+mod_name <- "0_nolearning"
+dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
+
+param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
+fit_path <- paste0(dat_dir, "draws.rds")
+
+free_params <- c("inv_temp_group", "initQF_group", "initQU_group")
+
+draws <- readRDS(fit_path) %>%
+  rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                  free_params))
+
+to_plot <- list("inv_temp_group", c("initQF_group", "initQU_group"))
+plot$posterior_densities(draws, to_plot, param_settings)
+
+to_inspect <- c("inv_temp_group", "initQF_group", "initQU_group")
+util$print_posterior_table(draws, param_settings, to_inspect)
+```
+
 # `1_std`
 ## Single run (chosen parameters)
 ```{r 1-single}
