@@ -5,8 +5,12 @@ source("~/research/climate-RL-mod/9_utilities/sim_utils.R", local = sim_utils)
 #' 
 #' @param params named list of parameter settings
 #' 
+#' @param seed for random generation. will be `k` when used in many
+#' runs
+#' 
 #' @return data frame of simulated data
-run <- function(params) {
+run <- function(params, seed = 1) {
+  set.seed(seed)
   # ------ initialize ------
   n_part <- params$n_part
   n_trials <- params$n_trials
@@ -112,9 +116,9 @@ run_many <- function(settings, save_dir, n_runs) {
 
   for (k in 1:n_runs) {
     save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
-    params <- sim_utils$randomize_free_params(settings, free_params_group)
+    params <- sim_utils$randomize_free_params(settings, free_params_group, k)
 
-    dat <- run(params)
+    dat <- run(params, seed = k)
 
     sim_utils$save_sim_dat(params, dat, save_path, free_params)
 

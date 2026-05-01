@@ -1500,7 +1500,8 @@ param_bounds &lt;- list(
 #&#39; @param free_params vector of names of free parameters to randomize
 #&#39;
 #&#39; @return A list of parameter settings with `free_params` randomized
-randomize_free_params &lt;- function(param_settings, free_params) {
+randomize_free_params &lt;- function(param_settings, free_params, seed) {
+  set.seed(seed)
   for (p in free_params) {
     bounds &lt;- param_bounds[[p]]
     draw &lt;- runif(n = length(param_settings[[p]]), 
@@ -1579,11 +1580,11 @@ draw_from_group_mean &lt;- function(group_mean, p) {
 #&#39; 
 #&#39; @return nothing
 save_sim_dat &lt;- function(params, sim_dat, dat_file_name, 
-                         free_params = c(&quot;LR&quot;, &quot;inv_temp&quot;, &quot;initQF&quot;, &quot;initQU&quot;)) {
+                         free_params_pp = c(&quot;LR&quot;, &quot;inv_temp&quot;, &quot;initQF&quot;, &quot;initQU&quot;)) {
 
   # parameter settings -&gt; group means are already in params, now we
   # add participant-level settings 
-  for (p in free_params) {
+  for (p in free_params_pp) {
     sim_name &lt;- case_when(
       (p == &quot;initQF&quot;) ~ &quot;Q_F&quot;,
       (p == &quot;initQU&quot;) ~ &quot;Q_U&quot;,
@@ -2176,7 +2177,7 @@ source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 #&#39; @param return: whether to return the fit object, or a draws
 #&#39; dataframe
 #&#39; 
-#&#39; @param k: run number (for progress print)
+#&#39; @param k: run number (for random seed and progress print)
 #&#39; 
 #&#39; @param n_runs: total number of runs (for progress print)
 #&#39; 
@@ -2193,7 +2194,7 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
     thin = 1,
     iter_warmup = it / 2,
     refresh = it / 5,
-    seed = 1234,
+    seed = k,
     show_messages = show_iteration_progress
   )
   message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)

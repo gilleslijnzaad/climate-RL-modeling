@@ -43,7 +43,8 @@ param_bounds <- list(
 #' @param free_params vector of names of free parameters to randomize
 #'
 #' @return A list of parameter settings with `free_params` randomized
-randomize_free_params <- function(param_settings, free_params) {
+randomize_free_params <- function(param_settings, free_params, seed) {
+  set.seed(seed)
   for (p in free_params) {
     bounds <- param_bounds[[p]]
     draw <- runif(n = length(param_settings[[p]]), 
@@ -122,11 +123,11 @@ draw_from_group_mean <- function(group_mean, p) {
 #' 
 #' @return nothing
 save_sim_dat <- function(params, sim_dat, dat_file_name, 
-                         free_params = c("LR", "inv_temp", "initQF", "initQU")) {
+                         free_params_pp = c("LR", "inv_temp", "initQF", "initQU")) {
 
   # parameter settings -> group means are already in params, now we
   # add participant-level settings 
-  for (p in free_params) {
+  for (p in free_params_pp) {
     sim_name <- case_when(
       (p == "initQF") ~ "Q_F",
       (p == "initQU") ~ "Q_U",

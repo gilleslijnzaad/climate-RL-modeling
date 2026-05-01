@@ -23,7 +23,7 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 #' @param return: whether to return the fit object, or a draws
 #' dataframe
 #' 
-#' @param k: run number (for progress print)
+#' @param k: run number (for random seed and progress print)
 #' 
 #' @param n_runs: total number of runs (for progress print)
 #' 
@@ -40,7 +40,7 @@ fit <- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progr
     thin = 1,
     iter_warmup = it / 2,
     refresh = it / 5,
-    seed = 1234,
+    seed = k,
     show_messages = show_iteration_progress
   )
   message("Completed run ", k, " of ", n_runs, " in ", round(fit$time()$total, 1), " seconds.")
