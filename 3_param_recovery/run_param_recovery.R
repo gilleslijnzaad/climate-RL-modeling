@@ -19,7 +19,7 @@ if (TRUE) {
   source(paste0(util_dir, "plot_utils.R"), local = plot)
   fitting <- new.env()
   source(paste0(util_dir, "fit_utils.R"), local = fitting)
-  util <- ne w.env()
+  util <- new.env()
   source(paste0(util_dir, "utils.R"), local = util)
 }
 
