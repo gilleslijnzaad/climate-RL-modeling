@@ -58,6 +58,33 @@ to_inspect <- c("inv_temp_group", "initQF_group", "initQU_group")
 util$print_posterior_table(draws, param_settings, to_inspect)
 ```
 
+## Many runs (random parameters)
+```{r 0-many}
+n_runs <- 100
+
+dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")
+
+sim_params <- data.frame(k = 1:n_runs)
+fit_params <- data.frame(k = 1:n_runs)
+
+for (k in 1:n_runs) {
+  sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
+  sim_dat <- rjson::fromJSON(file = sim_file)
+
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
+  fit_dat <- readRDS(fit_file) %>%
+    rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                    free_params))
+
+  for (p in free_params) {
+    sim_params[[p]][k] <- sim_dat[[p]]
+    fit_params[[p]][k] <- median(fit_dat[[p]])
+  }
+}
+
+plot$many_runs_param_fit(sim_params, fit_params, free_params)
+```
+
 # `1_std`
 ## Single run (chosen parameters)
 ```{r 1-single}
@@ -106,7 +133,7 @@ for (k in 1:n_runs) {
 plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
-# `2_LRN_discr_approx_stat_simple`
+# `2_LRN_discr_approx_stat`: simple
 Here the `initQ`s are fixed: they are not estimated, but fed to the model as data.
 
 ## Single run (chosen parameters)
@@ -160,7 +187,7 @@ for (k in 1:n_runs) {
 plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
-# `2_LRN_discr_approx_stat`
+# `2_LRN_discr_approx_stat`: regular
 Here the `initQ`s *are* free parameters.
 
 ## Single run (chosen parameters)
@@ -181,4 +208,35 @@ plot$posterior_densities(draws, to_plot, param_settings)
 
 to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)
+```
+
+## Many runs (random parameters)
+```{r 2-regular-many}
+n_runs <- 100
+
+dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")
+
+sim_params <- data.frame(k = 1:n_runs)
+fit_params <- data.frame(k = 1:n_runs)
+
+for (k in 1:n_runs) {
+  sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
+  sim_dat <- rjson::fromJSON(file = sim_file)
+  if ("LRs_group" %in% names(sim_dat)) {
+    sim_dat[["LR_disconf_group"]] <- sim_dat[["LRs_group"]][1]
+    sim_dat[["LR_diff_group"]] <- sim_dat[["LRs_group"]][2]
+  }
+
+  fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
+  fit_dat <- readRDS(fit_file) %>%
+    rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                    free_params))
+
+  for (p in free_params) {
+    sim_params[[p]][k] <- sim_dat[[p]]
+    fit_params[[p]][k] <- median(fit_dat[[p]])
+  }
+}
+
+plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
