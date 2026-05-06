@@ -1,5 +1,5 @@
 rm(list = ls())
-mod_name <- "2_LRN_discr_approx_stat"
+mod_name <- "4_LRN_discr_geq_stat"
 
 #' ------------------------------------------------------------
 #' SET DIRS AND ENVS ------------------------------------------
@@ -8,9 +8,9 @@ if (TRUE) {
   main_dir <- "~/research/climate-RL-mod/"
   util_dir <- paste0(main_dir, "9_utilities/")
   mod_dir <- paste0(main_dir, "0_models/")
-  model_path <- paste0(mod_dir, mod_name, "_simple.stan")
+  model_path <- paste0(mod_dir, mod_name, ".stan")
   recov_dir <- paste0(main_dir, "3_param_recovery/")
-  current_dir <- paste0(recov_dir, mod_name, "/simple/")
+  current_dir <- paste0(recov_dir, mod_name, "/")
   sim <- new.env()
   source(paste0(mod_dir, mod_name, ".R"), local = sim) # access functions using sim$fun()
   sim_utils <- new.env()
@@ -36,28 +36,28 @@ set_params <- function() {return(list(
   sigma_R_group = 2,
   margin_group = 2
 ))}
-#' ::: 0_nolearning :::
+#' ::: nolearning :::
 # params <- set_params()
 # free_params_group <- c("inv_temp_group", "initQF_group", "initQU_group")
 # to_plot <- list("inv_temp_group", c("initQF_group", "initQU_group"))
 
-#' ::: 1_std :::
+#' ::: std :::
 # params <- set_params()
 # params[["LR_group"]] <- 0.4
 # free_params_group <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
 # to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
 
-#' ::: 2_LRN_simple :::
-params <- set_params()
-params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.8)
-free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group")
-to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group")
-
-#' ::: 2_LRN_regular :::
+#' ::: LRN_discr_simple :::
 # params <- set_params()
 # params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.8)
-# free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
-# to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+# free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group")
+# to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group")
+
+#' ::: LRN_discr_regular :::
+params <- set_params()
+params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.8)
+free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
+to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
 
 free_params_pp <- gsub("_group", "", free_params_group)
 
@@ -69,16 +69,17 @@ if (TRUE) {
   sim_dat <- sim$run(params)
 
   dat_dir <- paste0(current_dir, "1_run/")
+  if (!dir.exists(dat_dir)) dir.create(dat_dir)
   dat_path <- paste0(dat_dir, "sim_dat_1.json")
   sim_utils$save_sim_dat(params, sim_dat, dat_path, free_params_pp)
 
   # add initQs to data for simple model
-  if (str_ends(model_path, "_simple.stan")) {
-    json_dat <- rjson::fromJSON(file = dat_path)
-    json_dat[["initQF"]] <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
-    json_dat[["initQU"]] <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-    cmdstanr::write_stan_json(json_dat, file = dat_path)
-  }
+  # if (str_ends(model_path, ".stan")) {
+  #   json_dat <- rjson::fromJSON(file = dat_path)
+  #   json_dat[["initQF"]] <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
+  #   json_dat[["initQU"]] <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
+  #   cmdstanr::write_stan_json(json_dat, file = dat_path)
+  # }
 
   pl <- plot$sim_plots(sim_dat, params)
   ggsave("sim_plots.png", 
@@ -97,7 +98,7 @@ if (TRUE) {
 #' ------------------------------------------------------------
 #' INSPECT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (FALSE) {
+if (TRUE) {
   draws <- readRDS(paste0(dat_dir, "draws.rds"))
   draws <- draws %>% 
     rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
@@ -108,9 +109,10 @@ if (FALSE) {
 #' ------------------------------------------------------------
 #' SIM + FIT MANY ---------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (FALSE) {
   n_runs <- 100
   dat_dir <- paste0(current_dir, "100_runs/")
+  if (!dir.exists(dat_dir)) dir.create(dat_dir)
   sim$run_many(params, dat_dir, n_runs)
   fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
 }
@@ -118,7 +120,7 @@ if (TRUE) {
 #' ------------------------------------------------------------
 #' INSPECT MANY -----------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (FALSE) {
   n_runs <- 100
   sim_params <- data.frame(k = 1:n_runs)
   fit_params <- data.frame(k = 1:n_runs)
