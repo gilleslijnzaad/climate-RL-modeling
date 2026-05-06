@@ -210,6 +210,26 @@ to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)
 ```
 
+## Single run with 100 trials instead of 30
+```{r 2-regular-single-100trials}
+mod_name <- "2_LRN_discr_approx_stat/regular"
+dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
+param_settings <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1_100trials.json"))
+
+fit_path <- paste0(dat_dir, "draws_100trials.rds")
+
+free_params <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
+draws <- readRDS(fit_path) %>%
+  rename(setNames(paste0("means[", seq_along(free_params), "]"),
+                  free_params))
+
+to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+plot$posterior_densities(draws, to_plot, param_settings)
+
+to_inspect <- free_params
+util$print_posterior_table(draws, param_settings, to_inspect)
+```
+
 ## Many runs (random parameters)
 ```{r 2-regular-many}
 n_runs <- 100
