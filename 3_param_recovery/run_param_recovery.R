@@ -55,7 +55,7 @@ set_params <- function() {return(list(
 
 #' ::: LRN_discr_regular :::
 params <- set_params()
-params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.8)
+params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.6)
 free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
 to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
 
