@@ -96,3 +96,27 @@ LR_approx <- function(LRs, R, belief, margin) {
     return(LRs[1])
   }
 }
+
+#' Runs this simulation model many times
+#' 
+#' @param settings named list of experiment settings
+#' 
+#' @param save_dir directory to save the simulated data to
+#' 
+#' @param n_runs how many times to run the simulation
+#' 
+#' @return nothing
+run_many <- function(settings, save_dir, n_runs) {
+  free_params_group <- c("LRs_group", "inv_temp_group", "initQF_group", "initQU_group")
+  free_params <- c("LR_disconf", "LR_diff", "inv_temp", "initQF", "initQU")
+
+  for (k in 1:n_runs) {
+    save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
+    params <- sim_utils$randomize_free_params(settings, free_params_group, k)
+
+    dat <- run(params, seed = k)
+
+    sim_utils$save_sim_dat(params, dat, save_path, free_params)
+  }
+  message(paste0("Finished simulating ", n_runs, " runs."))
+}
