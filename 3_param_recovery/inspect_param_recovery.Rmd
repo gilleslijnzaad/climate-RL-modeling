@@ -13,6 +13,8 @@ output:
     code_folding: hide
 ---
 
+> In this document I inspect parameter recovery results. More specifically, I first look at the results of a single run of the simulation and fitting (where parameter settings are chosen by me), and then at many runs (where parameter settings are generated randomly).
+
 ```{r doc-setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
@@ -37,6 +39,9 @@ source(paste0(util_dir, "utils.R"), local = util)
 ```
 
 # `0_nolearning`
+## Simulation behavior
+![Plot of simulated data for model 0](0_nolearning/1_run/sim_plots.png)
+
 ## Single run (chosen parameters)
 ```{r 0-single, fig.height = 4}
 mod_name <- "0_nolearning"
@@ -86,6 +91,9 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `1_std`
+## Simulation behavior
+![Plot of simulated data for model 1](1_std/1_run/sim_plots.png)
+
 ## Single run (chosen parameters)
 ```{r 1-single}
 mod_name <- "1_std"
@@ -135,6 +143,9 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 
 # `2_LRN_discr_approx_stat`: simple
 Here the `initQ`s are fixed: they are not estimated, but fed to the model as data.
+
+## Simulation behavior
+![Plot of simulated data for model 2](2_LRN_discr_approx_stat/simple/1_run/sim_plots.png)
 
 ## Single run (chosen parameters)
 ```{r 2-simple-single, fig.height = 4}
@@ -190,6 +201,9 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 # `2_LRN_discr_approx_stat`: regular
 Here the `initQ`s *are* free parameters.
 
+## Simulation behavior
+![Plot of simulated data for model 2](2_LRN_discr_approx_stat/regular/1_run/sim_plots.png)
+
 ## Single run (chosen parameters)
 ```{r 2-regular-single}
 mod_name <- "2_LRN_discr_approx_stat/regular"
@@ -211,6 +225,9 @@ util$print_posterior_table(draws, param_settings, to_inspect)
 ```
 
 ## Single run with 100 trials instead of 30
+
+![Plot of simulated data for model 2, 100 trials version](2_LRN_discr_approx_stat/regular/1_run/sim_plots_100trials.png)
+
 ```{r 2-regular-single-100trials}
 mod_name <- "2_LRN_discr_approx_stat/regular"
 dat_dir <- paste0(recov_dir, mod_name, "/1_run/")
@@ -262,6 +279,10 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `3_LRN_discr_approx_dyn`
+
+## Simulation behavior
+![Plot of simulated data for model 3](3_LRN_discr_approx_dyn/1_run/sim_plots.png)
+
 ## Single run (chosen parameters)
 ```{r 3-single}
 mod_name <- "3_LRN_discr_approx_dyn"
@@ -310,6 +331,11 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `4_LRN_discr_geq_stat`
+
+## Simulation behavior
+![Plot of simulated data for model 4](4_LRN_discr_geq_stat/1_run/sim_plots.png)
+
+
 ## Single run (chosen parameters)
 ```{r 4-single}
 mod_name <- "4_LRN_discr_geq_stat"
@@ -358,6 +384,10 @@ plot$many_runs_param_fit(sim_params, fit_params, free_params)
 ```
 
 # `5_LRN_discr_geq_dyn`
+
+## Simulation behavior
+![Plot of simulated data for model 5](5_LRN_discr_geq_dyn/1_run/sim_plots.png)
+
 ## Single run (chosen parameters)
 ```{r 5-single}
 mod_name <- "5_LRN_discr_geq_dyn"

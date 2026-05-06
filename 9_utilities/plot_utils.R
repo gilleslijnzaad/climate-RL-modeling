@@ -315,7 +315,7 @@ posterior_densities <- function(draws, to_plot, param_settings = NULL) {
   plot_grid <- gridExtra::arrangeGrob(
     grobs = plots,
     ncol = 2,
-    top = textGrob("Posterior distributions\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
+    # top = textGrob("Posterior distributions\n", x = unit(0, "npc"), just = "left", gp = gpar(fontsize = 22, font = 2)),
     bottom = textGrob("Estimate", gp = gpar(fontsize = 18)),
     left = textGrob("Density", rot = 90, gp = gpar(fontsize = 18))
   )

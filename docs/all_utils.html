@@ -2045,7 +2045,7 @@ posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
   plot_grid &lt;- gridExtra::arrangeGrob(
     grobs = plots,
     ncol = 2,
-    top = textGrob(&quot;Posterior distributions\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
+    # top = textGrob(&quot;Posterior distributions\n&quot;, x = unit(0, &quot;npc&quot;), just = &quot;left&quot;, gp = gpar(fontsize = 22, font = 2)),
     bottom = textGrob(&quot;Estimate&quot;, gp = gpar(fontsize = 18)),
     left = textGrob(&quot;Density&quot;, rot = 90, gp = gpar(fontsize = 18))
   )

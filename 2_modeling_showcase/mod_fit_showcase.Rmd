@@ -169,7 +169,7 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils) # access functions us
 
 dat_changed <- sim_utils$did_sim_dat_change(dat_file, sim_dat)
 sim_utils$save_sim_dat(params, sim_dat, dat_file)
-model_changed <- FALSE
+model_changed <- TRUE
 
 fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting) # access functions using fitting$fun()
