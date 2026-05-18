@@ -1,5 +1,12 @@
 rm(list = ls())
-mod_name <- "4_LRN_discr_geq_stat"
+# use in command line: Rscript run_param_recovery.R "[model_name]"
+# if used in VSCode: edit mod_name manually
+arg <- commandArgs(trailingOnly = TRUE)
+if (length(arg == 1)) {
+  mod_name <- arg
+} else {
+  mod_name <- "1_std"
+}
 
 #' ------------------------------------------------------------
 #' SET DIRS AND ENVS ------------------------------------------
@@ -30,59 +37,43 @@ set_params <- function() {return(list(
   n_part = 50,
   n_trials = 30,
   inv_temp_group = 0.5,
-  initQF_group = 8,
-  initQU_group = 2,
-  mu_R_group = list(F = 5, U = 5),
+  initQ_dev_group = 2,
+  mu_R_group = 5.5,
   sigma_R_group = 2,
   margin_group = 2
 ))}
-#' ::: nolearning :::
-# params <- set_params()
-# free_params_group <- c("inv_temp_group", "initQF_group", "initQU_group")
-# to_plot <- list("inv_temp_group", c("initQF_group", "initQU_group"))
 
-#' ::: std :::
-# params <- set_params()
-# params[["LR_group"]] <- 0.4
-# free_params_group <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
-# to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
+param_settings <- set_params()
 
-#' ::: LRN_discr_simple :::
-# params <- set_params()
-# params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.8)
-# free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group")
-# to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group")
-
-#' ::: LRN_discr_regular :::
-params <- set_params()
-params[["LRs_group"]] <- list(disconf = 0.2, diff = 0.6)
-free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQF_group", "initQU_group")
-to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", c("initQF_group", "initQU_group"))
+if (mod_name == "0_nolearning") {
+  free_params_group <- c("inv_temp_group", "initQ_dev_group")
+  to_plot <- free_params_group
+} else if (mod_name == "1_std") {
+  param_settings[["LR_group"]] <- 0.4
+  free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
+  to_plot <- free_params_group  
+} else { # LRN_discr 
+  param_settings[["LRs_group"]] <- list(disconf = 0.2, diff = 0.6)
+  free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQ_dev_group")
+  to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", "initQ_dev_group")
+}
 
 free_params_pp <- gsub("_group", "", free_params_group)
 
 #' ------------------------------------------------------------
 #' SIM FIT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (FALSE) {
   #' SIM
-  sim_dat <- sim$run(params)
+  sim_dat <- sim$run(param_settings)
 
   dat_dir <- paste0(current_dir, "1_run/")
   if (!dir.exists(dat_dir)) dir.create(dat_dir)
   dat_path <- paste0(dat_dir, "sim_dat_1.json")
-  sim_utils$save_sim_dat(params, sim_dat, dat_path, free_params_pp)
+  sim_utils$save_sim_dat(param_settings, sim_dat, dat_path, free_params_pp)
 
-  # add initQs to data for simple model
-  # if (str_ends(model_path, ".stan")) {
-  #   json_dat <- rjson::fromJSON(file = dat_path)
-  #   json_dat[["initQF"]] <- round(sim_dat$Q_F[which(sim_dat$trial == 1)], 4)
-  #   json_dat[["initQU"]] <- round(sim_dat$Q_U[which(sim_dat$trial == 1)], 4)
-  #   cmdstanr::write_stan_json(json_dat, file = dat_path)
-  # }
-
-  pl <- plot$sim_plots(sim_dat, params)
-  ggsave("sim_plots.png", 
+  pl <- plot$sim_plots(sim_dat, param_settings)
+  ggsave("sim_plots.png",
          plot = pl,
          path = dat_dir,
          width = 10,
@@ -99,11 +90,12 @@ if (TRUE) {
 #' INSPECT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
 if (TRUE) {
+  dat_dir <- paste0(current_dir, "1_run/")
   draws <- readRDS(paste0(dat_dir, "draws.rds"))
   draws <- draws %>% 
     rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
                     free_params_group))
-  plot$posterior_densities(draws, to_plot, params)
+  plot$posterior_densities(draws, to_plot, param_settings)
 }
 
 #' ------------------------------------------------------------
@@ -124,6 +116,7 @@ if (FALSE) {
   n_runs <- 100
   sim_params <- data.frame(k = 1:n_runs)
   fit_params <- data.frame(k = 1:n_runs)
+  dat_dir <- paste0(current_dir, "100_runs/")
 
   for (k in 1:n_runs) {
     sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
