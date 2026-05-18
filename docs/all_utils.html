@@ -1464,15 +1464,14 @@ param_stddevs &lt;- list(
   LR_group = 0.2,
   LRs_group = 0.2,
   inv_temp_group = 0.3,
-  initQ_group = 2,
-  initQF_group = 2,
-  initQU_group = 2,
+  initQ_dev_group = 0.3,
   mu_R_group = 2,
   sigma_R_group = 2,
   margin_group = 2
 )
 
 #&#39; A list of theoretical bounds for parameters; same as in Stan
+# TODO: check which of these are used
 param_bounds &lt;- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
@@ -1482,11 +1481,8 @@ param_bounds &lt;- list(
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
-  initQ_group = c(1, 10),
-  initQF_group = c(1, 10),
-  initQU_group = c(1, 10),
-  initQF = c(1, 10),
-  initQU = c(1, 10),
+  initQ_dev_group = c(0, 9),
+  initQ_dev = c(0, 9),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
   margin_group = c(0, 10)
@@ -1578,19 +1574,15 @@ draw_from_group_mean &lt;- function(group_mean, p) {
 #&#39; 
 #&#39; @param dat_file_name: file to save data to
 #&#39; 
+#&#39; @param free_params_pp: names of participant-level free parameters
+#&#39; 
 #&#39; @return nothing
-save_sim_dat &lt;- function(params, sim_dat, dat_file_name, 
-                         free_params_pp = c(&quot;LR&quot;, &quot;inv_temp&quot;, &quot;initQF&quot;, &quot;initQU&quot;)) {
+save_sim_dat &lt;- function(params, sim_dat, dat_file_name, free_params_pp) {
 
   # parameter settings -&gt; group means are already in params, now we
   # add participant-level settings 
   for (p in free_params_pp) {
-    sim_name &lt;- case_when(
-      (p == &quot;initQF&quot;) ~ &quot;Q_F&quot;,
-      (p == &quot;initQU&quot;) ~ &quot;Q_U&quot;,
-      .default = p
-    )
-    params[[p]] &lt;- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
+    params[[p]] &lt;- round(sim_dat[[p]][which(sim_dat$trial == 1)], 4)
   }
   param_file_name &lt;- stringr::str_replace(dat_file_name, &quot;dat_&quot;, &quot;param_settings_&quot;)
   cmdstanr::write_stan_json(params, file = param_file_name)
@@ -1598,7 +1590,7 @@ save_sim_dat &lt;- function(params, sim_dat, dat_file_name,
   # data
   n_part &lt;- params$n_part
   n_trials &lt;- params$n_trials
-  choice &lt;- matrix(sim_dat$choice,
+  choice_c &lt;- matrix(sim_dat$choice_c,
                    nrow = n_part,
                    ncol = n_trials,
                    byrow = TRUE)
@@ -1606,7 +1598,8 @@ save_sim_dat &lt;- function(params, sim_dat, dat_file_name,
               nrow = n_part,
               ncol = n_trials,
               byrow = TRUE)
-  dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice&quot;, &quot;R&quot;)
+  mu_R &lt;- round(sim_dat[[&quot;mu_R&quot;]][which(sim_dat$trial == 1)], 4)
+  dat_names &lt;- c(&quot;n_part&quot;, &quot;n_trials&quot;, &quot;choice_c&quot;, &quot;R&quot;, &quot;mu_R&quot;)
   list_dat &lt;- setNames(mget(dat_names), dat_names)
   cmdstanr::write_stan_json(list_dat, file = dat_file_name)
 }
@@ -1748,10 +1741,11 @@ my_blue &lt;- &quot;#0055bb&quot;
 my_light_blue &lt;- &quot;#00aadd&quot;
 my_dark_blue &lt;- &quot;#001199&quot;
 my_red &lt;- &quot;#ff4455&quot;
+my_orange &lt;- &quot;#ff9933&quot;
 my_param_colors &lt;- c(
-  F = my_teal,                      U = my_pink,
-  initQF = my_teal,                 initQU = my_pink,
-  initQF_group = my_teal,           initQU_group = my_pink,
+  pref = my_teal,                   nonpref = my_pink,
+  initQ_dev = my_orange,
+  initQ_dev_group = my_orange,
   LR = my_blue,                     inv_temp = my_red,
   LR_group = my_blue,               inv_temp_group = my_red,
   LR_disconf = my_light_blue,       LR_diff = my_dark_blue,       
@@ -1798,9 +1792,9 @@ get_legend &lt;- function(myggplot){
 Q &lt;- function(sim_dat) {
   # data to long format
   sim_dat &lt;- sim_dat %&gt;%
-    pivot_longer(c(Q_F, Q_U), names_prefix = &quot;Q_&quot;, names_to = &quot;option&quot;, values_to = &quot;Q&quot;) %&gt;%
+    pivot_longer(c(Q_pref, Q_nonpref), names_prefix = &quot;Q_&quot;, names_to = &quot;option&quot;, values_to = &quot;Q&quot;) %&gt;%
     mutate(option = factor(option),
-           choice = factor(choice))
+           choice_c = factor(choice_c))
 
   p &lt;- ggplot(sim_dat, aes(x = trial,
                            y = Q,
@@ -1808,10 +1802,8 @@ Q &lt;- function(sim_dat) {
     geom_smooth(aes(fill = option)) +
     ylim(c(1, 10)) +
     labs(x = &quot;Trial&quot;) +
-    scale_color_manual(values = my_param_colors,
-                       labels = c(&quot;Friendly&quot;, &quot;Unfriendly&quot;)) +  
-    scale_fill_manual(values = my_param_colors,
-                      labels = c(&quot;Friendly&quot;, &quot;Unfriendly&quot;)) +
+    scale_color_manual(values = my_param_colors) +  
+    scale_fill_manual(values = my_param_colors) +
     my_theme +
     theme(legend.position = &quot;inside&quot;,
           legend.position.inside = c(0.83, 0.91))
@@ -1827,16 +1819,16 @@ Q &lt;- function(sim_dat) {
 choice &lt;- function(sim_dat) {
   # data to long format
   sim_dat &lt;- sim_dat %&gt;%
-    mutate(choice_is_F = as.numeric(choice == 1),
-           choice_is_U = 1 - choice_is_F)
+    mutate(choice_is_pref = as.numeric(choice_c == 1),
+           choice_is_nonpref = 1 - choice_is_pref)
     
   p &lt;- ggplot(sim_dat, aes(x = trial)) +
-    geom_smooth(aes(y = choice_is_F),
-                color = my_param_colors[[&quot;F&quot;]],
-                fill = my_param_colors[[&quot;F&quot;]]) +
-    geom_smooth(aes(y = choice_is_U),
-                color = my_param_colors[[&quot;U&quot;]],
-                fill = my_param_colors[[&quot;U&quot;]]) +
+    geom_smooth(aes(y = choice_is_pref),
+                color = my_param_colors[[&quot;pref&quot;]],
+                fill = my_param_colors[[&quot;pref&quot;]]) +
+    geom_smooth(aes(y = choice_is_nonpref),
+                color = my_param_colors[[&quot;nonpref&quot;]],
+                fill = my_param_colors[[&quot;nonpref&quot;]]) +
     ylim(c(0, 1)) +
     labs(x = &quot;Trial&quot;,
         y = &quot;Proportion chosen&quot;) +
@@ -1985,21 +1977,26 @@ posterior_density_double &lt;- function(param_names, draws, param_settings = NUL
 #&#39; 
 #&#39; @return ggplot legend
 posterior_density_legend &lt;- function(params, show_sim_value) {
-  dummy_dat &lt;- data.frame(
-    parameter = params,
-    dat = rep(0, length(params))
-  )
+  if (is.null(params)) {
+    dummy_plot &lt;- ggplot()
+  } else {
+    dummy_dat &lt;- data.frame(
+      parameter = params,
+      dat = rep(0, length(params))
+    )
 
-  dummy_plot &lt;- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
-    geom_density(alpha = 0.6) +
-    scale_color_manual(values = my_param_colors) +
-    scale_fill_manual(values = my_param_colors) +
-    my_theme
+    dummy_plot &lt;- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
+      geom_density(alpha = 0.6) +
+      scale_color_manual(values = my_param_colors) +
+      scale_fill_manual(values = my_param_colors) +
+      my_theme
+  }
 
   if (show_sim_value) {
     dummy_plot &lt;- dummy_plot +
-    geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
-    scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL)
+      geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
+      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL) +
+      my_theme
   }
 
   return(get_legend(dummy_plot))
@@ -2027,8 +2024,6 @@ posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
     } else if (length(p) == 2) {
       plot &lt;- posterior_density_double(p, draws, param_settings)
       params_for_legend &lt;- c(params_for_legend, p)
-    } else {
-      stop(&quot;error: wrong format of to_plot&quot;)
     }
     plots[[i]] &lt;- plot + theme(legend.position = &quot;none&quot;)
     i &lt;- i + 1

@@ -7,15 +7,14 @@ param_stddevs <- list(
   LR_group = 0.2,
   LRs_group = 0.2,
   inv_temp_group = 0.3,
-  initQ_group = 2,
-  initQF_group = 2,
-  initQU_group = 2,
+  initQ_dev_group = 0.3,
   mu_R_group = 2,
   sigma_R_group = 2,
   margin_group = 2
 )
 
 #' A list of theoretical bounds for parameters; same as in Stan
+# TODO: check which of these are used
 param_bounds <- list(
   LR_group = c(0, 1),
   LRs_group = c(0, 1),
@@ -25,11 +24,8 @@ param_bounds <- list(
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
-  initQ_group = c(1, 10),
-  initQF_group = c(1, 10),
-  initQU_group = c(1, 10),
-  initQF = c(1, 10),
-  initQU = c(1, 10),
+  initQ_dev_group = c(0, 9),
+  initQ_dev = c(0, 9),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
   margin_group = c(0, 10)
@@ -121,19 +117,15 @@ draw_from_group_mean <- function(group_mean, p) {
 #' 
 #' @param dat_file_name: file to save data to
 #' 
+#' @param free_params_pp: names of participant-level free parameters
+#' 
 #' @return nothing
-save_sim_dat <- function(params, sim_dat, dat_file_name, 
-                         free_params_pp = c("LR", "inv_temp", "initQF", "initQU")) {
+save_sim_dat <- function(params, sim_dat, dat_file_name, free_params_pp) {
 
   # parameter settings -> group means are already in params, now we
   # add participant-level settings 
   for (p in free_params_pp) {
-    sim_name <- case_when(
-      (p == "initQF") ~ "Q_F",
-      (p == "initQU") ~ "Q_U",
-      .default = p
-    )
-    params[[p]] <- round(sim_dat[[sim_name]][which(sim_dat$trial == 1)], 4)
+    params[[p]] <- round(sim_dat[[p]][which(sim_dat$trial == 1)], 4)
   }
   param_file_name <- stringr::str_replace(dat_file_name, "dat_", "param_settings_")
   cmdstanr::write_stan_json(params, file = param_file_name)
@@ -141,7 +133,7 @@ save_sim_dat <- function(params, sim_dat, dat_file_name,
   # data
   n_part <- params$n_part
   n_trials <- params$n_trials
-  choice <- matrix(sim_dat$choice,
+  choice_c <- matrix(sim_dat$choice_c,
                    nrow = n_part,
                    ncol = n_trials,
                    byrow = TRUE)
@@ -149,7 +141,8 @@ save_sim_dat <- function(params, sim_dat, dat_file_name,
               nrow = n_part,
               ncol = n_trials,
               byrow = TRUE)
-  dat_names <- c("n_part", "n_trials", "choice", "R")
+  mu_R <- round(sim_dat[["mu_R"]][which(sim_dat$trial == 1)], 4)
+  dat_names <- c("n_part", "n_trials", "choice_c", "R", "mu_R")
   list_dat <- setNames(mget(dat_names), dat_names)
   cmdstanr::write_stan_json(list_dat, file = dat_file_name)
 }

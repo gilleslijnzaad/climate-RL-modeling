@@ -18,10 +18,11 @@ my_blue <- "#0055bb"
 my_light_blue <- "#00aadd"
 my_dark_blue <- "#001199"
 my_red <- "#ff4455"
+my_orange <- "#ff9933"
 my_param_colors <- c(
-  F = my_teal,                      U = my_pink,
-  initQF = my_teal,                 initQU = my_pink,
-  initQF_group = my_teal,           initQU_group = my_pink,
+  pref = my_teal,                   nonpref = my_pink,
+  initQ_dev = my_orange,
+  initQ_dev_group = my_orange,
   LR = my_blue,                     inv_temp = my_red,
   LR_group = my_blue,               inv_temp_group = my_red,
   LR_disconf = my_light_blue,       LR_diff = my_dark_blue,       
@@ -68,9 +69,9 @@ get_legend <- function(myggplot){
 Q <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
-    pivot_longer(c(Q_F, Q_U), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
+    pivot_longer(c(Q_pref, Q_nonpref), names_prefix = "Q_", names_to = "option", values_to = "Q") %>%
     mutate(option = factor(option),
-           choice = factor(choice))
+           choice_c = factor(choice_c))
 
   p <- ggplot(sim_dat, aes(x = trial,
                            y = Q,
@@ -78,10 +79,8 @@ Q <- function(sim_dat) {
     geom_smooth(aes(fill = option)) +
     ylim(c(1, 10)) +
     labs(x = "Trial") +
-    scale_color_manual(values = my_param_colors,
-                       labels = c("Friendly", "Unfriendly")) +  
-    scale_fill_manual(values = my_param_colors,
-                      labels = c("Friendly", "Unfriendly")) +
+    scale_color_manual(values = my_param_colors) +  
+    scale_fill_manual(values = my_param_colors) +
     my_theme +
     theme(legend.position = "inside",
           legend.position.inside = c(0.83, 0.91))
@@ -97,16 +96,16 @@ Q <- function(sim_dat) {
 choice <- function(sim_dat) {
   # data to long format
   sim_dat <- sim_dat %>%
-    mutate(choice_is_F = as.numeric(choice == 1),
-           choice_is_U = 1 - choice_is_F)
+    mutate(choice_is_pref = as.numeric(choice_c == 1),
+           choice_is_nonpref = 1 - choice_is_pref)
     
   p <- ggplot(sim_dat, aes(x = trial)) +
-    geom_smooth(aes(y = choice_is_F),
-                color = my_param_colors[["F"]],
-                fill = my_param_colors[["F"]]) +
-    geom_smooth(aes(y = choice_is_U),
-                color = my_param_colors[["U"]],
-                fill = my_param_colors[["U"]]) +
+    geom_smooth(aes(y = choice_is_pref),
+                color = my_param_colors[["pref"]],
+                fill = my_param_colors[["pref"]]) +
+    geom_smooth(aes(y = choice_is_nonpref),
+                color = my_param_colors[["nonpref"]],
+                fill = my_param_colors[["nonpref"]]) +
     ylim(c(0, 1)) +
     labs(x = "Trial",
         y = "Proportion chosen") +
@@ -255,21 +254,26 @@ posterior_density_double <- function(param_names, draws, param_settings = NULL) 
 #' 
 #' @return ggplot legend
 posterior_density_legend <- function(params, show_sim_value) {
-  dummy_dat <- data.frame(
-    parameter = params,
-    dat = rep(0, length(params))
-  )
+  if (is.null(params)) {
+    dummy_plot <- ggplot()
+  } else {
+    dummy_dat <- data.frame(
+      parameter = params,
+      dat = rep(0, length(params))
+    )
 
-  dummy_plot <- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
-    geom_density(alpha = 0.6) +
-    scale_color_manual(values = my_param_colors) +
-    scale_fill_manual(values = my_param_colors) +
-    my_theme
+    dummy_plot <- ggplot(dummy_dat, aes(x = dat, color = parameter, fill = parameter)) +
+      geom_density(alpha = 0.6) +
+      scale_color_manual(values = my_param_colors) +
+      scale_fill_manual(values = my_param_colors) +
+      my_theme
+  }
 
   if (show_sim_value) {
     dummy_plot <- dummy_plot +
-    geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
-    scale_linetype_manual(values = c("sim_value" = 2), name = NULL)
+      geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
+      scale_linetype_manual(values = c("sim_value" = 2), name = NULL) +
+      my_theme
   }
 
   return(get_legend(dummy_plot))
@@ -297,8 +301,6 @@ posterior_densities <- function(draws, to_plot, param_settings = NULL) {
     } else if (length(p) == 2) {
       plot <- posterior_density_double(p, draws, param_settings)
       params_for_legend <- c(params_for_legend, p)
-    } else {
-      stop("error: wrong format of to_plot")
     }
     plots[[i]] <- plot + theme(legend.position = "none")
     i <- i + 1

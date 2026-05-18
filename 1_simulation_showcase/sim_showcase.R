@@ -6,7 +6,7 @@ knitr::opts_chunk$set(fig.width = 10, fig.height = 4)
 
 ## ----run-std------------------------------------------------------------------
 rm(list = ls())
-# setwd("~/research/climate-RL-mod/1_simulation_showcase")
+setwd("~/research/climate-RL-mod/1_simulation_showcase")
 main_dir <- "~/research/climate-RL-mod/"
 model_dir <- paste0(main_dir, "0_models/")
 util_dir <- paste0(main_dir, "9_utilities/")
@@ -19,9 +19,8 @@ params_std <- list(
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
-  initQF_group = 8,
-  initQU_group = 2,
-  mu_R_group = list(F = 5, U = 5),
+  initQ_dev_group = 2,
+  mu_R_group = 5.5,
   sigma_R_group = 2
 )
 
@@ -32,7 +31,7 @@ dat <- sim$run(params_std)
 plot$sim_plots(dat, params_std)
 
 ## ----run-std-LR---------------------------------------------------------------
-params <- modifyList(params_std, list(LR_group = 0.2))
+params <- modifyList(params_std, list(LR_group = 0.1))
 dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
@@ -45,7 +44,7 @@ params <- modifyList(params_std, list(inv_temp_group = 0))
 dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
-params <- modifyList(params_std, list(inv_temp_group = 1.5))
+params <- modifyList(params_std, list(inv_temp_group = 2))
 dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
@@ -55,9 +54,8 @@ params_LRN_discr <- list(
   n_trials = 30,
   LRs_group = list(disconf = 0.2, diff = 0.6),
   inv_temp_group = 0.5,
-  initQF_group = 8,
-  initQU_group = 2,
-  mu_R_group = list(F = 5, U = 5),
+  initQ_dev_group = 2,
+  mu_R_group = 5.5,
   sigma_R_group = 2,
   margin_group = 2
 )
@@ -103,24 +101,24 @@ ggplot(dummy) +
   labs(x = "R - belief", y = "LR") +
   plot$my_theme_classic
 
-## ----run-LRN-cont-stat--------------------------------------------------------
-sim <- new.env()
-source(paste0(util_dir, "sim_utils.R"), local = sim)
+## ----run-LRN-cont-stat, eval = FALSE------------------------------------------
+# sim <- new.env()
+# source(paste0(util_dir, "sim_utils.R"), local = sim)
+# 
+# params_LRN_cont <- list(
+#   n_part = 50,
+#   n_trials = 30,
+#   w_LR_group = 0.8,
+#   inv_temp_group = 0.5,
+#   initQ_group = list(F = 8, U = 2),
+#   mu_R_group = list(F = 5, U = 5),
+#   sigma_R_group = 2
+# )
+# 
+# dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
+# plot$sim_plots(dat, params_LRN_cont)
 
-params_LRN_cont <- list(
-  n_part = 50,
-  n_trials = 30,
-  w_LR_group = 0.8,
-  inv_temp_group = 0.5,
-  initQ_group = list(F = 8, U = 2),
-  mu_R_group = list(F = 5, U = 5),
-  sigma_R_group = 2
-)
-
-dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
-plot$sim_plots(dat, params_LRN_cont)
-
-## ----run-LRN-cont-dyn---------------------------------------------------------
-dat <- sim$run_LRN_cont(params_LRN_cont, "dyn")
-plot$sim_plots(dat, params_LRN_cont)
+## ----run-LRN-cont-dyn, eval = FALSE-------------------------------------------
+# dat <- sim$run_LRN_cont(params_LRN_cont, "dyn")
+# plot$sim_plots(dat, params_LRN_cont)
 
