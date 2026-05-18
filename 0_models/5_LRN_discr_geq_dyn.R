@@ -11,9 +11,9 @@ run <- function(params) {
   n_part <- params$n_part
   n_trials <- params$n_trials
 
-  Q_F <- matrix(ncol = n_trials, nrow = n_part)
-  Q_U <- matrix(ncol = n_trials, nrow = n_part)
-  choice <- matrix(ncol = n_trials, nrow = n_part)
+  Q_pref <- matrix(ncol = n_trials, nrow = n_part)
+  Q_nonpref <- matrix(ncol = n_trials, nrow = n_part)
+  choice_c <- matrix(ncol = n_trials, nrow = n_part)
   R <- matrix(ncol = n_trials, nrow = n_part)
 
   group_params <- params[str_detect(names(params), "_group")]
@@ -24,41 +24,43 @@ run <- function(params) {
   list2env(pp_params, envir = environment())
   margin <- params[["margin_group"]]
 
-  Q_F[, 1] <- initQF
-  Q_U[, 1] <- initQU
-
   for (j in 1:n_part) {
-    P_F <- c()
-    pred_err <- c()
-
+    # set initQs
+    Q_pref[j, 1]    <- min(mu_R[j] + initQ_dev[j], 10)
+    Q_nonpref[j, 1] <- max(mu_R[j] - initQ_dev[j], 1)
+    
     # --------- run trials ------------
     for (t in 1:n_trials) {
       # choose
-      P_F[t] <- 1 / (1 + exp(-inv_temp[j] * (Q_F[j, t] - Q_U[j, t])))
-      choice[j, t] <- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
+      if (t == 1) {
+        choice_c[j, t] <- 1
+      } else {
+        P_pref <- 1 / (1 + exp(-inv_temp[j] * (Q_pref[j, t] - Q_nonpref[j, t])))
+        choice_c[j, t] <- sample(c(1, 2), 
+                              size = 1,
+                              prob = c(P_pref, 1 - P_pref))
+      }
 
       # rate
       R[j, t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
-                                  mean = mu_R[choice[j, t], j], 
+                                  mean = mu_R[j], 
                                   sd = sigma_R[j]),
                        0)
 
-      # learn
+          # learn
       if (t < n_trials) {   # no updating Qs in the very last trial
-        if (choice[j, t] == 1) {
-          pred_err[t] <- R[j, t] - Q_F[j, t]
-          belief <- Q_F[j, max(t-1, 1)]
+        if (choice_c[j, t] == 1) {    # choice was preferred option
+          pred_err <- R[j, t] - Q_pref[j, t]
+          belief <- Q_pref[j, max(t-1, 1)]
           LR <- LR_geq(LRs[, j], R[j, t], belief, margin)
-          Q_F[j, t+1] <- Q_F[j, t] + LR * pred_err[t]
-          Q_U[j, t+1] <- Q_U[j, t]
-        } else {
-          pred_err[t] <- R[j, t] - Q_U[j, t]
-          belief <- Q_U[j, max(t-1, 1)]
+          Q_pref[j, t+1] <- Q_pref[j, t] + LR * pred_err
+          Q_nonpref[j, t+1] <- Q_nonpref[j, t]
+        } else {                      # choice was nonpreferred option
+          pred_err <- R[j, t] - Q_nonpref[j, t]
+          belief <- Q_nonpref[j, max(t-1, 1)]
           LR <- LR_geq(LRs[, j], R[j, t], belief, margin)
-          Q_U[j, t+1] <- Q_U[j, t] + LR * pred_err[t]
-          Q_F[j, t+1] <- Q_F[j, t]
+          Q_nonpref[j, t+1] <- Q_nonpref[j, t] + LR * pred_err
+          Q_pref[j, t+1] <- Q_pref[j, t]
         }
       }
     }
@@ -67,13 +69,15 @@ run <- function(params) {
   dat <- data.frame(
     participant =   rep(seq_len(n_part), each = n_trials),
     trial =         rep(seq_len(n_trials), n_part),
-    Q_F =           array(t(Q_F)),
-    Q_U =           array(t(Q_U)),
-    choice =        array(t(choice)),
+    Q_pref =        array(t(Q_pref)),
+    Q_nonpref =     array(t(Q_nonpref)),
+    choice_c =      array(t(choice_c)),
     R =             array(t(R)),
+    mu_R =          rep(mu_R, each = n_trials),
     LR_disconf =    rep(LRs[1, ], each = n_trials),
     LR_diff =       rep(LRs[2, ], each = n_trials),
-    inv_temp =      rep(inv_temp, each = n_trials)
+    inv_temp =      rep(inv_temp, each = n_trials),
+    initQ_dev =     rep(initQ_dev, each = n_trials)
   )  
   return(dat)
 }
