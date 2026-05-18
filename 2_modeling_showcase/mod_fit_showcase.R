@@ -20,9 +20,8 @@ params <- list(
   n_trials = 30,
   LR_group = 0.4,
   inv_temp_group = 0.5,
-  initQF_group = 8,
-  initQU_group = 2,
-  mu_R_group = list(F = 5, U = 5),
+  initQ_dev_group = 2,
+  mu_R_group = 5.5,
   sigma_R_group = 2
 )
 
@@ -79,48 +78,39 @@ end <- length(mod_code)
 cat(mod_code[start:end], sep = "\n")
 
 ## ----run-model----------------------------------------------------------------
-dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/1_run/")
-dat_file <- paste0(dat_dir, "sim_dat_001.json")
-
-sim_utils <- new.env()
-source(paste0(util_dir, "sim_utils.R"), local = sim_utils) # access functions using sim_utils$fun()
-
-dat_changed <- sim_utils$did_sim_dat_change(dat_file, sim_dat)
-sim_utils$save_sim_dat(params, sim_dat, dat_file)
-model_changed <- TRUE
+dat_dir <- paste0(main_dir, "3_param_recovery/1_std/1_run/")
+dat_file <- paste0(dat_dir, "sim_dat_1.json")
 
 fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting) # access functions using fitting$fun()
-if (dat_changed | model_changed) {
-  model <- cmdstan_model(model_path)
-  draws <- fitting$fit(model, dat_file, return = "draws", show_iteration_progress = TRUE)
-  saveRDS(draws, paste0(dat_dir, "draws_001.rds"))
-} else {
-  draws <- readRDS(file = paste0(dat_dir, "draws_001.rds"))
-}
+model <- cmdstan_model(model_path)
+# draws <- fitting$fit(model, dat_file, return = "draws", show_iteration_progress = TRUE)
+# saveRDS(draws, paste0(dat_dir, "draws.rds"))
 
 ## ----posterior-plots----------------------------------------------------------
-free_params <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
+free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
+
+draws <- readRDS(paste0(dat_dir, "draws.rds"))
 draws <- draws %>%
-  rename(setNames(paste0("means[", seq_along(free_params), "]"),
-                  free_params))
-to_plot <- list("LR_group", "inv_temp_group", c("initQF_group", "initQU_group"))
+  rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
+                  free_params_group))
+to_plot <- free_params_group
 plot$posterior_densities(draws, to_plot, params)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
 source(paste0(util_dir, "utils.R"), local = util) # access functions using util$fun()
-to_inspect <- c("LR_group", "inv_temp_group", "initQF_group", "initQU_group")
+to_inspect <- free_params_group
 util$print_posterior_table(draws, params, to_inspect)
 
 ## ----sim-vs-fit---------------------------------------------------------------
-participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_001.json"))
-free_params_pp <- c("LR", "inv_temp", "initQF", "initQU")
+participant_params <- rjson::fromJSON(file = paste0(dat_dir, "sim_param_settings_1.json"))
+free_params_pp <- gsub("_group", "", free_params_group)
 plot$pp_level_param_fit(draws, free_params_pp, participant_params)
 
 ## ----many-runs----------------------------------------------------------------
 n_runs <- 100
-dat_dir <- paste0(main_dir, "2_modeling_showcase/dat/100_runs/")
+dat_dir <- paste0(main_dir, "3_param_recovery/1_std/100_runs/")
 
 # sim$run_many(params, dat_dir, n_runs)
 # running this bit below takes at least an hour
@@ -136,14 +126,14 @@ for (k in 1:n_runs) {
 
   fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
   fit_dat <- readRDS(fit_file) %>%
-    rename(setNames(paste0("means[", seq_along(free_params), "]"),
-                    free_params))
+    rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
+                    free_params_group))
 
-  for (p in free_params) {
+  for (p in free_params_group) {
     sim_params[[p]][k] <- sim_dat[[p]]
     fit_params[[p]][k] <- median(fit_dat[[p]])
   }
 }
 
-plot$many_runs_param_fit(sim_params, fit_params, free_params)
+plot$many_runs_param_fit(sim_params, fit_params, free_params_group)
 
