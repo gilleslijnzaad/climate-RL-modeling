@@ -111,8 +111,8 @@ LR_geq <- function(LRs, R, belief, margin) {
 #' 
 #' @return nothing
 run_many <- function(settings, save_dir, n_runs) {
-  free_params_group <- c("LRs_group", "inv_temp_group", "initQF_group", "initQU_group")
-  free_params <- c("LR_disconf", "LR_diff", "inv_temp", "initQF", "initQU")
+  free_params_group <- c("LRs_group", "inv_temp_group", "initQ_dev_group")
+  free_params <- c("LR_disconf", "LR_diff", "inv_temp", "initQ_dev")
 
   for (k in 1:n_runs) {
     save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
