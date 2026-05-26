@@ -85,7 +85,7 @@ run <- function(params, seed = 1) {
 #' 
 #' @return nothing
 run_many <- function(settings, save_dir, n_runs) {
-  free_params_group <- c("inv_temp_group", "initQF_group", "initQU_group")
+  free_params_group <- c("inv_temp_group", "initQ_dev_group")
   free_params_pp <- gsub("_group", "", free_params_group)
 
   free_params_pp <- gsub("_group", "", free_params_group)
