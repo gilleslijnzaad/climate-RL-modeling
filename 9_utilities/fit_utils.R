@@ -14,7 +14,7 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 # ---------------------------
 
 #' Fits the model once, prints progress (Completed run k of n_runs),
-#' returns data frame of fit draws
+#' returns fit object or a draws dataframe
 #' 
 #' @param model: the CmdStanModel object
 #' 
@@ -30,7 +30,7 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 #' @param show_iteration_progress: whether to show the progress of the
 #' individual iteration (i.e., chain updates)
 #' 
-#' @return data frame of fit draws
+#' @return data frame of the type specified in return
 fit <- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
   it <- 1000
   fit <- model$sample(

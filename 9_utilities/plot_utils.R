@@ -11,7 +11,8 @@ source(paste0(util_dir, "utils.R"), local = utils)
 # ---------------------
 #        GENERAL
 # ---------------------
-library(tidyverse)
+library(ggplot2)
+library(dplyr)
 my_teal <- "#008080"
 my_pink <- "#dd66dd"
 my_blue <- "#0055bb"

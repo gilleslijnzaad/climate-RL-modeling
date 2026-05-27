@@ -24,7 +24,7 @@ param_bounds <- list(
   LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
-  initQ_dev_group = c(0, 9),
+  initQ_dev_group = c(0, 5),
   initQ_dev = c(0, 9),
   mu_R_group = c(1, 10),
   sigma_R_group = c(0, 10),
