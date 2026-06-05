@@ -108,27 +108,27 @@ server <- function(input, output) {
     return(p)
   })
 
-  sim <- new.env()
-  source("../sim_for_app.R", local = sim)
+  util <- new.env()
+  source("../app_utils.R", local = util)
 
   # helper function
   run_discr <- function(p, confirmatory, belief_type) {
     LR_fun <- switch(confirmatory,
-                     approx = sim$LR_approx,
-                     geq    = sim$LR_geq,
+                     approx = util$LR_approx,
+                     geq    = util$LR_geq,
                      stop("error: not 'approx' or 'geq'!"))
-    return(sim$run_LRN_discr(p, LR_fun, belief_type))
+    return(util$run_LRN_discr(p, LR_fun, belief_type))
   }
 
   dat <- reactive({
     d <- switch(input$conf_bias,
-      none = sim$run_std(params()),
+      none = util$run_std(params()),
 
       LRN = {
         if (input$d_or_c == "discr") {
           run_discr(params(), input$confirmatory, input$belief_type)
         } else if (input$d_or_c == "cont") {
-          sim$run_LRN_cont(params(), input$belief_type)
+          util$run_LRN_cont(params(), input$belief_type)
         } else {
           stop("error: not 'discr' or 'cont'!")
         }
@@ -140,9 +140,6 @@ server <- function(input, output) {
     )
     return(d)
   })
-
-  plot <- new.env()
-  source("../../plot_utils.R", local = plot)
 
   plot_title <- reactive({
     t <- switch(input$conf_bias,
@@ -161,7 +158,7 @@ server <- function(input, output) {
   })
   
   output$plot <- renderPlot({
-    plot$sim_plots(dat(), NA, plot_title())
+    util$sim_plots(dat(), NA, plot_title())
  })
 }
 
