@@ -159,7 +159,9 @@ server <- function(input, output) {
   
   output$plot <- renderPlot({
     util$sim_plots(dat(), NA, plot_title())
- })
+  },
+    width = 600,
+    height = 300)
 }
 
 shinyApp(ui = ui, server = server)

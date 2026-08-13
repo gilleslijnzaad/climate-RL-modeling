@@ -245,18 +245,17 @@ choice <- function(sim_dat) {
     mutate(choice_F = as.numeric(choice == 1),
            choice_U = as.numeric(choice == 2)) %>%
     pivot_longer(c(choice_F, choice_U), names_prefix = "choice_", names_to = "option", values_to = "choice_prop") %>%
-    mutate(option = factor(option))
+    mutate(option = factor(option)) %>%
+    filter(option == "F")
 
   p <- ggplot(plot_dat) +
-    geom_smooth(aes(x = trial, y = choice_prop, color = option, fill = option)) +
+    geom_smooth(aes(x = trial, y = choice_prop), color = "black") +
     ylim(c(0, 1)) +
     labs(x = "Trial",
-         y = "Proportion chosen") +
-    scale_color_grey() +  
-    scale_fill_grey() +
+         y = "Chose climate-friendly") +
     my_theme +
     theme(legend.position = "inside",
-          legend.position.inside = c(0.83, 0.91))
+          legend.position.inside = c(0.83, 0.87))
   return(p)
 }
 
