@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prior-weighted learning in a Rescorla–Wagner model</title>
+  <meta name="description" content="A step-by-step explanation of Gaussian and hyperbolic prior-weighted learning rates.">
+  <style>
+    :root{--ink:#17252b;--muted:#5f6d72;--paper:#fbfaf6;--panel:#fff;--line:#d9dedb;--blue:#176b87;--coral:#d4654a;--gold:#dcae39;--soft:#eef4f3;--code:#f2f0e9}
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65}
+    main{max-width:1080px;margin:auto;padding:32px 28px 80px} header{padding:42px 0 34px;border-bottom:1px solid var(--line)}
+    .eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.76rem;font-weight:750;color:var(--blue)} h1{font-family:Georgia,serif;font-size:clamp(2.25rem,6vw,4.8rem);line-height:1.02;letter-spacing:-.035em;max-width:900px;margin:.3rem 0 1rem;font-weight:500}
+    .lead{font-size:1.18rem;max-width:780px;color:var(--muted)} nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px} nav a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);padding:5px 2px;margin-right:14px;font-size:.93rem}
+    section{padding:52px 0;border-bottom:1px solid var(--line)} h2{font-family:Georgia,serif;font-size:clamp(1.75rem,3.4vw,2.65rem);font-weight:500;line-height:1.15;margin:0 0 18px} h3{font-size:1.08rem;margin:28px 0 8px} p{max-width:790px}.callout{border-left:4px solid var(--gold);padding:4px 0 4px 20px;margin:28px 0;font-size:1.08rem;max-width:850px}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:25px}.step{background:var(--panel);border:1px solid var(--line);padding:20px;min-height:170px}.step b{display:block;color:var(--blue);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}.step strong{font-size:1.05rem}.equation{font-family:"Times New Roman",serif;font-size:clamp(1.15rem,2.3vw,1.6rem);background:var(--code);border:1px solid var(--line);padding:18px 22px;margin:20px 0;overflow-x:auto;white-space:nowrap}.equation.center{text-align:center}
+    .symbols{display:grid;grid-template-columns:120px 1fr;gap:8px 16px;max-width:790px}.symbols dt{font-family:"Times New Roman",serif;font-size:1.2rem;font-weight:700}.symbols dd{margin:0;color:var(--muted)}
+    .figure{margin:30px 0}.figure-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:12px}.figure-title{font-weight:750}.figure-note{font-size:.87rem;color:var(--muted);max-width:520px;text-align:right}.chart-wrap{background:var(--panel);border:1px solid var(--line);padding:14px;overflow:hidden} svg{display:block;width:100%;height:auto}.caption{font-size:.88rem;color:var(--muted);margin-top:9px;max-width:900px}
+    .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;background:var(--soft);padding:18px;margin:14px 0}.control label{display:flex;justify-content:space-between;font-size:.88rem;font-weight:700}.control input{width:100%;accent-color:var(--blue)}
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}.compare article{background:var(--panel);border-top:4px solid var(--blue);padding:20px;border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}.compare article:last-child{border-top-color:var(--coral)} ul{padding-left:1.2rem}.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#1d292d;color:#eef5f3;padding:22px;overflow:auto;font-size:.88rem;line-height:1.55}.tag{display:inline-block;font-size:.73rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--blue);background:var(--soft);padding:3px 7px}
+    .refs li{margin-bottom:12px}.refs a{color:var(--blue)} footer{padding-top:36px;color:var(--muted);font-size:.85rem}
+    @media(max-width:760px){main{padding:20px 17px 60px}.steps,.compare,.controls{grid-template-columns:1fr}.figure-head{display:block}.figure-note{text-align:left;margin-top:5px}.symbols{grid-template-columns:76px 1fr}.equation{font-size:1.05rem;padding:14px}.steps .step{min-height:auto}}
+    @media print{body{background:#fff}main{max-width:none;padding:0 20px}.controls,nav{display:none}.chart-wrap,.step,.compare article{break-inside:avoid}section{break-before:auto}a{color:inherit;text-decoration:none}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Conceptual model note · Rescorla–Wagner</div>
+    <h1>Learning more from outcomes that fit an initial belief</h1>
+    <p class="lead">A novice-friendly guide to translating Kahnt et al.’s similarity-weighted learning model into a confirmation-biased learning rate based on the distance between reward and a participant’s initial expectation.</p>
+    <nav><a href="#rw">1. Standard model</a><a href="#kahnt">2. Kahnt model</a><a href="#translation">3. Our experiment</a><a href="#comparison">4. Curve comparison</a><a href="#implementation">5. Implementation</a></nav>
+  </header>
+
+  <section id="rw">
+    <span class="tag">Step 1</span><h2>Start with the ordinary Rescorla–Wagner model</h2>
+    <p>The model stores a current estimate of an option’s value. After seeing a reward, it computes a <em>prediction error</em>: the difference between what happened and what was expected. The value is then moved part of the way toward the reward.</p>
+    <div class="equation center">V<sub>t+1</sub> = V<sub>t</sub> + α × (r<sub>t</sub> − V<sub>t</sub>)</div>
+    <dl class="symbols">
+      <dt>V<sub>t</sub></dt><dd>Current learned value before trial <em>t</em>.</dd>
+      <dt>r<sub>t</sub></dt><dd>Reward observed on trial <em>t</em>.</dd>
+      <dt>r<sub>t</sub>−V<sub>t</sub></dt><dd>Prediction error. Positive means “better than expected”; negative means “worse than expected.”</dd>
+      <dt>α</dt><dd>Learning rate. At 0 nothing changes; at 1 the value jumps fully to the latest reward.</dd>
+    </dl>
+    <div class="callout">In the standard model, the same learning rate α is used regardless of whether an outcome agrees with or contradicts the participant’s initial belief.</div>
+  </section>
+
+  <section id="kahnt">
+    <span class="tag">Step 2</span><h2>What Kahnt and colleagues added</h2>
+    <p>Kahnt et al. studied generalization between perceptually similar stimuli. A prediction error generated by one stimulus updated not only that stimulus, but also nearby stimuli. The farther another stimulus was from the observed stimulus, the smaller its update.</p>
+    <div class="steps">
+      <div class="step"><b>Observe</b><strong>A stimulus produces an outcome.</strong><p>The model calculates the usual reward prediction error.</p></div>
+      <div class="step"><b>Measure</b><strong>Compute stimulus distance.</strong><p>Similar orientations have a small distance; dissimilar orientations have a large distance.</p></div>
+      <div class="step"><b>Weight</b><strong>Scale learning by similarity.</strong><p>A Gaussian function converts distance into a weight between 0 and 1.</p></div>
+    </div>
+    <div class="equation center">G(x′,x) = exp[−(x′−x)² / (2σ²)]</div>
+    <p>When the two stimuli are identical, their distance is zero and (G=1): the update is fully expressed. As distance increases, (G) approaches zero smoothly. It never becomes negative and does not need clipping. The parameter σ controls the width of generalization.</p>
+    <div class="figure">
+      <div class="figure-head"><div class="figure-title">Figure 1. Gaussian similarity weighting</div><div class="figure-note">Larger σ means broader generalization: distant stimuli receive more of the update.</div></div>
+      <div class="chart-wrap"><svg id="kahntChart" viewBox="0 0 900 410" role="img" aria-label="Gaussian similarity weights for multiple sigma values"></svg></div>
+      <p class="caption">This is the mathematical precedent for fixing the squared-distance exponent at 2. It defines the Gaussian family; 2 is not an additional fitted parameter.</p>
+    </div>
+  </section>
+
+  <section id="translation">
+    <span class="tag">Step 3</span><h2>Translate the same idea to your experiment</h2>
+    <p>Before learning begins, each participant reports what reward or value they expect on a 1–10 scale. Call this person-specific initial expectation <strong>H</strong>. You referred to it as a hyperprior. Computationally, it enters the model as an observed participant-level anchor rather than a fitted parameter.</p>
+    <div class="equation center">H = participant’s initial expected reward</div>
+    <p>On each trial, compare the actual reward with that anchor:</p>
+    <div class="equation center">d<sub>t</sub> = |r<sub>t</sub> − H|</div>
+    <p>The absolute value makes the mechanism symmetric. A reward three points above H and a reward three points below H receive the same learning rate. This implements your decision not to model positive–negative asymmetry.</p>
+    <p>Now use Gaussian similarity to scale the learning rate:</p>
+    <div class="equation center">α<sub>t</sub> = α<sub>max</sub> × exp[−d<sub>t</sub>² / (2σ²)]</div>
+    <div class="equation center">V<sub>t+1</sub> = V<sub>t</sub> + α<sub>t</sub>(r<sub>t</sub> − V<sub>t</sub>)</div>
+    <div class="callout"><strong>Interpretation:</strong> outcomes close to H receive a large learning rate and strongly alter value. Outcomes far from H receive a small learning rate and are discounted. That is the confirmation-bias mechanism.</div>
+    <h3>Exactly two fitted parameters</h3>
+    <dl class="symbols">
+      <dt>α<sub>max</sub></dt><dd>The maximum learning rate, occurring when reward exactly matches H. Constrain it to 0–1.</dd>
+      <dt>σ</dt><dd>The width of confirmation. A small σ means narrow confirmation; a large σ means outcomes farther from H are still learned from.</dd>
+      <dt>H</dt><dd>Measured before the task. It is data, not a fitted parameter.</dd>
+    </dl>
+    <div class="figure">
+      <div class="figure-head"><div class="figure-title">Figure 2. Trial learning rate on the 1–10 reward scale</div><div class="figure-note">Move the controls to see how H, αmax, and σ change the model. H is observed; only αmax and σ are fitted.</div></div>
+      <div class="controls">
+        <div class="control"><label for="hSlider"><span>Hyperprior H</span><output id="hOut">4</output></label><input id="hSlider" type="range" min="1" max="10" step="1" value="4"></div>
+        <div class="control"><label for="aSlider"><span>αmax</span><output id="aOut">0.60</output></label><input id="aSlider" type="range" min="0.05" max="0.95" step="0.05" value="0.60"></div>
+        <div class="control"><label for="sSlider"><span>Gaussian σ</span><output id="sOut">2.00</output></label><input id="sSlider" type="range" min="0.25" max="5" step="0.25" value="2"></div>
+      </div>
+      <div class="chart-wrap"><svg id="rewardChart" viewBox="0 0 900 410" role="img" aria-label="Learning rate across rewards centered on the hyperprior"></svg></div>
+      <p class="caption">With H=4, rewards 3 and 5 are equally distant and therefore produce equal learning rates. Rewards 2 and 6 are also paired, and so forth.</p>
+    </div>
+  </section>
+
+  <section id="comparison">
+    <span class="tag">Step 4</span><h2>Gaussian versus hyperbolic drop-off</h2>
+    <p>Both candidates use only two fitted parameters and both stay strictly between zero and α<sub>max</sub>. Neither requires clipping. Their main difference is how rapidly they discount increasingly inconsistent rewards.</p>
+    <div class="compare">
+      <article><h3>Gaussian</h3><div class="equation">α<sub>t</sub> = α<sub>max</sub> exp[−d<sub>t</sub>²/(2σ²)]</div><ul><li>Nearly flat at distance zero.</li><li>Decline then accelerates as distance grows.</li><li>Eventually approaches zero quickly.</li><li>σ is the width of the confirmation window.</li><li>Closely parallels Kahnt et al.’s similarity mechanism.</li></ul></article>
+      <article><h3>Hyperbolic</h3><div class="equation">α<sub>t</sub> = α<sub>max</sub> / (1 + k d<sub>t</sub>)</div><ul><li>Begins declining immediately at distance zero.</li><li>The decline becomes progressively shallower.</li><li>Has a long tail: very inconsistent outcomes retain influence.</li><li>k is the strength of distance discounting.</li><li>Does not have the same Gaussian-generalization precedent.</li></ul></article>
+    </div>
+    <div class="figure">
+      <div class="figure-head"><div class="figure-title">Figure 3. Shape comparison at several parameter values</div><div class="figure-note">These parameters are illustrative and not numerically equivalent across families.</div></div>
+      <div class="chart-wrap"><svg id="compareChart" viewBox="0 0 900 460" role="img" aria-label="Comparison of Gaussian and hyperbolic learning rate curves"></svg></div>
+      <p class="caption">Solid blue lines are Gaussian; dashed coral lines are hyperbolic. The Gaussian protects learning near H and discounts remote outcomes strongly. The hyperbolic starts discounting immediately but retains a heavier tail.</p>
+    </div>
+    <h3>Which hypothesis does each curve express?</h3>
+    <p>The Gaussian says: “Small discrepancies are treated almost like confirmation, but sufficiently large discrepancies are rapidly discounted.” The hyperbolic says: “Every discrepancy reduces learning immediately, but even extreme discrepancies retain some influence.” Given your stated idea—slow initial drop-off followed by stronger discounting—and the Kahnt analogy, the Gaussian is the more direct primary model. The hyperbolic is a useful two-parameter comparison model.</p>
+  </section>
+
+  <section id="implementation">
+    <span class="tag">Step 5</span><h2>Trial-by-trial implementation</h2>
+    <p>For each participant, record H before learning. For every trial, select the current option value, observe the reward, compute distance from H, calculate the trial learning rate, and perform the usual Rescorla–Wagner update.</p>
+    <pre class="code"><code>import numpy as np
+
+def gaussian_learning_rate(reward, H, alpha_max, sigma):
+    distance = abs(reward - H)
+    return alpha_max * np.exp(-(distance ** 2) / (2 * sigma ** 2))
+
+def update_value(value, reward, H, alpha_max, sigma):
+    alpha_t = gaussian_learning_rate(reward, H, alpha_max, sigma)
+    prediction_error = reward - value
+    new_value = value + alpha_t * prediction_error
+    return new_value, alpha_t, prediction_error</code></pre>
+    <h3>Parameter constraints during fitting</h3>
+    <p>Estimate α<sub>max</sub> on (0,1), for example through a logistic transform. Estimate σ as positive, for example through an exponential transform. The resulting trial learning rate is automatically valid and needs no clipping.</p>
+    <div class="equation center">0 &lt; α<sub>t</sub> ≤ α<sub>max</sub> &lt; 1</div>
+    <h3>Recommended model comparison</h3>
+    <p>Fit the same observation/choice model with either the Gaussian or hyperbolic learning-rate rule, keeping everything else identical. Compare predictive performance and conduct parameter-recovery and model-recovery simulations before interpreting participant differences. This tests whether the data truly distinguish the two curve shapes.</p>
+  </section>
+
+  <section>
+    <span class="tag">References</span><h2>Key sources</h2>
+    <ol class="refs">
+      <li>Kahnt, T., Park, S. Q., Burke, C. J., &amp; Tobler, P. N. (2012). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6794052/">How glitter relates to gold: Similarity-dependent reward prediction errors in the human striatum.</a> <em>Journal of Neuroscience, 32</em>, 16521–16529.</li>
+      <li>Rescorla, R. A., &amp; Wagner, A. R. (1972). A theory of Pavlovian conditioning: Variations in the effectiveness of reinforcement and nonreinforcement. In <em>Classical Conditioning II</em>.</li>
+    </ol>
+    <p class="caption">Important distinction: Kahnt et al. used Gaussian distance to generalize prediction-error updates across stimuli. The proposed experiment transfers that mathematical principle to distance between the observed reward and a measured initial expectation H.</p>
+  </section>
+  <footer>Prepared as a conceptual teaching note. Figures are generated within this file and remain interactive when opened in a browser.</footer>
+</main>
+<script>
+  const NS='http://www.w3.org/2000/svg', colors={blue:'#176b87',coral:'#d4654a',gold:'#dcae39',ink:'#17252b',muted:'#5f6d72',grid:'#d9dedb'};
+  function el(tag,attrs={},text=''){const n=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));if(text)n.textContent=text;return n}
+  function linePath(points,x,y){return points.map((p,i)=>(i?'L':'M')+x(p[0]).toFixed(2)+','+y(p[1]).toFixed(2)).join(' ')}
+  function base(svg,xDomain,yDomain,xLabel,yLabel){svg.innerHTML='';const W=900,H=410,m={l:74,r:25,t:28,b:62},iw=W-m.l-m.r,ih=H-m.t-m.b;const x=v=>m.l+(v-xDomain[0])/(xDomain[1]-xDomain[0])*iw,y=v=>m.t+ih-(v-yDomain[0])/(yDomain[1]-yDomain[0])*ih;
+    for(let i=0;i<=5;i++){const v=yDomain[0]+i*(yDomain[1]-yDomain[0])/5;svg.append(el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:colors.grid,'stroke-width':1}));svg.append(el('text',{x:m.l-12,y:y(v)+4,'text-anchor':'end',fill:colors.muted,'font-size':12},v.toFixed(1)))}
+    const xticks=xDomain[1]-xDomain[0]<=10?Array.from({length:xDomain[1]-xDomain[0]+1},(_,i)=>xDomain[0]+i):[0,2,4,6,8,10];xticks.forEach(v=>{svg.append(el('line',{x1:x(v),x2:x(v),y1:m.t,y2:H-m.b,stroke:colors.grid,'stroke-width':1}));svg.append(el('text',{x:x(v),y:H-m.b+23,'text-anchor':'middle',fill:colors.muted,'font-size':12},String(v)))});
+    svg.append(el('line',{x1:m.l,x2:W-m.r,y1:H-m.b,y2:H-m.b,stroke:colors.ink,'stroke-width':1.2}));svg.append(el('line',{x1:m.l,x2:m.l,y1:m.t,y2:H-m.b,stroke:colors.ink,'stroke-width':1.2}));svg.append(el('text',{x:m.l+iw/2,y:H-12,'text-anchor':'middle',fill:colors.ink,'font-size':14},xLabel));const yt=el('text',{x:18,y:m.t+ih/2,'text-anchor':'middle',fill:colors.ink,'font-size':14,transform:`rotate(-90 18 ${m.t+ih/2})`},yLabel);svg.append(yt);return{x,y,W,H,m,iw,ih}}
+  function path(svg,pts,sc,color,dash=''){svg.append(el('path',{d:linePath(pts,sc.x,sc.y),fill:'none',stroke:color,'stroke-width':3,'stroke-dasharray':dash,'stroke-linecap':'round'}))}
+  function legend(svg,items,y=16){let x=78;items.forEach(item=>{svg.append(el('line',{x1:x,x2:x+28,y1:y,y2:y,stroke:item.color,'stroke-width':3,'stroke-dasharray':item.dash||''}));svg.append(el('text',{x:x+35,y:y+4,fill:colors.ink,'font-size':12},item.label));x+=item.width||150})}
+  function renderKahnt(){const svg=document.getElementById('kahntChart'),sc=base(svg,[0,10],[0,1],'stimulus distance |x′ − x|','similarity weight G');[1,2,3].forEach((s,i)=>{const pts=[];for(let d=0;d<=10;d+=.05)pts.push([d,Math.exp(-d*d/(2*s*s))]);path(svg,pts,sc,[colors.blue,colors.gold,colors.coral][i])});legend(svg,[{label:'σ = 1',color:colors.blue},{label:'σ = 2',color:colors.gold},{label:'σ = 3',color:colors.coral}])}
+  function renderReward(){const H=+document.getElementById('hSlider').value,a=+document.getElementById('aSlider').value,s=+document.getElementById('sSlider').value;document.getElementById('hOut').value=H;document.getElementById('aOut').value=a.toFixed(2);document.getElementById('sOut').value=s.toFixed(2);const svg=document.getElementById('rewardChart'),sc=base(svg,[1,10],[0,1],'observed reward rₜ','trial learning rate αₜ');const pts=[];for(let r=1;r<=10;r+=.025)pts.push([r,a*Math.exp(-((r-H)**2)/(2*s*s))]);path(svg,pts,sc,colors.blue);svg.append(el('line',{x1:sc.x(H),x2:sc.x(H),y1:sc.m.t,y2:sc.H-sc.m.b,stroke:colors.gold,'stroke-width':2,'stroke-dasharray':'6 5'}));svg.append(el('text',{x:sc.x(H)+8,y:sc.m.t+18,fill:colors.ink,'font-size':13},`H = ${H}`));for(let r=1;r<=10;r++){const y=a*Math.exp(-((r-H)**2)/(2*s*s));svg.append(el('circle',{cx:sc.x(r),cy:sc.y(y),r:4.5,fill:colors.blue}))}}
+  function renderCompare(){const svg=document.getElementById('compareChart');svg.setAttribute('viewBox','0 0 900 460');const sc=base(svg,[0,9],[0,0.65],'absolute distance dₜ = |rₜ − H|','trial learning rate αₜ');const a=.6;[[1.25,colors.blue],[2.25,colors.gold]].forEach(([s,c])=>{const pts=[];for(let d=0;d<=9;d+=.04)pts.push([d,a*Math.exp(-d*d/(2*s*s))]);path(svg,pts,sc,c)});[[.20,colors.coral],[.50,'#8f3f50']].forEach(([k,c])=>{const pts=[];for(let d=0;d<=9;d+=.04)pts.push([d,a/(1+k*d)]);path(svg,pts,sc,c,'8 5')});legend(svg,[{label:'Gaussian σ=1.25',color:colors.blue,width:190},{label:'Gaussian σ=2.25',color:colors.gold,width:190},{label:'Hyperbolic k=.20',color:colors.coral,dash:'8 5',width:190},{label:'Hyperbolic k=.50',color:'#8f3f50',dash:'8 5',width:170}],20)}
+  renderKahnt();renderReward();renderCompare();['hSlider','aSlider','sSlider'].forEach(id=>document.getElementById(id).addEventListener('input',renderReward));
+</script>
+</body>
+</html>
