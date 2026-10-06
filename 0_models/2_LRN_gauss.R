@@ -80,7 +80,8 @@ run <- function(params, seed = 1) {
     choice_c =      array(t(choice_c)),
     R =             array(t(R)),
     mu_R =          rep(mu_R, each = n_trials),
-    LR =            rep(LR, each = n_trials),
+    LR_max =        rep(LR_max, each = n_trials),
+    sigma_LR =      rep(sigma_LR, each = n_trials),
     inv_temp =      rep(inv_temp, each = n_trials),
     initQ_dev =     rep(initQ_dev, each = n_trials)
   )
