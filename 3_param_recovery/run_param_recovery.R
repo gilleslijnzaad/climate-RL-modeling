@@ -5,7 +5,7 @@ arg <- commandArgs(trailingOnly = TRUE)
 if (length(arg == 1)) {
   mod_name <- arg
 } else {
-  mod_name <- "1_std"
+  mod_name <- "2_LRN_gauss"
 }
 
 #' ------------------------------------------------------------
@@ -39,8 +39,7 @@ set_params <- function() {return(list(
   inv_temp_group = 0.5,
   initQ_dev_group = 2,
   mu_R_group = 5.5,
-  sigma_R_group = 2,
-  margin_group = 2
+  sigma_R_group = 2
 ))}
 
 param_settings <- set_params()
@@ -52,10 +51,11 @@ if (mod_name == "0_nolearning") {
   param_settings[["LR_group"]] <- 0.4
   free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
   to_plot <- free_params_group  
-} else { # LRN_discr 
-  param_settings[["LRs_group"]] <- list(disconf = 0.2, diff = 0.6)
-  free_params_group <- c("LR_disconf_group", "LR_diff_group", "inv_temp_group", "initQ_dev_group")
-  to_plot <- list(c("LR_disconf_group", "LR_diff_group"), "inv_temp_group", "initQ_dev_group")
+} else if (mod_name == "2_LRN_gauss") {
+  param_settings[["LR_max_group"]] <- 0.6
+  param_settings[["sigma_LR_group"]] <- 2
+  free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
+  to_plot <- free_params_group
 }
 
 free_params_pp <- gsub("_group", "", free_params_group)
@@ -63,7 +63,7 @@ free_params_pp <- gsub("_group", "", free_params_group)
 #' ------------------------------------------------------------
 #' SIM FIT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (FALSE) {
+if (TRUE) {
   #' SIM
   sim_dat <- sim$run(param_settings)
 
@@ -89,7 +89,7 @@ if (FALSE) {
 #' ------------------------------------------------------------
 #' INSPECT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (FALSE) {
   dat_dir <- paste0(current_dir, "1_run/")
   draws <- readRDS(paste0(dat_dir, "draws.rds"))
   draws <- draws %>% 
