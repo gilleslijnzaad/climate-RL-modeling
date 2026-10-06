@@ -5,30 +5,27 @@ library(stringr)
 #' A list of standard deviations for group-level means of parameters
 param_stddevs <- list(
   LR_group = 0.2,
-  LRs_group = 0.2,
+  LR_max_group = 0.2,
+  sigma_LR_group = 0.8,
   inv_temp_group = 0.3,
   initQ_dev_group = 0.3,
   mu_R_group = 2,
-  sigma_R_group = 2,
-  margin_group = 2
+  sigma_R_group = 2
 )
 
 #' A list of theoretical bounds for parameters; same as in Stan
 # TODO: check which of these are used
 param_bounds <- list(
   LR_group = c(0, 1),
-  LRs_group = c(0, 1),
-  LR_disconf_group = c(0, 1),
-  LR_diff_group = c(0, 1),
+  LR_max_group = c(0, 1),
+  sigma_LR_group = c(0.01, 10),
   LR = c(0, 1),
-  LRs = c(0, 1),
   inv_temp_group = c(0, 5),
   inv_temp = c(0, 5),
   initQ_dev_group = c(0, 5),
   initQ_dev = c(0, 9),
   mu_R_group = c(1, 10),
-  sigma_R_group = c(0, 10),
-  margin_group = c(0, 10)
+  sigma_R_group = c(0, 10)
 )
 
 #' Randomizes given free parameters according to a uniform
@@ -46,15 +43,6 @@ randomize_free_params <- function(param_settings, free_params, seed) {
     draw <- runif(n = length(param_settings[[p]]), 
                   min = bounds[1], 
                   max = bounds[2])
-    # if we have two learning rates: rerun if LR_diff < 0.2 or
-    # LR_disconf + LR_diff > 1
-    if (p == "LRs_group") {
-      while (draw[2] < 0.2 | draw[1] + draw[2] > 1) {
-        draw <- runif(n = length(param_settings[[p]]), 
-                      min = bounds[1], 
-                      max = bounds[2])
-      }
-    }
     param_settings[[p]] <- draw
   }
 
@@ -98,13 +86,6 @@ draw_from_group_mean <- function(group_mean, p) {
                      mean = group_mean,
                      sd = param_stddevs[[p]])
 
-  # if we have two learning rates: rerun if LR_diff < 0.2 or
-  # LR_disconf + LR_diff > 1
-  if (p == "LRs_group") {
-    if (draw[2] < 0.2 | draw[1] + draw[2] > 1) {
-      return(draw_from_group_mean(group_mean, p))
-    }
-  }
   return(draw)
 }
 
@@ -168,96 +149,4 @@ did_sim_dat_change <- function(data_file, sim_dat) {
   } else {
     return(TRUE)
   }
-}
-
-# BELOW: WILL BE DEPRECATED! IS ONLY THERE FOR SIM_SHOWCASE NOW
-
-# === run_LRN_cont() =================
-# arguments: vector of parameter settings; whether belief is stat or dyn
-# returns: data frame of simulated data
-run_LRN_cont <- function(params, belief_type) {
-  dat <- data.frame()
-
-  n_part <- params$n_part
-  n_trials <- params$n_trials
-
-  for (j in 1:n_part) {
-
-    # ------ init data frames & vectors -----
-    Q <- data.frame(
-      F = rep(NA, n_trials),
-      U = rep(NA, n_trials)
-    )
-    P_F <- c()
-    choice <- c()
-    R <- c()
-    LR <- c()
-    pred_err <- c()
-
-    # ----- initialize parameters -----
-    w_LR <- params$w_LR
-    inv_temp <- params$inv_temp
-    Q$F[1] <- params$initQ$F
-    Q$U[1] <- params$initQ$U
-    mu_R <- params$mu_R
-    sigma_R <- params$sigma_R
-
-    # --------- run trials ------------
-    for (t in 1:n_trials) {
-
-      # choose
-      P_F[t] <- 1 / (1 + exp(-inv_temp * (Q$F[t] - Q$U[t])))
-      choice[t] <- sample(c(1, 2), 
-                          size = 1,
-                          prob = c(P_F[t], 1 - P_F[t]))
-
-      # rate
-      R[t] <- round(truncnorm::rtruncnorm(n = 1, a = 1, b = 10,
-                               mean = mu_R[[choice[t]]], 
-                               sd = sigma_R),
-                    0)
-
-      # learn
-      pred_err[t] <- R[t] - Q[t, choice[t]]
-
-      if (t < n_trials) {   # no updating Qs in the very last trial
-        if (choice[t] == 1) {                                 # since t = 0 doesn't exist
-          belief <- if (belief_type == "stat") Q[1, 1] else Q[max(t-1, 1), 1]
-          LR[t] <- LR_cont(R[t], belief, w_LR)
-          Q[t+1, 1] <- Q[t, 1] + LR[t] * pred_err[t]
-          Q[t+1, 2] <- Q[t, 2]
-        } else {
-          belief <- if (belief_type == "stat") Q[1, 2] else Q[max(t-1, 1), 2]
-          LR[t] <- LR_cont(R[t], belief, w_LR)
-          Q[t+1, 2] <- Q[t, 2] + LR[t] * pred_err[t]
-          Q[t+1, 1] <- Q[t, 1]
-        }
-      }
-    }
-
-    dat_p <- data.frame(
-      participant = rep(j, n_trials),
-      trial =       1:n_trials,
-      Q_F =         Q$F,
-      Q_U =         Q$U,
-      P_F =         P_F,
-      LR =          c(LR, NA),
-      choice =      choice,
-      R =           R,
-      pred_err =    pred_err
-    )
-
-    dat <- rbind(dat, dat_p)
-  }
-  return(dat)
-}
-
-# === LR_cont() =================
-# arguments: the rating of this trial; the belief to compare it to; the learning rate weight
-# returns: learning rate for this trial
-LR_cont <- function(R, belief, w_LR) {
-  diff <- R - belief
-  LR_prime <- min(1, 
-                  1/9 * diff + 1)
-  return(w_LR * LR_prime)
 }
