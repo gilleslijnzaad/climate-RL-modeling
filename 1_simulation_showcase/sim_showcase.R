@@ -48,77 +48,32 @@ params <- modifyList(params_std, list(inv_temp_group = 2))
 dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
-## ----params-discr-approx------------------------------------------------------
-params_LRN_discr <- list(
-  n_part = 50,
-  n_trials = 30,
-  LRs_group = list(disconf = 0.2, diff = 0.6),
-  inv_temp_group = 0.5,
-  initQ_dev_group = 2,
-  mu_R_group = 5.5,
-  sigma_R_group = 2,
-  margin_group = 2
-)
+## ----gauss, echo = FALSE------------------------------------------------------
+gauss <- function(R, sigma = 2) {
+  LR_max <- 1
+  belief <- 6
+  distance <- abs(belief - R)
+  LR <- LR_max * exp(-distance^2/(2*sigma^2))
+  return(LR)
+}
 
-## ----run-LRN-discr-approx-stat------------------------------------------------
-sim <- new.env()
-source(paste0(model_dir, "2_LRN_discr_approx_stat.R"), local = sim)
-
-dat <- sim$run(params_LRN_discr)
-plot$sim_plots(dat, params_LRN_discr)
-
-## ----run-LRN-discr-approx-dyn-------------------------------------------------
-sim <- new.env()
-source(paste0(model_dir, "3_LRN_discr_approx_dyn.R"), local = sim)
-
-dat <- sim$run(params_LRN_discr)
-plot$sim_plots(dat, params_LRN_discr)
-
-## ----run-LRN-discr-geq-stat---------------------------------------------------
-sim <- new.env()
-source(paste0(model_dir, "4_LRN_discr_geq_stat.R"), local = sim)
-
-dat <- sim$run(params_LRN_discr)
-plot$sim_plots(dat, params_LRN_discr)
-
-## ----run-LRN-discr-geq-dyn----------------------------------------------------
-sim <- new.env()
-source(paste0(model_dir, "5_LRN_discr_geq_dyn.R"), local = sim)
-
-dat <- sim$run(params_LRN_discr)
-plot$sim_plots(dat, params_LRN_discr)
-
-## ----illustrate-rel-LR, fig.width = 5, fig.height = 3-------------------------
-dummy <- data.frame(
-  diff = c(-9, 0, 9),
-  LR_prime = c(0, 1, 1)
-)
-ggplot(dummy) + 
-  geom_line(aes(x = diff, y = LR_prime)) +
-  geom_vline(aes(xintercept = 0), lty = 2) +
-  scale_x_continuous(breaks = seq(-9, 9, 3)) +
-  scale_y_continuous(breaks = c(0, 1), labels = c("0", expression(w[LR]))) +
-  labs(x = "R - belief", y = "LR") +
+ggplot() + 
+  geom_function(fun = gauss) +
+  geom_vline(aes(xintercept = 6, linetype = "belief")) +
+  scale_linetype_manual(values = c("belief" = 2), name = NULL) +
+  scale_x_continuous(breaks = c(2, 4, 6, 8, 10), limits = c(1, 10)) +
+  scale_y_continuous(breaks = c(0, 1), labels = c(0, "LR_max")) +
+  labs(x = "Rating", y = "LR[t]") +
   plot$my_theme_classic
 
-## ----run-LRN-cont-stat, eval = FALSE------------------------------------------
-# sim <- new.env()
-# source(paste0(util_dir, "sim_utils.R"), local = sim)
-# 
-# params_LRN_cont <- list(
-#   n_part = 50,
-#   n_trials = 30,
-#   w_LR_group = 0.8,
-#   inv_temp_group = 0.5,
-#   initQ_group = list(F = 8, U = 2),
-#   mu_R_group = list(F = 5, U = 5),
-#   sigma_R_group = 2
-# )
-# 
-# dat <- sim$run_LRN_cont(params_LRN_cont, "stat")
-# plot$sim_plots(dat, params_LRN_cont)
+## ----run-LRN-gauss------------------------------------------------------------
+my_order <- c("n_part", "n_trials", "LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group", "mu_R_group", "sigma_R_group")
+params <- modifyList(params_std[-3], list(LR_max_group = 0.6,
+                                          sigma_LR_group = 2))[my_order]
 
-## ----run-LRN-cont-dyn, eval = FALSE-------------------------------------------
-# dat <- sim$run_LRN_cont(params_LRN_cont, "dyn")
-# plot$sim_plots(dat, params_LRN_cont)
+sim <- new.env()
+source(paste0(model_dir, "2_LRN_gauss.R"), local = sim)  # access functions using sim$fun()
+
+dat <- sim$run(params)
+plot$sim_plots(dat, params)
 
