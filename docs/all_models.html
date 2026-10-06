@@ -1619,8 +1619,8 @@ generated quantities {
   means[3] = Phi_approx(means_probit[3]) * 10; // initQ_dev_group
 }</code></pre>
 </div>
-<div id="lrn_discr_approx_stat" class="section level1">
-<h1><code>2_LRN_discr_approx_stat</code></h1>
+<div id="lrn_gauss" class="section level1">
+<h1><code>2_LRN_gauss</code></h1>
 <pre><code>data {
   int&lt;lower=1&gt; n_part;
   int&lt;lower=1&gt; n_trials;
@@ -1638,36 +1638,34 @@ parameters {
   vector&lt;lower=0&gt;[4] sigmas;
 
   // participant-level parameters
-  vector[n_part] LR_disconf_probit;
-  vector[n_part] LR_diff_probit;
+  vector[n_part] LR_max_probit;
+  vector[n_part] sigma_LR_probit;
   vector[n_part] inv_temp_probit;
   vector[n_part] initQ_dev_probit;
 }
 
 transformed parameters {
   // participant-level parameters
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_disconf; 
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_diff; 
+  vector&lt;lower=0, upper=1&gt;[n_part] LR_max; 
+  vector&lt;lower=0, upper=10&gt;[n_part] sigma_LR; 
   vector&lt;lower=0, upper=5&gt;[n_part] inv_temp;
   vector&lt;lower=0, upper=10&gt;[n_part] initQ_dev;
 
   for (j in 1:n_part) {
-    LR_disconf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_disconf_probit[j]);
-    LR_diff[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_diff_probit[j]);
+    LR_max[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_max_probit[j]);
+    sigma_LR[j] = Phi_approx(means_probit[2] + sigmas[2] * sigma_LR_probit[j]) * 10;
     inv_temp[j] = Phi_approx(means_probit[3] + sigmas[3] * inv_temp_probit[j]) * 5;
     initQ_dev[j] = Phi_approx(means_probit[4] + sigmas[4] * initQ_dev_probit[j]) * 10;
   }
 }
 
-model {
-  real margin = 2;
-  
-  // priors
+model {  
+  // priors: make them all flat
   means_probit ~ normal(0, 1);
   sigmas ~ normal(0, 0.2);
   
-  LR_disconf_probit ~ normal(0, 1);
-  LR_diff_probit ~ normal(0, 1);
+  LR_max_probit ~ normal(0, 1);
+  sigma_LR_probit ~ normal(0, 1);
   inv_temp_probit ~ normal(0, 1);
   initQ_dev_probit ~ normal(0, 1);
 
@@ -1698,24 +1696,16 @@ model {
       // update value (learn)
       if (t &lt; n_trials) {    // no updating in the very last trial
 
-        // choice is F
+        // choice is pref
         if (choice_c[j, t] == 1) {
-          if (abs(R[j, t] - Q[1, 1]) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
+          LR = LR_max[j] * exp(-abs(R[j, t] - Q[1, 1])^2/(2*sigma_LR[j]^2));
           Q[t+1, 1] = Q[t, 1] + LR * pred_err;
           Q[t+1, 2] = Q[t, 2];
         } 
         
-        // choice is U
+        // choice is nonpref
         else {
-          if (abs(R[j, t] - Q[1, 2]) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
+          LR = LR_max[j] * exp(-abs(R[j, t] - Q[1, 2])^2/(2*sigma_LR[j]^2));
           Q[t+1, 1] = Q[t, 1];
           Q[t+1, 2] = Q[t, 2] + LR * pred_err;
         }
@@ -1726,353 +1716,8 @@ model {
 
 generated quantities {
   vector[4] means;
-  means[1] = Phi_approx(means_probit[1]); // LR_disconf_group
-  means[2] = Phi_approx(means_probit[2]); // LR_diff_group
-  means[3] = Phi_approx(means_probit[3]) * 5; // inv_temp_group
-  means[4] = Phi_approx(means_probit[4]) * 10; // initQ_dev_group
-}</code></pre>
-</div>
-<div id="lrn_discr_approx_dyn" class="section level1">
-<h1><code>3_LRN_discr_approx_dyn</code></h1>
-<pre><code>data {
-  int&lt;lower=1&gt; n_part;
-  int&lt;lower=1&gt; n_trials;
-  array[n_part, n_trials] int&lt;lower=1, upper=2&gt; choice_c;
-  array[n_part, n_trials] int&lt;lower=1, upper=10&gt; R;
-  vector&lt;lower=1, upper=10&gt;[n_part] mu_R;
-}
-
-// transformed data {
-// }
-
-parameters {
-  // group-level parameters
-  vector[4] means_probit;
-  vector&lt;lower=0&gt;[4] sigmas;
-
-  // participant-level parameters
-  vector[n_part] LR_disconf_probit;
-  vector[n_part] LR_diff_probit;
-  vector[n_part] inv_temp_probit;
-  vector[n_part] initQ_dev_probit;
-}
-
-transformed parameters {
-  // participant-level parameters
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_disconf; 
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_diff; 
-  vector&lt;lower=0, upper=5&gt;[n_part] inv_temp;
-  vector&lt;lower=0, upper=10&gt;[n_part] initQ_dev;
-
-  for (j in 1:n_part) {
-    LR_disconf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_disconf_probit[j]);
-    LR_diff[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_diff_probit[j]);
-    inv_temp[j] = Phi_approx(means_probit[3] + sigmas[3] * inv_temp_probit[j]) * 5;
-    initQ_dev[j] = Phi_approx(means_probit[4] + sigmas[4] * initQ_dev_probit[j]) * 10;
-  }
-}
-
-model {
-  real margin = 2;
-  
-  // priors
-  means_probit ~ normal(0, 1);
-  sigmas ~ normal(0, 0.2);
-  
-  LR_disconf_probit ~ normal(0, 1);
-  LR_diff_probit ~ normal(0, 1);
-  inv_temp_probit ~ normal(0, 1);
-  initQ_dev_probit ~ normal(0, 1);
-
-  // participant loop
-  for (j in 1:n_part) {
-    
-    // initialization
-    array[n_trials, 2] real Q;
-    Q[1, 1] = mu_R[j] + initQ_dev[j];
-    Q[1, 2] = mu_R[j] - initQ_dev[j];
-    vector[2] Q_t;
-    real pred_err;
-    real LR;
-    real belief;
-
-    // trial loop
-    for (t in 1:n_trials) {
-      Q_t = to_vector(Q[t]);
-
-      // sample choice (1 is pref, 2 is nonpref) via softmax
-      // but not for trial 1
-      if (t &gt; 1) {
-        choice_c[j, t] ~ categorical_logit(inv_temp[j] * Q_t);
-      }
-      
-      // prediction error
-      pred_err = R[j, t] - Q[t, choice_c[j, t]];
-
-      // update value (learn)
-      if (t &lt; n_trials) {    // no updating in the very last trial
-
-        // choice is F
-        if (choice_c[j, t] == 1) {
-          belief = Q[max(t-1, 1), 1]; // previous trial
-          if (abs(R[j, t] - belief) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-          Q[t+1, 2] = Q[t, 2];
-        } 
-        
-        // choice is U
-        else {
-          belief = Q[max(t-1, 1), 2]; // previous trial
-          if (abs(R[j, t] - belief) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
-        }
-      }
-    }
-  }
-}
-
-generated quantities {
-  vector[4] means;
-  means[1] = Phi_approx(means_probit[1]); // LR_disconf_group
-  means[2] = Phi_approx(means_probit[2]); // LR_diff_group
-  means[3] = Phi_approx(means_probit[3]) * 5; // inv_temp_group
-  means[4] = Phi_approx(means_probit[4]) * 10; // initQ_dev_group
-}</code></pre>
-</div>
-<div id="lrn_discr_geq_stat" class="section level1">
-<h1><code>4_LRN_discr_geq_stat</code></h1>
-<pre><code>data {
-  int&lt;lower=1&gt; n_part;
-  int&lt;lower=1&gt; n_trials;
-  array[n_part, n_trials] int&lt;lower=1, upper=2&gt; choice_c;
-  array[n_part, n_trials] int&lt;lower=1, upper=10&gt; R;
-  vector&lt;lower=1, upper=10&gt;[n_part] mu_R;
-}
-
-// transformed data {
-// }
-
-parameters {
-  // group-level parameters
-  vector[4] means_probit;
-  vector&lt;lower=0&gt;[4] sigmas;
-
-  // participant-level parameters
-  vector[n_part] LR_disconf_probit;
-  vector[n_part] LR_diff_probit;
-  vector[n_part] inv_temp_probit;
-  vector[n_part] initQ_dev_probit;
-}
-
-transformed parameters {
-  // participant-level parameters
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_disconf; 
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_diff; 
-  vector&lt;lower=0, upper=5&gt;[n_part] inv_temp;
-  vector&lt;lower=0, upper=10&gt;[n_part] initQ_dev;
-
-  for (j in 1:n_part) {
-    LR_disconf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_disconf_probit[j]);
-    LR_diff[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_diff_probit[j]);
-    inv_temp[j] = Phi_approx(means_probit[3] + sigmas[3] * inv_temp_probit[j]) * 5;
-    initQ_dev[j] = Phi_approx(means_probit[4] + sigmas[4] * initQ_dev_probit[j]) * 10;
-  }
-}
-
-model {
-  real margin = 2;
-  
-  // priors
-  means_probit ~ normal(0, 1);
-  sigmas ~ normal(0, 0.2);
-  
-  LR_disconf_probit ~ normal(0, 1);
-  LR_diff_probit ~ normal(0, 1);
-  inv_temp_probit ~ normal(0, 1);
-  initQ_dev_probit ~ normal(0, 1);
-
-  // participant loop
-  for (j in 1:n_part) {
-    
-    // initialization
-    array[n_trials, 2] real Q;
-    Q[1, 1] = mu_R[j] + initQ_dev[j];
-    Q[1, 2] = mu_R[j] - initQ_dev[j];
-    vector[2] Q_t;
-    real pred_err;
-    real LR;
-
-    // trial loop
-    for (t in 1:n_trials) {
-      Q_t = to_vector(Q[t]);
-
-      // sample choice (1 is pref, 2 is nonpref) via softmax
-      // but not for trial 1
-      if (t &gt; 1) {
-        choice_c[j, t] ~ categorical_logit(inv_temp[j] * Q_t);
-      }
-      
-      // prediction error
-      pred_err = R[j, t] - Q[t, choice_c[j, t]];
-
-      // update value (learn)
-      if (t &lt; n_trials) {    // no updating in the very last trial
-
-        // choice is F
-        if (choice_c[j, t] == 1) {
-          if (R[j, t] + margin &gt;= Q[1, 1]) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-          Q[t+1, 2] = Q[t, 2];
-        } 
-        
-        // choice is U
-        else {
-          if (R[j, t] + margin &gt;= Q[1, 2]) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
-        }
-      }
-    }
-  }
-}
-
-generated quantities {
-  vector[4] means;
-  means[1] = Phi_approx(means_probit[1]); // LR_disconf_group
-  means[2] = Phi_approx(means_probit[2]); // LR_diff_group
-  means[3] = Phi_approx(means_probit[3]) * 5; // inv_temp_group
-  means[4] = Phi_approx(means_probit[4]) * 10; // initQ_dev_group
-}</code></pre>
-</div>
-<div id="lrn_discr_geq_dyn" class="section level1">
-<h1><code>5_LRN_discr_geq_dyn</code></h1>
-<pre><code>data {
-  int&lt;lower=1&gt; n_part;
-  int&lt;lower=1&gt; n_trials;
-  array[n_part, n_trials] int&lt;lower=1, upper=2&gt; choice_c;
-  array[n_part, n_trials] int&lt;lower=1, upper=10&gt; R;
-  vector&lt;lower=1, upper=10&gt;[n_part] mu_R;
-}
-
-// transformed data {
-// }
-
-parameters {
-  // group-level parameters
-  vector[4] means_probit;
-  vector&lt;lower=0&gt;[4] sigmas;
-
-  // participant-level parameters
-  vector[n_part] LR_disconf_probit;
-  vector[n_part] LR_diff_probit;
-  vector[n_part] inv_temp_probit;
-  vector[n_part] initQ_dev_probit;
-}
-
-transformed parameters {
-  // participant-level parameters
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_disconf; 
-  vector&lt;lower=0, upper=1&gt;[n_part] LR_diff; 
-  vector&lt;lower=0, upper=5&gt;[n_part] inv_temp;
-  vector&lt;lower=0, upper=10&gt;[n_part] initQ_dev;
-
-  for (j in 1:n_part) {
-    LR_disconf[j] = Phi_approx(means_probit[1] + sigmas[1] * LR_disconf_probit[j]);
-    LR_diff[j] = Phi_approx(means_probit[2] + sigmas[2] * LR_diff_probit[j]);
-    inv_temp[j] = Phi_approx(means_probit[3] + sigmas[3] * inv_temp_probit[j]) * 5;
-    initQ_dev[j] = Phi_approx(means_probit[4] + sigmas[4] * initQ_dev_probit[j]) * 10;
-  }
-}
-
-model {
-  real margin = 2;
-  
-  // priors
-  means_probit ~ normal(0, 1);
-  sigmas ~ normal(0, 0.2);
-  
-  LR_disconf_probit ~ normal(0, 1);
-  LR_diff_probit ~ normal(0, 1);
-  inv_temp_probit ~ normal(0, 1);
-  initQ_dev_probit ~ normal(0, 1);
-
-  // participant loop
-  for (j in 1:n_part) {
-    
-    // initialization
-    array[n_trials, 2] real Q;
-    Q[1, 1] = mu_R[j] + initQ_dev[j];
-    Q[1, 2] = mu_R[j] - initQ_dev[j];
-    vector[2] Q_t;
-    real pred_err;
-    real LR;
-    real belief;
-
-    // trial loop
-    for (t in 1:n_trials) {
-      Q_t = to_vector(Q[t]);
-
-      // sample choice (1 is pref, 2 is nonpref) via softmax
-      // but not for trial 1
-      if (t &gt; 1) {
-        choice_c[j, t] ~ categorical_logit(inv_temp[j] * Q_t);
-      }
-      
-      // prediction error
-      pred_err = R[j, t] - Q[t, choice_c[j, t]];
-
-      // update value (learn)
-      if (t &lt; n_trials) {    // no updating in the very last trial
-
-        // choice is F
-        if (choice_c[j, t] == 1) {
-          belief = Q[max(t-1, 1), 1];
-          if (abs(R[j, t] - belief) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1] + LR * pred_err;
-          Q[t+1, 2] = Q[t, 2];
-        } 
-        
-        // choice is U
-        else {
-          belief = Q[max(t-1, 1), 2];
-          if (abs(R[j, t] - belief) &lt;= margin) {
-            LR = LR_disconf[j] + LR_diff[j]; // confirmatory
-          } else {
-            LR = LR_disconf[j];
-          }
-          Q[t+1, 1] = Q[t, 1];
-          Q[t+1, 2] = Q[t, 2] + LR * pred_err;
-        }
-      }
-    }
-  }
-}
-
-generated quantities {
-  vector[4] means;
-  means[1] = Phi_approx(means_probit[1]); // LR_disconf_group
-  means[2] = Phi_approx(means_probit[2]); // LR_diff_group
+  means[1] = Phi_approx(means_probit[1]); // LR_max_group
+  means[2] = Phi_approx(means_probit[2]) * 10; // sigma_LR_group
   means[3] = Phi_approx(means_probit[3]) * 5; // inv_temp_group
   means[4] = Phi_approx(means_probit[4]) * 10; // initQ_dev_group
 }</code></pre>
