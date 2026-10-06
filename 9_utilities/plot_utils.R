@@ -13,6 +13,7 @@ source(paste0(util_dir, "utils.R"), local = utils)
 # ---------------------
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 my_teal <- "#008080"
 my_pink <- "#dd66dd"
 my_blue <- "#0055bb"
@@ -24,10 +25,10 @@ my_param_colors <- c(
   pref = my_teal,                   nonpref = my_pink,
   initQ_dev = my_orange,
   initQ_dev_group = my_orange,
-  LR = my_blue,                     inv_temp = my_red,
-  LR_group = my_blue,               inv_temp_group = my_red,
-  LR_disconf = my_light_blue,       LR_diff = my_dark_blue,       
-  LR_disconf_group = my_light_blue, LR_diff_group = my_dark_blue
+  LR = my_blue,                 inv_temp = my_red,
+  LR_group = my_blue,           inv_temp_group = my_red,
+  LR_max = my_dark_blue,        sigma_LR = my_light_blue,       
+  LR_max_group = my_dark_blue, sigma_LR_group = my_light_blue
 )
 
 my_theme <- theme_bw() +
