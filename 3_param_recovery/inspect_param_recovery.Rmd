@@ -166,7 +166,7 @@ util$print_posterior_table(draws, param_settings, to_inspect)
 ```
 
 ## Many runs (random parameters)
-```{r 2-many, eval = FALSE}
+```{r 2-many}
 n_runs <- 100
 
 dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")

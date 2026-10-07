@@ -11,7 +11,7 @@ if (length(arg == 1)) {
 #' ------------------------------------------------------------
 #' SET DIRS AND ENVS ------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (1) {
   main_dir <- "~/research/climate-RL-mod/"
   util_dir <- paste0(main_dir, "9_utilities/")
   mod_dir <- paste0(main_dir, "0_models/")
@@ -63,7 +63,7 @@ free_params_pp <- gsub("_group", "", free_params_group)
 #' ------------------------------------------------------------
 #' SIM FIT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (TRUE) {
+if (0) {
   #' SIM
   sim_dat <- sim$run(param_settings)
 
@@ -89,7 +89,7 @@ if (TRUE) {
 #' ------------------------------------------------------------
 #' INSPECT SINGLE ---------------------------------------------
 #' ------------------------------------------------------------
-if (FALSE) {
+if (0) {
   dat_dir <- paste0(current_dir, "1_run/")
   draws <- readRDS(paste0(dat_dir, "draws.rds"))
   draws <- draws %>% 
@@ -101,18 +101,18 @@ if (FALSE) {
 #' ------------------------------------------------------------
 #' SIM + FIT MANY ---------------------------------------------
 #' ------------------------------------------------------------
-if (FALSE) {
+if (1) {
   n_runs <- 100
   dat_dir <- paste0(current_dir, "100_runs/")
   if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  sim$run_many(params, dat_dir, n_runs)
+  sim$run_many(param_settings, dat_dir, n_runs)
   fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
 }
 
 #' ------------------------------------------------------------
 #' INSPECT MANY -----------------------------------------------
 #' ------------------------------------------------------------
-if (FALSE) {
+if (1) {
   n_runs <- 100
   sim_params <- data.frame(k = 1:n_runs)
   fit_params <- data.frame(k = 1:n_runs)
