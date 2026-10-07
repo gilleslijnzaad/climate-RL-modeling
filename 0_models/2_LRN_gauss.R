@@ -104,3 +104,27 @@ get_LR <- function(LR_max, sigma_LR, R, belief) {
   distance <- abs(R - belief)
   return(LR_max * exp(-distance^2/(2*sigma_LR^2)))
 }
+
+#' Runs this simulation model many times
+#' 
+#' @param settings named list of experiment settings
+#' 
+#' @param save_dir directory to save the simulated data to
+#' 
+#' @param n_runs how many times to run the simulation
+#' 
+#' @return nothing
+run_many <- function(settings, save_dir, n_runs) {
+  free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
+  free_params_pp <- gsub("_group", "", free_params_group)
+
+  for (k in 1:n_runs) {
+    save_path <- paste0(save_dir, "dat_", sprintf("%03d", k), ".json")
+    params <- sim_utils$randomize_free_params(settings, free_params_group, seed = k)
+
+    dat <- run(params, seed = k)
+  
+    sim_utils$save_sim_dat(params, dat, save_path, free_params_pp)
+  }
+  message(paste0("Finished simulating ", n_runs, " runs."))
+}
