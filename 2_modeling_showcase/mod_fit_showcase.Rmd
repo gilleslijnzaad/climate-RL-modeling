@@ -103,10 +103,11 @@ In the current model, we have three free parameters:
 1. learning rate `LR`;
 1. inverse temperature `inv_temp`;
 1. deviation from the mean for initial Q: `initQ_dev`. This is related to the actual initial Qs as: 
+
   > `initQ_pref = mu_R + initQ_dev`
   > `initQ_nonpref = mu_R - initQ_dev`
 
-[explanation here]
+  where `mu_R` is calculated from the data.
 
 ```{r explmod-params, comment = NA}
 start <- grep("parameters \\{", mod_code)[1]
@@ -115,7 +116,7 @@ cat(mod_code[start:end], sep = "\n")
 ```
 
 ## `transformed parameters` block
-[explanation here]
+Currently unused.
 ```{r explmod-transf-params, eval = FALSE, comment = NA}
 start <- grep("transformed parameters \\{", mod_code)
 end <- grep("model \\{", mod_code) - 2
@@ -205,7 +206,7 @@ To check parameter recovery across a range of parameter values, I run the model 
 n_runs <- 100
 dat_dir <- paste0(main_dir, "3_param_recovery/1_std/100_runs/")
 
-sim$run_many(params, dat_dir, n_runs)
+# sim$run_many(params, dat_dir, n_runs)
 # running this bit below takes at least an hour
 # fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
 ```
