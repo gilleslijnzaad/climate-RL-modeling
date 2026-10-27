@@ -49,7 +49,7 @@ dat <- sim$run(params)
 plot$sim_plots(dat, params)
 
 ## ----gauss, echo = FALSE------------------------------------------------------
-gauss <- function(R, sigma = 2) {
+gauss <- function(R, sigma) {
   LR_max <- 1
   belief <- 6
   distance <- abs(belief - R)
@@ -57,8 +57,15 @@ gauss <- function(R, sigma = 2) {
   return(LR)
 }
 
+sigmas <- c(0.5, 1:10)
+
 ggplot() + 
-  geom_function(fun = gauss) +
+  lapply(sigmas, function(s) {
+    stat_function(fun = function(x) gauss(x, s),
+                  aes(color = factor(s)),
+                  linewidth = 1
+    )
+  }) +
   geom_vline(aes(xintercept = 6, linetype = "belief")) +
   scale_linetype_manual(values = c("belief" = 2), name = NULL) +
   scale_x_continuous(breaks = c(2, 4, 6, 8, 10), limits = c(1, 10)) +

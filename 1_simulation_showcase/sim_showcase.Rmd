@@ -73,14 +73,13 @@ plot$sim_plots(dat, params)
 
 # Confirmation bias
 
-## At the level of learning: LRN
 The learning rate depends on the difference between the belief (i.e., the initial Q) and the rating like this:
 
 $$LR_t = LR_{max} \cdot \exp(-\frac{|\text{belief} - R_t|^2}{2\sigma^2})$$
 
 where there are two free parameters: $LR_{max}$ and $\sigma$ (which is the width of the Gaussian distribution). In the example below, the prior belief is 6.
 ```{r gauss, echo = FALSE}
-gauss <- function(R, sigma = 2) {
+gauss <- function(R, sigma) {
   LR_max <- 1
   belief <- 6
   distance <- abs(belief - R)
@@ -88,8 +87,15 @@ gauss <- function(R, sigma = 2) {
   return(LR)
 }
 
+sigmas <- c(0.5, 1:10)
+
 ggplot() + 
-  geom_function(fun = gauss) +
+  lapply(sigmas, function(s) {
+    stat_function(fun = function(x) gauss(x, s),
+                  aes(color = factor(s)),
+                  linewidth = 1
+    )
+  }) +
   geom_vline(aes(xintercept = 6, linetype = "belief")) +
   scale_linetype_manual(values = c("belief" = 2), name = NULL) +
   scale_x_continuous(breaks = c(2, 4, 6, 8, 10), limits = c(1, 10)) +
@@ -109,5 +115,3 @@ source(paste0(model_dir, "2_LRN_gauss.R"), local = sim)  # access functions usin
 dat <- sim$run(params)
 plot$sim_plots(dat, params)
 ```
-
-## At the level of rating: RTN
