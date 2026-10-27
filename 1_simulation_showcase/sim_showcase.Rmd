@@ -76,9 +76,9 @@ plot$sim_plots(dat, params)
 ## At the level of learning: LRN
 The learning rate depends on the difference between the belief (i.e., the initial Q) and the rating like this:
 
-$$LR_t = LR_{max} \cdot \exp(-\frac{|\text{belief} - R|^2}{2\sigma^2})$$
+$$LR_t = LR_{max} \cdot \exp(-\frac{|\text{belief} - R_t|^2}{2\sigma^2})$$
 
-where there are two free parameters: $LR_{max}$ and $\sigma$ (which is the width of the Gaussian distribution).
+where there are two free parameters: $LR_{max}$ and $\sigma$ (which is the width of the Gaussian distribution). In the example below, the prior belief is 6.
 ```{r gauss, echo = FALSE}
 gauss <- function(R, sigma = 2) {
   LR_max <- 1
