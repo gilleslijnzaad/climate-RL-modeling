@@ -3,7 +3,7 @@ packages <- c(
   "truncnorm",
   "grid",
   "gridExtra",
-  "cmdstanr",
+  "cmdstanr"
 )
 
 install.packages(packages, dependencies = TRUE)
