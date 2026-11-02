@@ -1903,7 +1903,7 @@ posterior_density_legend &lt;- function(params, show_sim_value) {
 #&#39; @param param_settings: named list of parameter settings; if NULL,
 #&#39; don&#39;t show simulated value
 #&#39; 
-#&#39; @return nothing
+#&#39; @return a grob with all the plots
 posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
   plots &lt;- list()
   params_for_legend &lt;- c()
@@ -1938,16 +1938,16 @@ posterior_densities &lt;- function(draws, to_plot, param_settings = NULL) {
 
   # if even number of plots, put legend next to all plots
   if (length(to_plot) %% 2 == 0) {
-    gridExtra::grid.arrange(
+    grob &lt;- gridExtra::grid.arrange(
       grobs = list(plot_grid, legend),
       ncol = 2,
       widths = unit.c(unit(1, &quot;null&quot;), # fill space evenly
                       grobWidth(legend) + unit(2, &quot;mm&quot;))
     )
   } else {
-    grid.newpage()
-    grid.draw(plot_grid)
+    grob &lt;- plot_grid
   }
+  return(grob)
 }
 
 #&#39; Plots participant-level simulated parameters against their

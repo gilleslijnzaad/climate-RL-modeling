@@ -291,7 +291,7 @@ posterior_density_legend <- function(params, show_sim_value) {
 #' @param param_settings: named list of parameter settings; if NULL,
 #' don't show simulated value
 #' 
-#' @return nothing
+#' @return a grob with all the plots
 posterior_densities <- function(draws, to_plot, param_settings = NULL) {
   plots <- list()
   params_for_legend <- c()
@@ -326,16 +326,16 @@ posterior_densities <- function(draws, to_plot, param_settings = NULL) {
 
   # if even number of plots, put legend next to all plots
   if (length(to_plot) %% 2 == 0) {
-    gridExtra::grid.arrange(
+    grob <- gridExtra::grid.arrange(
       grobs = list(plot_grid, legend),
       ncol = 2,
       widths = unit.c(unit(1, "null"), # fill space evenly
                       grobWidth(legend) + unit(2, "mm"))
     )
   } else {
-    grid.newpage()
-    grid.draw(plot_grid)
+    grob <- plot_grid
   }
+  return(grob)
 }
 
 #' Plots participant-level simulated parameters against their

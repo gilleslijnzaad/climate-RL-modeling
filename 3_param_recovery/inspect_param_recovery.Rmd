@@ -57,14 +57,16 @@ draws <- readRDS(fit_path) %>%
                   free_params))
 
 to_plot <- free_params
-plot$posterior_densities(draws, to_plot, param_settings)
+p <- plot$posterior_densities(draws, to_plot, param_settings)
+grid.newpage()
+grid.draw(p)
 
 to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)
 ```
 
 ## Many runs (random parameters)
-```{r 0-many, fig.height = 4}
+```{r 0-many, fig.height = 6}
 n_runs <- 100
 
 dat_dir <- paste0(recov_dir, mod_name, "/100_runs/")
@@ -108,7 +110,9 @@ draws <- readRDS(fit_path) %>%
   rename(setNames(paste0("means[", seq_along(free_params), "]"),
                   free_params))
 to_plot <- free_params
-plot$posterior_densities(draws, to_plot, param_settings)
+p <- plot$posterior_densities(draws, to_plot, param_settings)
+grid.newpage()
+grid.draw(p)
 
 to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)
@@ -159,7 +163,9 @@ draws <- readRDS(fit_path) %>%
   rename(setNames(paste0("means[", seq_along(free_params), "]"),
                   free_params))
 to_plot <- free_params
-plot$posterior_densities(draws, to_plot, param_settings)
+p <- plot$posterior_densities(draws, to_plot, param_settings)
+grid.newpage()
+grid.draw(p)
 
 to_inspect <- free_params
 util$print_posterior_table(draws, param_settings, to_inspect)

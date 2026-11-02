@@ -95,7 +95,9 @@ draws <- draws %>%
   rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
                   free_params_group))
 to_plot <- free_params_group
-plot$posterior_densities(draws, to_plot, params)
+p <- plot$posterior_densities(draws, to_plot, params)
+grid.newpage()
+grid.draw(p)
 
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
