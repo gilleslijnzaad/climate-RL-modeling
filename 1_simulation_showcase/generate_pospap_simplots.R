@@ -1,17 +1,22 @@
-# setwd("1_simulation_showcase")
+setwd("1_simulation_showcase")
 rm(list = ls())
 library(showtext)
-font_add("Geologica", "~/Downloads/Geologica-Light.ttf")
+if (exists("~/Downloads/Geologica-Light.ttf")) {
+  font_add("Geologica", "~/Downloads/Geologica-Light.ttf")
+  f <- "Geologica"
+} else {
+  f <- "Arial"
+}
 showtext_auto()
 
 
 util <- new.env()
 source("app_utils.R", local = util)
 util$my_theme <- util$my_theme + 
-  theme(axis.title = element_text(family = "Geologica"),
-        axis.text = element_text(family = "Geologica"),
-        legend.text = element_text(family = "Geologica"),
-        plot.caption = element_text(size = 20, family = "Geologica", hjust = 0.5))
+  theme(axis.title = element_text(family = f),
+        axis.text = element_text(family = f),
+        legend.text = element_text(family = f),
+        plot.caption = element_text(size = 20, family = f, hjust = 0.5))
 
 gen_plot_dat <- function(sim_dat) {
   plot_dat <- sim_dat %>%
