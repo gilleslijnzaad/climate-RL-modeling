@@ -2074,8 +2074,8 @@ source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 #&#39; individual iteration (i.e., chain updates)
 #&#39; 
 #&#39; @return data frame of the type specified in return
-fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = FALSE) {
-  it &lt;- 1000
+fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = TRUE) {
+  it &lt;- 5000
   fit &lt;- model$sample(
     data = dat_file,
     iter_sampling = it,
@@ -2090,6 +2090,8 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
   if (return == &quot;draws&quot;) {
     draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
     return(draws)
+  } else if (return == &quot;bridge&quot;) {
+    return(bridgesampling::bridge_sampler(fit))
   } else {
     return(fit)
   }
@@ -2111,11 +2113,10 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
 #&#39; 
 #&#39; @return nothing
 fit_many &lt;- function(sim_dat_dir, model_path, fit_data_type, fit_dir, n_runs) {
-  model &lt;- cmdstan_model(model_path)
+  model &lt;- cmdstan_model(model_path, force_recompile = TRUE)
   for (k in 1:n_runs) {
-    k_code &lt;- sprintf(&quot;%03d&quot;, k)
-    sim_dat_path &lt;- paste0(sim_dat_dir, &quot;dat_&quot;, k_code, &quot;.json&quot;)
-    fit_path &lt;- paste0(fit_dir, fit_data_type, &quot;_&quot;, k_code, &quot;.rds&quot;)
+    sim_dat_path &lt;- sprintf(&quot;%sdat_%03d.json&quot;, sim_dat_dir, k)
+    fit_path &lt;- sprintf(&quot;%s%s_%03d.rds&quot;, fit_dir, fit_data_type, k)
     fit &lt;- fit(model, sim_dat_path, return = fit_data_type, k, n_runs)
     saveRDS(fit, file = fit_path)
   }
