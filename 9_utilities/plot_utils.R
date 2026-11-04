@@ -405,16 +405,15 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
 many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
   plots <- list()
   for (p in to_plot) {
-    bounds <- sim_utils$param_bounds[[p]]
+    lims <- range(c(sim_params[[p]], fit_params[[p]]))
 
     plot_dat <- data.frame(x = sim_params[[p]], y = fit_params[[p]])
-
-    r <- cor(plot_dat$x, plot_dat$y)
 
     plot <- ggplot(plot_dat, aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
-      lims(x = bounds, y = bounds) +
+      lims(x = lims, y = lims) +
+      coord_fixed() +
       labs(title = p, x = NULL, y = NULL) +
       ggpubr::stat_cor() +
       my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
