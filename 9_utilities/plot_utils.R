@@ -37,7 +37,8 @@ my_theme <- theme_bw() +
         axis.title = element_text(size = 18)) +
   theme(legend.title = element_blank(),
         legend.text = element_text(size = 16)) +
-  theme(strip.text = element_text(size = 18, face = "bold"))
+  theme(strip.text = element_text(size = 18, face = "bold")) +
+  theme(legend.key.size = unit(1.5, 'lines'))
 
 my_theme_classic <- theme_classic() +
   theme(plot.title = element_text(size = 22, face = "bold")) +
@@ -190,16 +191,20 @@ posterior_density_single <- function(p, param_draws, sim_value = NULL) {
   )
 
   plot <- ggplot(dat, aes(x = estimate)) +
-    geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
+    geom_density(alpha = 0.5, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
     labs(title = p, x = NULL, y = NULL) +
     my_theme + 
     theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
 
   if (!is.null(sim_value)) {
-    dat[["sim_value"]] <- sim_value
     plot <- plot + 
-      geom_vline(aes(xintercept = sim_value), linetype = 2)
+      geom_vline(aes(xintercept = sim_value), linetype = 1)
   }
+
+  plot <- plot +
+    geom_vline(aes(xintercept = median(param_draws)), 
+               color = my_param_colors[[p]], linetype = 2)
+
   return(plot)
 }
 
@@ -274,7 +279,8 @@ posterior_density_legend <- function(params, show_sim_value) {
   if (show_sim_value) {
     dummy_plot <- dummy_plot +
       geom_vline(aes(xintercept = 0, linetype = "sim_value")) +
-      scale_linetype_manual(values = c("sim_value" = 2), name = NULL) +
+      geom_vline(aes(xintercept = 0, linetype = "posterior_median")) +
+      scale_linetype_manual(values = c("sim_value" = 1, "posterior_median" = 2), name = NULL) +
       my_theme
   }
 

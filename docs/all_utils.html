@@ -1649,7 +1649,8 @@ my_theme &lt;- theme_bw() +
         axis.title = element_text(size = 18)) +
   theme(legend.title = element_blank(),
         legend.text = element_text(size = 16)) +
-  theme(strip.text = element_text(size = 18, face = &quot;bold&quot;))
+  theme(strip.text = element_text(size = 18, face = &quot;bold&quot;)) +
+  theme(legend.key.size = unit(1.5, &#39;lines&#39;))
 
 my_theme_classic &lt;- theme_classic() +
   theme(plot.title = element_text(size = 22, face = &quot;bold&quot;)) +
@@ -1802,16 +1803,20 @@ posterior_density_single &lt;- function(p, param_draws, sim_value = NULL) {
   )
 
   plot &lt;- ggplot(dat, aes(x = estimate)) +
-    geom_density(alpha = 0.6, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
+    geom_density(alpha = 0.5, color = my_param_colors[[p]], fill = my_param_colors[[p]]) +
     labs(title = p, x = NULL, y = NULL) +
     my_theme + 
     theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
 
   if (!is.null(sim_value)) {
-    dat[[&quot;sim_value&quot;]] &lt;- sim_value
     plot &lt;- plot + 
-      geom_vline(aes(xintercept = sim_value), linetype = 2)
+      geom_vline(aes(xintercept = sim_value), linetype = 1)
   }
+
+  plot &lt;- plot +
+    geom_vline(aes(xintercept = median(param_draws)), 
+               color = my_param_colors[[p]], linetype = 2)
+
   return(plot)
 }
 
@@ -1886,7 +1891,8 @@ posterior_density_legend &lt;- function(params, show_sim_value) {
   if (show_sim_value) {
     dummy_plot &lt;- dummy_plot +
       geom_vline(aes(xintercept = 0, linetype = &quot;sim_value&quot;)) +
-      scale_linetype_manual(values = c(&quot;sim_value&quot; = 2), name = NULL) +
+      geom_vline(aes(xintercept = 0, linetype = &quot;posterior_median&quot;)) +
+      scale_linetype_manual(values = c(&quot;sim_value&quot; = 1, &quot;posterior_median&quot; = 2), name = NULL) +
       my_theme
   }
 
@@ -2075,7 +2081,7 @@ source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 #&#39; 
 #&#39; @return data frame of the type specified in return
 fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = TRUE) {
-  it &lt;- 5000
+  it &lt;- 1000
   fit &lt;- model$sample(
     data = dat_file,
     iter_sampling = it,
