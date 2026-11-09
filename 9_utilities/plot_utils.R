@@ -413,7 +413,6 @@ many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
       geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = lims, y = lims) +
-      coord_fixed() +
       labs(title = p, x = NULL, y = NULL) +
       ggpubr::stat_cor() +
       my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))

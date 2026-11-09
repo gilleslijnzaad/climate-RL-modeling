@@ -31,8 +31,8 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 #' individual iteration (i.e., chain updates)
 #' 
 #' @return data frame of the type specified in return
-fit <- function(model, dat_file, return, k = 1, n_runs = 1, free_params = NULL, show_iteration_progress = TRUE) {
-  it <- 1000
+fit <- function(model, dat_file, return, k = 1, n_runs = 1, free_params = NULL, show_iteration_progress = FALSE) {
+  it <- 5000
   fit <- model$sample(
     data = dat_file,
     iter_sampling = it,
