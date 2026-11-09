@@ -2,7 +2,7 @@ library(tidyverse)
 
 rm(list = ls())
 
-mod_name <- "1_std"
+mod_name <- "2_LRN_gauss"
 
 if (1) {
   main_dir <- "~/research/climate-RL-mod/"
@@ -26,14 +26,15 @@ if (1) {
 param_settings <- list(
   n_part = 50,
   n_trials = 30,
-  LR_group = 0.4,
+  LR_max_group = 0.8,
+  sigma_LR_group = 6,
   inv_temp_group = 2,
   initQ_dev_group = 2,
   mu_R_group = 5.5,
   sigma_R_group = 2
 )
 
-free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
+free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
 free_params_pp <- gsub("_group", "", free_params_group)
 
 if (1) {
@@ -50,9 +51,10 @@ if (1) {
   pl <- plot$posterior_densities(draws, free_params_group, param_settings)
 }
 
-name <- sprintf("%sLR_%.1f_invtemp_%.1f_initQdev_%.1f.png",
+name <- sprintf("%sLR_max_%.1f_sigma_LR_%.1f_invtemp_%.1f_initQdev_%.1f.png",
                 current_dir,
-                param_settings[["LR_group"]],
+                param_settings[["LR_max_group"]],
+                param_settings[["sigma_LR_group"]],
                 param_settings[["inv_temp_group"]],
                 param_settings[["initQ_dev_group"]])
 
@@ -62,6 +64,3 @@ ggsave(name,
        height = 6,
        units = "in",
        bg = "white")
-
-grid.newpage()
-grid.draw(pl)
