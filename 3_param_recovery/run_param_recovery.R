@@ -1,34 +1,35 @@
 rm(list = ls())
 # use in command line: Rscript run_param_recovery.R "[model_name]"
 # if used in VSCode: edit mod_name manually
-arg <- commandArgs(trailingOnly = TRUE)
-if (length(arg == 1)) {
-  mod_name <- arg
-} else {
-  mod_name <- "2_LRN_gauss"
-}
+# arg <- commandArgs(trailingOnly = TRUE)
+# if (length(arg == 1)) {
+#   mod_name <- arg
+# } else {
+#   mod_name <- "2_LRN_gauss"
+# }
+n_runs <- 100
 
 #' ------------------------------------------------------------
 #' SET DIRS AND ENVS ------------------------------------------
 #' ------------------------------------------------------------
-if (1) {
-  main_dir <- "~/research/climate-RL-mod/"
-  util_dir <- paste0(main_dir, "9_utilities/")
-  mod_dir <- paste0(main_dir, "0_models/")
-  model_path <- paste0(mod_dir, mod_name, ".stan")
-  recov_dir <- paste0(main_dir, "3_param_recovery/")
-  current_dir <- paste0(recov_dir, mod_name, "/")
-  sim <- new.env()
-  source(paste0(mod_dir, mod_name, ".R"), local = sim) # access functions using sim$fun()
-  sim_utils <- new.env()
-  source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
-  plot <- new.env()
-  source(paste0(util_dir, "plot_utils.R"), local = plot)
-  fitting <- new.env()
-  source(paste0(util_dir, "fit_utils.R"), local = fitting)
-  util <- new.env()
-  source(paste0(util_dir, "utils.R"), local = util)
-}
+main_dir <- "~/research/climate-RL-mod/"
+util_dir <- paste0(main_dir, "9_utilities/")
+mod_dir <- paste0(main_dir, "0_models/")
+recov_dir <- paste0(main_dir, "3_param_recovery/")
+sim_utils <- new.env()
+source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
+plot <- new.env()
+source(paste0(util_dir, "plot_utils.R"), local = plot)
+fitting <- new.env()
+source(paste0(util_dir, "fit_utils.R"), local = fitting)
+util <- new.env()
+source(paste0(util_dir, "utils.R"), local = util)
+
+full_mod_names <- list(
+  "0" = "0_nolearning",
+  "1" = "1_std",
+  "2" = "2_LRN_gauss"
+)
 
 #' ------------------------------------------------------------
 #' SET PARAMS -------------------------------------------------
@@ -42,100 +43,25 @@ set_params <- function() {return(list(
   sigma_R_group = 2
 ))}
 
-param_settings <- set_params()
+for (sim_model in as.character(0:2)) {
+  sim <- new.env()
+  source(paste0(mod_dir, full_mod_names[[sim_model]], ".R"), local = sim)
+  model_path <- paste0(mod_dir, full_mod_names[[sim_model]], ".stan")
+  current_dir <- paste0(recov_dir, full_mod_names[[sim_model]], "/")
 
-if (mod_name == "0_nolearning") {
-  free_params_group <- c("inv_temp_group", "initQ_dev_group")
-  to_plot <- free_params_group
-} else if (mod_name == "1_std") {
-  param_settings[["LR_group"]] <- 0.4
-  free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
-  to_plot <- free_params_group  
-} else if (mod_name == "2_LRN_gauss") {
-  param_settings[["LR_max_group"]] <- 0.6
-  param_settings[["sigma_LR_group"]] <- 2
-  free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
-  to_plot <- free_params_group
-}
-
-free_params_pp <- gsub("_group", "", free_params_group)
-
-#' ------------------------------------------------------------
-#' SIM FIT SINGLE ---------------------------------------------
-#' ------------------------------------------------------------
-if (0) {
-  #' SIM
-  sim_dat <- sim$run(param_settings)
-
-  dat_dir <- paste0(current_dir, "1_run/")
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  dat_path <- paste0(dat_dir, "sim_dat_1.json")
-  sim_utils$save_sim_dat(param_settings, sim_dat, dat_path, free_params_pp)
-
-  pl <- plot$sim_plots(sim_dat, param_settings)
-  ggsave("sim_plots.png",
-         plot = pl,
-         path = dat_dir,
-         width = 10,
-         height = 4,
-         units = "in")
-
-  #' FIT
-  model <- cmdstan_model(model_path)
-  draws <- fitting$fit(model, dat_path, return = "draws", show_iteration_progress = TRUE)
-  saveRDS(draws, paste0(dat_dir, "draws.rds"))
-}
-
-#' ------------------------------------------------------------
-#' INSPECT SINGLE ---------------------------------------------
-#' ------------------------------------------------------------
-if (0) {
-  dat_dir <- paste0(current_dir, "1_run/")
-  draws <- readRDS(paste0(dat_dir, "draws.rds"))
-  draws <- draws %>% 
-    rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
-                    free_params_group))
-  plot$posterior_densities(draws, to_plot, param_settings)
-}
-
-#' ------------------------------------------------------------
-#' SIM + FIT MANY ---------------------------------------------
-#' ------------------------------------------------------------
-if (1) {
-  n_runs <- 100
-  dat_dir <- paste0(current_dir, "100_runs/")
-  if (!dir.exists(dat_dir)) dir.create(dat_dir)
-  sim$run_many(param_settings, dat_dir, n_runs)
-  fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs)
-}
-
-#' ------------------------------------------------------------
-#' INSPECT MANY -----------------------------------------------
-#' ------------------------------------------------------------
-if (1) {
-  n_runs <- 100
-  sim_params <- data.frame(k = 1:n_runs)
-  fit_params <- data.frame(k = 1:n_runs)
-  dat_dir <- paste0(current_dir, "100_runs/")
-
-  for (k in 1:n_runs) {
-    sim_file <- paste0(dat_dir, "param_settings_", sprintf("%03d", k), ".json")
-    sim_dat <- rjson::fromJSON(file = sim_file)
-    if ("LRs_group" %in% names(sim_dat)) {
-      sim_dat[["LR_disconf_group"]] <- sim_dat[["LRs_group"]][1]
-      sim_dat[["LR_diff_group"]] <- sim_dat[["LRs_group"]][2]
-    }
-
-    fit_file <- paste0(dat_dir, "draws_", sprintf("%03d", k), ".rds")
-    fit_dat <- readRDS(fit_file) %>%
-      rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
-                      free_params_group))
-
-    for (p in free_params_group) {
-      sim_params[[p]][k] <- sim_dat[[p]]
-      fit_params[[p]][k] <- median(fit_dat[[p]])
-    }
+  param_settings <- set_params()
+  if (sim_model == "0") {
+    free_params_group <- c("inv_temp_group", "initQ_dev_group")
+  } else if (sim_model == "1") {
+    param_settings[["LR_group"]] <- NA
+    free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
+  } else if (sim_model == "2") {
+    param_settings[["LR_max_group"]] <- NA
+    param_settings[["sigma_LR_group"]] <- NA
+    free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
   }
 
-  plot$many_runs_param_fit(sim_params, fit_params, free_params_group)
+  dat_dir <- paste0(current_dir, n_runs, "_runs/")
+  sim$run_many(param_settings, dat_dir, n_runs)
+  fitting$fit_many(dat_dir, model_path, fit_data_type = "draws", dat_dir, n_runs, free_params = free_params_group)
 }
