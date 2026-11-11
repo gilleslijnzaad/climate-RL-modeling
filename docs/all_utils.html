@@ -2025,7 +2025,6 @@ many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
       geom_point(color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = lims, y = lims) +
-      coord_fixed() +
       labs(title = p, x = NULL, y = NULL) +
       ggpubr::stat_cor() +
       my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
@@ -2079,7 +2078,7 @@ source(paste0(util_dir, &quot;sim_utils.R&quot;), local = sim_utils)
 #&#39; individual iteration (i.e., chain updates)
 #&#39; 
 #&#39; @return data frame of the type specified in return
-fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_progress = TRUE) {
+fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, free_params = NULL, show_iteration_progress = FALSE) {
   it &lt;- 5000
   fit &lt;- model$sample(
     data = dat_file,
@@ -2091,9 +2090,10 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
     seed = k,
     show_messages = show_iteration_progress
   )
-  message(&quot;Completed run &quot;, k, &quot; of &quot;, n_runs, &quot; in &quot;, round(fit$time()$total, 1), &quot; seconds.&quot;)
   if (return == &quot;draws&quot;) {
-    draws &lt;- posterior::as_draws_df(fit$draws()) # df makes it easier to handle
+    draws &lt;- posterior::as_draws_df(fit$draws()) %&gt;%
+      rename(setNames(paste0(&quot;means[&quot;, seq_along(free_params), &quot;]&quot;),
+                      free_params))
     return(draws)
   } else if (return == &quot;bridge&quot;) {
     return(bridgesampling::bridge_sampler(fit))
@@ -2116,13 +2116,18 @@ fit &lt;- function(model, dat_file, return, k = 1, n_runs = 1, show_iteration_pr
 #&#39; 
 #&#39; @param n_runs how often to fit the model
 #&#39; 
+#&#39; @param free_params names of free parameters (to rename )
+#&#39; 
 #&#39; @return nothing
-fit_many &lt;- function(sim_dat_dir, model_path, fit_data_type, fit_dir, n_runs) {
+fit_many &lt;- function(sim_dat_dir, model_path, fit_data_type, fit_dir, n_runs, model_nums = NULL, free_params = NULL) {
   model &lt;- cmdstan_model(model_path, force_recompile = TRUE)
   for (k in 1:n_runs) {
     sim_dat_path &lt;- sprintf(&quot;%sdat_%03d.json&quot;, sim_dat_dir, k)
     fit_path &lt;- sprintf(&quot;%s%s_%03d.rds&quot;, fit_dir, fit_data_type, k)
-    fit &lt;- fit(model, sim_dat_path, return = fit_data_type, k, n_runs)
+    fit &lt;- fit(model, sim_dat_path, return = fit_data_type, k, n_runs, free_params = free_params)
+    message(format(Sys.time(), &quot;[%d%b%Y, %H:%M] &quot;), 
+            sprintf(&quot;run %d of %d ✅ &quot;, k, n_runs),
+            sprintf(&quot;(sim%d_fit%d)&quot;, model_nums[[&quot;sim&quot;]], model_nums[[&quot;fit&quot;]]))
     saveRDS(fit, file = fit_path)
   }
 }</code></pre>
