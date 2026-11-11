@@ -4,28 +4,34 @@ library(stringr)
 
 #' A list of standard deviations for group-level means of parameters
 param_stddevs <- list(
-  LR_group = 0.2,
-  LR_max_group = 0.2,
-  sigma_LR_group = 0.8,
-  inv_temp_group = 0.3,
-  initQ_dev_group = 0.3,
-  mu_R_group = 2,
-  sigma_R_group = 2
+  LR = 0.2,
+  LR_max = 0.2,
+  sigma_LR = 0.2,
+  inv_temp = 0.3,
+  initQ_dev = 0.3,
+  mu_R = 2,
+  sigma_R = 1
 )
 
-#' A list of theoretical bounds for parameters; same as in Stan
-# TODO: check which of these are used
-param_bounds <- list(
+#' A list of parameter bounds used for simulation
+sim_param_range <- list(
   LR_group = c(0, 1),
   LR_max_group = c(0, 1),
-  sigma_LR_group = c(0.01, 10),
-  LR = c(0, 1),
+  sigma_LR_group = c(1, 8),
   inv_temp_group = c(0, 5),
-  inv_temp = c(0, 5),
-  initQ_dev_group = c(0, 5),
-  initQ_dev = c(0, 9),
-  mu_R_group = c(1, 10),
-  sigma_R_group = c(0, 10)
+  initQ_dev_group = c(0, 4)
+)
+
+#' A list of theoretical bounds for parameters such that
+#' participant-level settings don't reach impossible values
+param_bounds <- list(
+  LR = c(0, 1),
+  LR_max = c(0, 1),
+  sigma_LR = c(0, 1),
+  inv_temp = c(0, Inf),
+  initQ_dev = c(0, Inf),
+  mu_R = c(1, 10),
+  sigma_R = c(0, Inf)
 )
 
 #' Randomizes given free parameters according to a uniform
@@ -39,10 +45,10 @@ param_bounds <- list(
 randomize_free_params <- function(param_settings, free_params, seed) {
   set.seed(seed)
   for (p in free_params) {
-    bounds <- param_bounds[[p]]
+    range <- sim_param_range[[p]]
     draw <- runif(n = length(param_settings[[p]]), 
-                  min = bounds[1], 
-                  max = bounds[2])
+                  min = range[1], 
+                  max = range[2])
     param_settings[[p]] <- draw
   }
 
@@ -64,7 +70,7 @@ draw_pp_params <- function(group_param_settings, n_part) {
     group_mean <- group_param_settings[[p]]
     pp_level_name <- str_remove(p, "_group")
     pp_params[[pp_level_name]] <- replicate(n = n_part,
-                                            draw_from_group_mean(group_mean, p))
+                                            draw_from_group_mean(group_mean, pp_level_name))
   }
   return(pp_params)
 }
