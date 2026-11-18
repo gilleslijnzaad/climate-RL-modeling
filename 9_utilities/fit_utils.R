@@ -32,7 +32,7 @@ source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
 #' 
 #' @return data frame of the type specified in return
 fit <- function(model, dat_file, return, k = 1, n_runs = 1, free_params = NULL, show_iteration_progress = FALSE) {
-  it <- 5000
+  it <- 1000
   fit <- model$sample(
     data = dat_file,
     iter_sampling = it,
@@ -44,6 +44,10 @@ fit <- function(model, dat_file, return, k = 1, n_runs = 1, free_params = NULL, 
     show_messages = show_iteration_progress
   )
   if (return == "draws") {
+    if (is.null(free_params)) {
+      warning("free_params is NULL!")
+      return()
+    }
     draws <- posterior::as_draws_df(fit$draws()) %>%
       rename(setNames(paste0("means[", seq_along(free_params), "]"),
                       free_params))
