@@ -1,23 +1,12 @@
-set.seed(1234)
+set.seed(1234) # remove this?
 library(dplyr)
 library(stringr)
-
-#' A list of standard deviations for group-level means of parameters
-param_stddevs <- list(
-  LR = 0.2,
-  LR_max = 0.2,
-  sigma_LR = 0.2,
-  inv_temp = 0.3,
-  initQ_dev = 0.3,
-  mu_R = 2,
-  sigma_R = 1
-)
 
 #' A list of parameter bounds used for simulation
 sim_param_range <- list(
   LR_group = c(0, 1),
   LR_max_group = c(0, 1),
-  sigma_LR_group = c(1, 8),
+  sigma_LR_group = c(0.5, 4),
   inv_temp_group = c(0, 5),
   initQ_dev_group = c(0, 4)
 )
@@ -27,11 +16,23 @@ sim_param_range <- list(
 param_bounds <- list(
   LR = c(0, 1),
   LR_max = c(0, 1),
-  sigma_LR = c(0, 1),
+  sigma_LR = c(0, Inf),
   inv_temp = c(0, Inf),
   initQ_dev = c(0, Inf),
   mu_R = c(1, 10),
   sigma_R = c(0, Inf)
+)
+
+#' A list of standard deviations for group-level means of parameters
+#' Rule of thumb: std_devs are approximately 1/4 of the parameter range
+param_stddevs <- list(
+  LR = 0.25,
+  LR_max = 0.25,
+  sigma_LR = 1,
+  inv_temp = 1.25,
+  initQ_dev = 1,
+  mu_R = 2,
+  sigma_R = 1
 )
 
 #' Randomizes given free parameters according to a uniform
@@ -128,7 +129,7 @@ save_sim_dat <- function(params, sim_dat, dat_file_name, free_params_pp) {
               nrow = n_part,
               ncol = n_trials,
               byrow = TRUE)
-  mu_R <- round(sim_dat[["mu_R"]][which(sim_dat$trial == 1)], 4)
+  mu_R <- round(unique(sim_dat[["mu_R"]]), 2)
   dat_names <- c("n_part", "n_trials", "choice_c", "R", "mu_R")
   list_dat <- setNames(mget(dat_names), dat_names)
   cmdstanr::write_stan_json(list_dat, file = dat_file_name)
