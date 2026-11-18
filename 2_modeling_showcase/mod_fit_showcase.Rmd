@@ -183,8 +183,7 @@ grid.draw(p)
 ```{r posterior-table}
 util <- new.env()
 source(paste0(util_dir, "utils.R"), local = util)
-to_inspect <- free_params_group
-util$print_posterior_table(draws, params, to_inspect)
+util$print_posterior_table(draws, params, free_params_group)
 ```
 
 ### Participant-level parameters
