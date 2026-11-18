@@ -75,8 +75,8 @@ ggplot() +
 
 ## ----run-LRN-gauss------------------------------------------------------------
 my_order <- c("n_part", "n_trials", "LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group", "mu_R_group", "sigma_R_group")
-params <- modifyList(params_std[-3], list(LR_max_group = 0.6,
-                                          sigma_LR_group = 2))[my_order]
+params <- modifyList(params_std[-3], list(LR_max_group = 0.4,
+                                          sigma_LR_group = 3))[my_order]
 
 sim <- new.env()
 source(paste0(model_dir, "2_LRN_gauss.R"), local = sim)
