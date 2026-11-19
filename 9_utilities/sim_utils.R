@@ -1,4 +1,3 @@
-set.seed(1234) # remove this?
 library(dplyr)
 library(stringr)
 
