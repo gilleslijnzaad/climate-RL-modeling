@@ -365,16 +365,17 @@ pp_level_param_fit <- function(draws, to_plot, param_settings) {
       param_name <- paste0(p, "[", j, "]")
       median_draws[j] <- median(draws[[param_name]])
     }
-    dat <- data.frame(sim_value = sim_values, 
-                      fit_value = median_draws)
+    plot_dat <- data.frame(x = sim_values, 
+                           y = median_draws)
     
-    bounds <- range(sim_values)
+    lims <- range(plot_dat$x, plot_dat$y)
 
-    plot <- ggplot(dat, aes(x = sim_value, y = fit_value)) +
+    plot <- ggplot(plot_dat, aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
-      lims(y = bounds) +
+      lims(x = lims, y = lims) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
+      geom_label(label = utils$my_icc_report(plot_dat$x, plot_dat$y), x = lims[1], y = lims[2], hjust = "left") +
       my_theme + 
       theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
     plots[[p]] <- plot
@@ -409,13 +410,14 @@ many_runs_param_fit <- function(sim_params, fit_params, to_plot) {
 
     plot_dat <- data.frame(x = sim_params[[p]], y = fit_params[[p]])
 
-    plot <- ggplot(plot_dat, aes(x = x, y = y)) +
-      geom_point(color = my_param_colors[[p]], size = 2) +
+    plot <- ggplot(plot_dat) +
+      geom_point(aes(x = x, y = y), color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = lims, y = lims) +
+      geom_label(label = utils$my_icc_report(plot_dat$x, plot_dat$y), x = lims[1], y = lims[2], hjust = "left") +
       labs(title = p, x = NULL, y = NULL) +
-      ggpubr::stat_cor() +
-      my_theme + theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
+      my_theme +
+      theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5))
     plots[[p]] <- plot
   }
 

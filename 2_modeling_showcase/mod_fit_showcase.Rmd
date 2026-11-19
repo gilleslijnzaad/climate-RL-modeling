@@ -169,8 +169,8 @@ fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting)
 model <- cmdstan_model(model_path)
 free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
-draws <- fitting$fit(model, dat_file, return = "draws", free_params = free_params_group, show_iteration_progress = TRUE)
-saveRDS(draws, paste0(dat_dir, "draws.rds"))
+# draws <- fitting$fit(model, dat_file, return = "draws", free_params = free_params_group, show_iteration_progress = TRUE)
+# saveRDS(draws, paste0(dat_dir, "draws.rds"))
 ```
 
 ### Group-level parameters
@@ -192,8 +192,6 @@ participant_params <- rjson::fromJSON(file = paste0(dat_dir, "param_settings_001
 free_params_pp <- gsub("_group", "", free_params_group)
 plot$pp_level_param_fit(draws, free_params_pp, participant_params)
 ```
-
-TODO: for inv_temp it seems okay, but for the other parameters the participant-level estimations are very similar to the group-level estimations. Seems like a mistake?
 
 ## Many runs: random parameters
 See [Parameter recovery](https://gilleslijnzaad.github.io/climate-RL-modeling/inspect_param_recovery.html)

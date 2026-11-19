@@ -2,7 +2,8 @@ packages <- c(
   "dplyr",
   "ggplot2",
   "tidyr",
-  "truncnorm"
+  "truncnorm",
+  "irr"
 )
 
 install.packages(packages, dependencies = TRUE)

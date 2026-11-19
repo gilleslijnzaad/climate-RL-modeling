@@ -63,3 +63,33 @@ common_param_name <- function(name1, name2) {
 
   return(common_name)
 }
+
+#' Report clean p-values easier
+#' 
+#' @param p p-value
+#' 
+#' @return a string
+my_p_value <- function(p) {
+  if (p < 0.001) {
+    return("p < 0.001")
+  } else if (p < 0.01) {
+    return("p < 0.01")
+  } else {
+    return(paste0("p = ", round(p, 2)))
+  }
+}
+
+#' Calculates agreement between simulated and fitted data
+#' 
+#' @param sim_dat array of simulated values for parameter
+#' 
+#' @param fit_dat array of median of fitted values for parameter
+#' 
+#' @return a string
+my_icc_report <- function(sim_dat, fit_dat) {
+  dat <- cbind(sim_dat, fit_dat)
+  icc <- irr::icc(dat, "twoway", "agreement", "single")
+  p <- my_p_value(icc$p.value)
+  report <- sprintf("ICC = %.2f, %s", icc$value, p)
+  return(report)
+}

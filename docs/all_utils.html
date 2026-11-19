@@ -1465,7 +1465,7 @@ sim_param_range &lt;- list(
   LR_max_group = c(0, 1),
   sigma_LR_group = c(0.5, 4),
   inv_temp_group = c(0, 5),
-  initQ_dev_group = c(0, 4)
+  initQ_dev_group = c(0, 3)
 )
 
 #&#39; A list of theoretical bounds for parameters such that
@@ -1487,7 +1487,7 @@ param_stddevs &lt;- list(
   LR_max = 0.25,
   sigma_LR = 1,
   inv_temp = 1.25,
-  initQ_dev = 1,
+  initQ_dev = 0.75,
   mu_R = 2,
   sigma_R = 1
 )
@@ -1984,16 +1984,17 @@ pp_level_param_fit &lt;- function(draws, to_plot, param_settings) {
       param_name &lt;- paste0(p, &quot;[&quot;, j, &quot;]&quot;)
       median_draws[j] &lt;- median(draws[[param_name]])
     }
-    dat &lt;- data.frame(sim_value = sim_values, 
-                      fit_value = median_draws)
+    plot_dat &lt;- data.frame(x = sim_values, 
+                           y = median_draws)
     
-    bounds &lt;- range(sim_values)
+    lims &lt;- range(plot_dat$x, plot_dat$y)
 
-    plot &lt;- ggplot(dat, aes(x = sim_value, y = fit_value)) +
+    plot &lt;- ggplot(plot_dat, aes(x = x, y = y)) +
       geom_point(color = my_param_colors[[p]], size = 2) +
-      lims(y = bounds) +
+      lims(x = lims, y = lims) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       labs(title = p, x = NULL, y = NULL) +
+      geom_label(label = utils$my_icc_report(plot_dat$x, plot_dat$y), x = lims[1], y = lims[2], hjust = &quot;left&quot;) +
       my_theme + 
       theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
     plots[[p]] &lt;- plot
@@ -2028,13 +2029,14 @@ many_runs_param_fit &lt;- function(sim_params, fit_params, to_plot) {
 
     plot_dat &lt;- data.frame(x = sim_params[[p]], y = fit_params[[p]])
 
-    plot &lt;- ggplot(plot_dat, aes(x = x, y = y)) +
-      geom_point(color = my_param_colors[[p]], size = 2) +
+    plot &lt;- ggplot(plot_dat) +
+      geom_point(aes(x = x, y = y), color = my_param_colors[[p]], size = 2) +
       geom_abline(intercept = 0, slope = 1, linetype = 2) +
       lims(x = lims, y = lims) +
+      geom_label(label = utils$my_icc_report(plot_dat$x, plot_dat$y), x = lims[1], y = lims[2], hjust = &quot;left&quot;) +
       labs(title = p, x = NULL, y = NULL) +
-      ggpubr::stat_cor() +
-      my_theme + theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
+      my_theme +
+      theme(plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5))
     plots[[p]] &lt;- plot
   }
 
@@ -2209,6 +2211,36 @@ common_param_name &lt;- function(name1, name2) {
   }
 
   return(common_name)
+}
+
+#&#39; Report clean p-values easier
+#&#39; 
+#&#39; @param p p-value
+#&#39; 
+#&#39; @return a string
+my_p_value &lt;- function(p) {
+  if (p &lt; 0.001) {
+    return(&quot;p &lt; 0.001&quot;)
+  } else if (p &lt; 0.01) {
+    return(&quot;p &lt; 0.01&quot;)
+  } else {
+    return(paste0(&quot;p = &quot;, round(p, 2)))
+  }
+}
+
+#&#39; Calculates agreement between simulated and fitted data
+#&#39; 
+#&#39; @param sim_dat array of simulated values for parameter
+#&#39; 
+#&#39; @param fit_dat array of median of fitted values for parameter
+#&#39; 
+#&#39; @return a string
+my_icc_report &lt;- function(sim_dat, fit_dat) {
+  dat &lt;- cbind(sim_dat, fit_dat)
+  icc &lt;- irr::icc(dat, &quot;twoway&quot;, &quot;agreement&quot;, &quot;single&quot;)
+  p &lt;- my_p_value(icc$p.value)
+  report &lt;- sprintf(&quot;ICC = %.2f, %s&quot;, icc$value, p)
+  return(report)
 }</code></pre>
 </div>
 

@@ -84,8 +84,8 @@ fitting <- new.env()
 source(paste0(util_dir, "fit_utils.R"), local = fitting)
 model <- cmdstan_model(model_path)
 free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
-draws <- fitting$fit(model, dat_file, return = "draws", free_params = free_params_group, show_iteration_progress = TRUE)
-saveRDS(draws, paste0(dat_dir, "draws.rds"))
+# draws <- fitting$fit(model, dat_file, return = "draws", free_params = free_params_group, show_iteration_progress = TRUE)
+# saveRDS(draws, paste0(dat_dir, "draws.rds"))
 
 ## ----posterior-plots----------------------------------------------------------
 draws <- readRDS(paste0(dat_dir, "draws.rds"))
@@ -96,8 +96,7 @@ grid.draw(p)
 ## ----posterior-table----------------------------------------------------------
 util <- new.env()
 source(paste0(util_dir, "utils.R"), local = util)
-to_inspect <- free_params_group
-util$print_posterior_table(draws, params, to_inspect)
+util$print_posterior_table(draws, params, free_params_group)
 
 ## ----sim-vs-fit---------------------------------------------------------------
 participant_params <- rjson::fromJSON(file = paste0(dat_dir, "param_settings_001.json"))
