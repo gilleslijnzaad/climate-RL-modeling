@@ -2,7 +2,8 @@ library(tidyverse)
 
 rm(list = ls())
 
-mod_name <- "2_LRN_gauss"
+mod_name <- "1_std"
+# mod_name <- "2_LRN_gauss"
 
 if (1) {
   main_dir <- "~/research/climate-RL-mod/"
@@ -12,7 +13,7 @@ if (1) {
   recov_dir <- paste0(main_dir, "3_param_recovery/")
   current_dir <- paste0(recov_dir, "sandbox/")
   sim <- new.env()
-  source(paste0(mod_dir, mod_name, ".R"), local = sim) # access functions using sim$fun()
+  source(paste0(mod_dir, mod_name, ".R"), local = sim)
   sim_utils <- new.env()
   source(paste0(util_dir, "sim_utils.R"), local = sim_utils)
   plot <- new.env()
@@ -26,15 +27,17 @@ if (1) {
 param_settings <- list(
   n_part = 50,
   n_trials = 30,
-  LR_max_group = 0.8,
-  sigma_LR_group = 6,
+  LR_group = 0.4,
+  # LR_max_group = 0.4,
+  # sigma_LR_group = 6,
   inv_temp_group = 2,
   initQ_dev_group = 2,
   mu_R_group = 5.5,
   sigma_R_group = 2
 )
 
-free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
+free_params_group <- c("LR_group", "inv_temp_group", "initQ_dev_group")
+# free_params_group <- c("LR_max_group", "sigma_LR_group", "inv_temp_group", "initQ_dev_group")
 free_params_pp <- gsub("_group", "", free_params_group)
 
 if (1) {
@@ -42,19 +45,18 @@ if (1) {
   dat_path <- sprintf("%ssim_dat.json", current_dir)
   sim_utils$save_sim_dat(param_settings, sim_dat, dat_path, free_params_pp)
 
-
   model <- cmdstan_model(model_path)
-  draws <- fitting$fit(model, dat_path, return = "draws", show_iteration_progress = TRUE) %>% 
-    rename(setNames(paste0("means[", seq_along(free_params_group), "]"),
-                    free_params_group))
+  draws <- fitting$fit(model, dat_path, return = "draws", free_params = free_params_group, show_iteration_progress = TRUE)
 
   pl <- plot$posterior_densities(draws, free_params_group, param_settings)
 }
 
-name <- sprintf("%sLR_max_%.1f_sigma_LR_%.1f_invtemp_%.1f_initQdev_%.1f.png",
+name <- sprintf("%sLR_%.1f_invtemp_%.1f_initQdev_%.1f.png",
+# name <- sprintf("%sLR_max_%.1f_sigma_LR_%.1f_invtemp_%.1f_initQdev_%.1f.png",
                 current_dir,
-                param_settings[["LR_max_group"]],
-                param_settings[["sigma_LR_group"]],
+                param_settings[["LR_group"]],
+                # param_settings[["LR_max_group"]],
+                # param_settings[["sigma_LR_group"]],
                 param_settings[["inv_temp_group"]],
                 param_settings[["initQ_dev_group"]])
 
