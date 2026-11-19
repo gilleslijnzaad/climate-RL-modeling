@@ -8,7 +8,7 @@ sim_param_range <- list(
   LR_max_group = c(0, 1),
   sigma_LR_group = c(0.5, 4),
   inv_temp_group = c(0, 5),
-  initQ_dev_group = c(0, 4)
+  initQ_dev_group = c(0, 3)
 )
 
 #' A list of theoretical bounds for parameters such that
@@ -30,7 +30,7 @@ param_stddevs <- list(
   LR_max = 0.25,
   sigma_LR = 1,
   inv_temp = 1.25,
-  initQ_dev = 1,
+  initQ_dev = 0.75,
   mu_R = 2,
   sigma_R = 1
 )
