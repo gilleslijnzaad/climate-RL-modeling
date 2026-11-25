@@ -44,28 +44,11 @@ confusion <- data.frame(
   p = 0
 )
 
-fits <- list(
-  "0" = NA,
-  "1" = NA,
-  "2" = NA
-)
-
 for (sim_model in as.character(0:2)) {
+  winning_models <- readRDS(sprintf("%ssim%s/winning_models.rds", recov_dir, sim_model))
   for (run in 1:n_runs) {
-    for (fit_model in as.character(0:2)) {
-      fits[[fit_model]] <- readRDS(sprintf("%ssim%s/fit%s/bridge_%.03d.rds", recov_dir, sim_model, fit_model, run))
-    }
-    winner_I <- ifelse(bf(fits[["1"]], fits[["0"]])$bf > 3,
-                       "1",
-                       "0")
-    winner_II <- ifelse(bf(fits[["2"]], fits[["1"]])$bf > 3,
-                       "2",
-                       "1")
-    final_winner <- ifelse(bf(fits[[winner_II]], fits[[winner_I]])$bf > 3,
-                       winner_II,
-                       winner_I)
     confusion <- confusion %>%
-      mutate(p = if_else(sim_mod == sim_model & fit_mod == final_winner,
+      mutate(p = if_else(sim_mod == sim_model & fit_mod == winning_models$winner[run],
                          p + 1/n_runs,
                          p))
   }
